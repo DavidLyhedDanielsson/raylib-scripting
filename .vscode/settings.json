@@ -1,6 +1,3 @@
 {
     "editor.formatOnSave": true,
-    "cmake.environment": {
-        "EMSDK": "/home/david/dev/tools/emsdk"
-    }
 }

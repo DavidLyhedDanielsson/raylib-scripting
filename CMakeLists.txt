@@ -16,7 +16,7 @@ else()
 endif ()
 
 
-file(GLOB SRCS *.cpp *.h)
+file(GLOB SRCS *.cpp)
 file(GLOB LUA_SRC ${CMAKE_CURRENT_SOURCE_DIR}/lua/*.c)
 list(REMOVE_ITEM LUA_SRC ${CMAKE_CURRENT_SOURCE_DIR}/lua/lua.c ${CMAKE_CURRENT_SOURCE_DIR}/lua/onelua.c)
 file(GLOB IMGUI_SRC ${CMAKE_CURRENT_SOURCE_DIR}/imgui/*.cpp ${CMAKE_CURRENT_SOURCE_DIR}/imgui/backends/imgui_impl_opengl3.cpp)
