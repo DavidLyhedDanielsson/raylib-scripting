@@ -46,9 +46,9 @@ void main_loop()
 
     float rotation = (3.141593f * 2.0f) * (timer / 5000.0f);
 
-    camera.position = (Vector3){cosf(rotation) * 10.0f, 5.0f, sinf(rotation) * 10.0f};
-    camera.target = (Vector3){0.0f, 0.0f, 0.0f};
-    camera.up = (Vector3){0.0f, 1.0f, 0.0f};
+    camera.position = {cosf(rotation) * 10.0f, 5.0f, sinf(rotation) * 10.0f};
+    camera.target = {0.0f, 0.0f, 0.0f};
+    camera.up = {0.0f, 1.0f, 0.0f};
     camera.fovy = 45.0f;
     camera.projection = CAMERA_PERSPECTIVE;
 
@@ -61,7 +61,7 @@ void main_loop()
     DrawText(buf, 0, 0, 20, LIGHTGRAY);
 
     BeginMode3D(camera);
-    DrawModel(model, (Vector3){0.0f, 0.0f, 0.0f}, 1.0f, WHITE);
+    DrawModel(model, {0.0f, 0.0f, 0.0f}, 1.0f, WHITE);
     EndMode3D();
 
     RaylibImGui::Begin();
