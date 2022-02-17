@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <array>
+#include <vector>
 extern "C"
 {
 #include <lua.h>
@@ -37,6 +38,12 @@ float timer = 0.0f;
 lua_State *luaState;
 ImGuiContext *guiContext;
 
+// Hacky lua console
+std::array<char, 256> inputBuffer;
+bool scrollDown = false;
+bool addCommandToHistory = false;
+std::vector<std::string> history;
+
 void main_loop()
 {
     auto now = std::chrono::high_resolution_clock::now();
@@ -67,13 +74,67 @@ void main_loop()
     RaylibImGui::Begin();
     ImGui::NewFrame();
 
-    ImGui::Begin("Hello");
+    ImGui::Begin("Lua console");
+    if (ImGui::InputText("Input", inputBuffer.data(), 256, ImGuiInputTextFlags_EnterReturnsTrue))
+    {
+        addCommandToHistory = true;
+        luaL_loadstring(luaState, inputBuffer.data());
+        lua_pcall(luaState, 0, 0, 0);
+
+        if (addCommandToHistory)
+        {
+            history.push_back(std::string(inputBuffer.data()));
+        }
+
+        inputBuffer[0] = '\0';
+        ImGui::SetKeyboardFocusHere(-1);
+
+        scrollDown = true;
+    }
+    ImGui::BeginChild("Output");
+    for (int i = 0; i < history.size(); ++i)
+    {
+        ImGui::Text(history[i].c_str(), i);
+    }
+    if (scrollDown)
+    {
+        ImGui::SetScrollHereY(1.0f);
+        scrollDown = false;
+    }
+    ImGui::EndChild();
     ImGui::End();
 
     ImGui::Render();
     RaylibImGui::End();
 
     EndDrawing();
+}
+
+static int lua_print(lua_State *state)
+{
+    int args = lua_gettop(state);
+
+    std::string str = std::string(inputBuffer.data()) + ": ";
+    for (int i = 1; i <= args; ++i)
+    {
+        if (lua_isstring(state, i))
+        {
+            str += lua_tostring(state, i);
+        }
+        else
+        {
+            lua_pop(state, 1);
+            history.push_back(std::string("No output data"));
+        }
+    }
+
+    if (!str.empty())
+    {
+        history.push_back(str);
+    }
+    addCommandToHistory = false;
+
+    return 0;
 }
 
 int main()
@@ -87,8 +148,12 @@ int main()
 
     luaState = luaL_newstate();
     luaL_openlibs(luaState);
-    luaL_loadstring(luaState, "print(\"Hello world\")");
-    lua_pcall(luaState, 0, 0, 0);
+
+    // Use our own print function
+    const luaL_Reg printarr[] = {{"print", lua_print}, {NULL, NULL}};
+    lua_getglobal(luaState, "_G");
+    luaL_setfuncs(luaState, printarr, 0);
+    lua_pop(luaState, 1);
 
     guiContext = ImGui::CreateContext();
     last = std::chrono::high_resolution_clock::now();
