@@ -17,9 +17,11 @@ endif ()
 
 
 file(GLOB SRCS *.cpp *.h)
+file(GLOB LUA_SRC ${CMAKE_CURRENT_SOURCE_DIR}/lua/*.c)
+list(REMOVE_ITEM LUA_SRC ${CMAKE_CURRENT_SOURCE_DIR}/lua/lua.c ${CMAKE_CURRENT_SOURCE_DIR}/lua/onelua.c)
 
 add_subdirectory(raylib)
 link_libraries(raylib)
-include_directories(./raylib/src)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/raylib/src ${CMAKE_CURRENT_SOURCE_DIR}/lua)
 
-add_executable(raylib_test ${SRCS})
+add_executable(raylib_test ${SRCS} ${LUA_SRC})
