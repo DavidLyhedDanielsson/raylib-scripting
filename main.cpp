@@ -4,6 +4,12 @@
 #include <stdio.h>
 #include <math.h>
 #include <array>
+extern "C"
+{
+#include <lua.h>
+#include <lauxlib.h>
+#include <lualib.h>
+}
 
 #ifdef PLATFORM_WEB
 #include <emscripten/emscripten.h>
@@ -25,6 +31,8 @@ std::chrono::time_point<std::chrono::high_resolution_clock> last;
 
 constexpr float TICK_RATE = 1000.0f / 60.0f;
 float timer = 0.0f;
+
+lua_State *luaState;
 
 void main_loop()
 {
@@ -64,6 +72,11 @@ int main()
     InitWindow(screenWidth, screenHeight, "Raylib test");
 
     model = LoadModel(AssetPath("Bob/glTF/Bob.gltf").data());
+
+    luaState = luaL_newstate();
+    luaL_openlibs(luaState);
+    luaL_loadstring(luaState, "print(\"Hello world\")");
+    lua_pcall(luaState, 0, 0, 0);
 
 #ifdef PLATFORM_WEB
     emscripten_set_main_loop(main_loop, 0, 1);
