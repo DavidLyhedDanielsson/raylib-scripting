@@ -78,6 +78,8 @@ int main()
     luaL_loadstring(luaState, "print(\"Hello world\")");
     lua_pcall(luaState, 0, 0, 0);
 
+    last = std::chrono::high_resolution_clock::now();
+
 #ifdef PLATFORM_WEB
     emscripten_set_main_loop(main_loop, 0, 1);
 #else
