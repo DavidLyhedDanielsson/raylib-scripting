@@ -19,9 +19,10 @@ endif ()
 file(GLOB SRCS *.cpp *.h)
 file(GLOB LUA_SRC ${CMAKE_CURRENT_SOURCE_DIR}/lua/*.c)
 list(REMOVE_ITEM LUA_SRC ${CMAKE_CURRENT_SOURCE_DIR}/lua/lua.c ${CMAKE_CURRENT_SOURCE_DIR}/lua/onelua.c)
+file(GLOB IMGUI_SRC ${CMAKE_CURRENT_SOURCE_DIR}/imgui/*.cpp ${CMAKE_CURRENT_SOURCE_DIR}/imgui/backends/imgui_impl_opengl3.cpp)
 
 add_subdirectory(raylib)
 link_libraries(raylib)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/raylib/src ${CMAKE_CURRENT_SOURCE_DIR}/lua)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/raylib/src ${CMAKE_CURRENT_SOURCE_DIR}/lua ${CMAKE_CURRENT_SOURCE_DIR}/imgui ${CMAKE_CURRENT_SOURCE_DIR}/imgui/backends)
 
-add_executable(raylib_test ${SRCS} ${LUA_SRC})
+add_executable(raylib_test ${SRCS} ${LUA_SRC} ${IMGUI_SRC})
