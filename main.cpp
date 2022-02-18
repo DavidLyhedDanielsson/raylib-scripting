@@ -3,8 +3,10 @@
 #include <iostream>
 #include <stdio.h>
 #include <math.h>
+#include <cmath>
 #include <array>
 #include <vector>
+#include <numbers>
 extern "C"
 {
 #include <lua.h>
@@ -32,9 +34,6 @@ Model model;
 
 std::chrono::time_point<std::chrono::high_resolution_clock> last;
 
-constexpr float TICK_RATE = 1000.0f / 60.0f;
-float timer = 0.0f;
-
 lua_State *luaState;
 ImGuiContext *guiContext;
 
@@ -44,14 +43,23 @@ bool scrollDown = false;
 bool addCommandToHistory = false;
 std::vector<std::string> history;
 
+float rotation = 0.0f;
+
 void main_loop()
 {
     auto now = std::chrono::high_resolution_clock::now();
     float deltaMs = std::chrono::duration<float, std::milli>(now - last).count();
     last = now;
-    timer += deltaMs;
 
-    float rotation = (3.141593f * 2.0f) * (timer / 5000.0f);
+    lua_getglobal(luaState, "rotation_speed");
+    float rotationSpeed = lua_tonumber(luaState, -1);
+    lua_pop(luaState, 1);
+    rotation += deltaMs * rotationSpeed;
+    if (isnan(rotation))
+    {
+        // if rotation ever becomes nan it will never recover, so this is just a safety check
+        rotation = 0.0f;
+    }
 
     camera.position = {cosf(rotation) * 10.0f, 5.0f, sinf(rotation) * 10.0f};
     camera.target = {0.0f, 0.0f, 0.0f};
@@ -75,6 +83,26 @@ void main_loop()
     ImGui::NewFrame();
 
     ImGui::Begin("Lua console");
+    float rotationPeriod = (std::numbers::pi * 2.0f) / rotationSpeed / 1000.0f;
+    if (ImGui::SliderFloat("##rotationperiod", &rotationPeriod, 1.0f, 10.0f))
+    {
+        if (rotationPeriod < 0.01f)
+        {
+            rotationSpeed = 0.0f;
+        }
+        else
+        {
+            rotationSpeed = (std::numbers::pi * 2.0f) / (1000.0f * rotationPeriod);
+        }
+        lua_pushnumber(luaState, rotationSpeed);
+        lua_setglobal(luaState, "rotation_speed");
+    }
+    ImGui::SameLine();
+    ImGui::Text("Rotation period");
+    if (ImGui::IsItemHovered())
+    {
+        ImGui::SetTooltip("How long it takes to rotate 1 lap");
+    }
     if (ImGui::InputText("Input", inputBuffer.data(), 256, ImGuiInputTextFlags_EnterReturnsTrue))
     {
         addCommandToHistory = true;
@@ -154,6 +182,9 @@ int main()
     lua_getglobal(luaState, "_G");
     luaL_setfuncs(luaState, printarr, 0);
     lua_pop(luaState, 1);
+    // It should spin one revolution in 3000 ms
+    lua_pushnumber(luaState, std::numbers::pi * 2.0f / 3000.0f);
+    lua_setglobal(luaState, "rotation_speed");
 
     guiContext = ImGui::CreateContext();
     last = std::chrono::high_resolution_clock::now();
