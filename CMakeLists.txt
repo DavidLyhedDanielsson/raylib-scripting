@@ -16,14 +16,15 @@ else()
   add_compile_definitions(DASSET_ROOT=\"${CMAKE_CURRENT_SOURCE_DIR}/assets\")
 endif ()
 
+set(LIB_DIR ${CMAKE_CURRENT_SOURCE_DIR}/libs)
 
 file(GLOB SRCS *.cpp)
-file(GLOB LUA_SRC ${CMAKE_CURRENT_SOURCE_DIR}/lua/*.c)
-list(REMOVE_ITEM LUA_SRC ${CMAKE_CURRENT_SOURCE_DIR}/lua/lua.c ${CMAKE_CURRENT_SOURCE_DIR}/lua/onelua.c)
-file(GLOB IMGUI_SRC ${CMAKE_CURRENT_SOURCE_DIR}/imgui/*.cpp ${CMAKE_CURRENT_SOURCE_DIR}/imgui/backends/imgui_impl_opengl3.cpp)
+file(GLOB LUA_SRC ${LIB_DIR}/lua/*.c)
+list(REMOVE_ITEM LUA_SRC ${LIB_DIR}/lua/lua.c ${LIB_DIR}/lua/onelua.c)
+file(GLOB IMGUI_SRC ${LIB_DIR}/imgui/*.cpp ${LIB_DIR}/imgui/backends/imgui_impl_opengl3.cpp)
 
-add_subdirectory(raylib)
+add_subdirectory(${LIB_DIR}/raylib)
 link_libraries(raylib)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/raylib/src ${CMAKE_CURRENT_SOURCE_DIR}/lua ${CMAKE_CURRENT_SOURCE_DIR}/imgui ${CMAKE_CURRENT_SOURCE_DIR}/imgui/backends)
+include_directories(${LIB_DIR}/raylib/src ${LIB_DIR}/lua ${LIB_DIR}/imgui ${LIB_DIR}/imgui/backends)
 
 add_executable(raylib_test ${SRCS} ${LUA_SRC} ${IMGUI_SRC})

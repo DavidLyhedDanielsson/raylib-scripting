@@ -178,7 +178,8 @@ int main()
     InitWindow(screenWidth, screenHeight, "Raylib test");
 
     // Bob comes from https://quaternius.com/. Thanks Quaternius!
-    model = LoadModel(AssetPath("Bob/glTF/Bob.gltf").data());
+    // model = LoadModel(AssetPath("Bob/glTF/Bob.gltf").data());
+    model = LoadModel(AssetPath("Bob.glb").data());
 
     // Create lua state and perform initial setup
     luaState = luaL_newstate();

@@ -1,9 +1,9 @@
 [submodule "raylib"]
-	path = raylib
+	path = libs/raylib
 	url = git@github.com:raysan5/raylib.git
 [submodule "lua"]
-	path = lua
+	path = libs/lua
 	url = git@github.com:lua/lua.git
 [submodule "imgui"]
-	path = imgui
+	path = libs/imgui
 	url = git@github.com:ocornut/imgui.git
