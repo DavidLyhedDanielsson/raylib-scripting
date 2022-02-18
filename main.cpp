@@ -23,12 +23,14 @@ extern "C"
 // Windows clocks in at 260, linux allows 4096
 constexpr int MAX_PATH_LENGTH = 256;
 std::array<char, MAX_PATH_LENGTH> pathBuffer = {0}; // Helper to avoid dynamic allocation
+// This function is required since the file paths are different on the web and locally
 std::array<char, MAX_PATH_LENGTH> AssetPath(const char *assetName)
 {
     snprintf(pathBuffer.data(), MAX_PATH_LENGTH, "%s/%s", DASSET_ROOT, assetName);
     return pathBuffer;
 }
 
+// Global variables for simplicity
 Camera camera = {0};
 Model model;
 
@@ -46,10 +48,12 @@ float rotation = 0.0f;
 
 void main_loop()
 {
+    // Calculate time delta
     auto now = std::chrono::high_resolution_clock::now();
     float deltaMs = std::chrono::duration<float, std::milli>(now - last).count();
     last = now;
 
+    // Fetch rotation speed and update rotation
     lua_getglobal(luaState, "rotation_speed");
     float rotationSpeed = lua_tonumber(luaState, -1);
     lua_pop(luaState, 1);
@@ -81,6 +85,7 @@ void main_loop()
     RaylibImGui::Begin();
 
     ImGui::Begin("Lua console");
+    // Create the rotation speed slider
     float rotationPeriod = (std::numbers::pi * 2.0f) / rotationSpeed / 1000.0f;
     if (ImGui::SliderFloat("##rotationperiod", &rotationPeriod, 1.0f, 10.0f))
     {
@@ -101,6 +106,7 @@ void main_loop()
     {
         ImGui::SetTooltip("How long it takes to rotate 1 lap");
     }
+    // Console input
     if (ImGui::InputText("Input", inputBuffer.data(), 256, ImGuiInputTextFlags_EnterReturnsTrue))
     {
         addCommandToHistory = true;
@@ -117,6 +123,7 @@ void main_loop()
 
         scrollDown = true;
     }
+    // Console output
     ImGui::BeginChild("Output");
     for (int i = 0; i < history.size(); ++i)
     {
@@ -135,6 +142,7 @@ void main_loop()
     EndDrawing();
 }
 
+// Function to write to the console output window instead of stdout when `print` is used in lua
 static int lua_print(lua_State *state)
 {
     int args = lua_gettop(state);
@@ -169,8 +177,10 @@ int main()
 
     InitWindow(screenWidth, screenHeight, "Raylib test");
 
+    // Bob comes from https://quaternius.com/. Thanks Quaternius!
     model = LoadModel(AssetPath("Bob/glTF/Bob.gltf").data());
 
+    // Create lua state and perform initial setup
     luaState = luaL_newstate();
     luaL_openlibs(luaState);
 
@@ -179,7 +189,7 @@ int main()
     lua_getglobal(luaState, "_G");
     luaL_setfuncs(luaState, printarr, 0);
     lua_pop(luaState, 1);
-    // It should spin one revolution in 3000 ms
+    // Add rotation_speed variable. It defaults to spinning one revolution in 3000 ms
     lua_pushnumber(luaState, std::numbers::pi * 2.0f / 3000.0f);
     lua_setglobal(luaState, "rotation_speed");
 
