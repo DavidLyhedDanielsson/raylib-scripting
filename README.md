@@ -15,7 +15,7 @@ make
 ## Web compilation on Linux:
 
 Only tested on Arch. Run the code through the emscripten compiler by using their
-cmake toolchain file by running the `cmake` command below.c
+cmake toolchain file by running the `cmake` command below.
 
 Install emscripten and set up emsdk and the EMSDK environment variable. On my
 laptop:
