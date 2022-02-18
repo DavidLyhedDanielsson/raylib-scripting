@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.11)
 project(raylib_test VERSION 0.1.0)
 
+# Used mostly for convenience things like std::numbers::pi and std::make_array
 set(CMAKE_CXX_STANDARD 20)
 set(OpenGL_GL_PREFERENCE GLVND)
 
