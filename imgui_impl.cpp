@@ -236,9 +236,10 @@ TranslateKey(KeyboardKey key)
 
 void RaylibImGui::Init()
 {
-    ImGui_ImplOpenGL3_Init();
-
+    ImGui::CreateContext();
     ImGui::GetIO().BackendPlatformName = "custom_raylib_impl";
+
+    ImGui_ImplOpenGL3_Init();
 }
 
 void RaylibImGui::Deinit()
@@ -457,9 +458,12 @@ void RaylibImGui::Begin()
     double currentTime = GetTime();
     io.DeltaTime = lastTime > 0.0 ? (float)(currentTime - lastTime) : (float)(1.0f / 60.0f);
     lastTime = currentTime;
+
+    ImGui::NewFrame();
 }
 
 void RaylibImGui::End()
 {
+    ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }

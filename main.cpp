@@ -35,7 +35,6 @@ Model model;
 std::chrono::time_point<std::chrono::high_resolution_clock> last;
 
 lua_State *luaState;
-ImGuiContext *guiContext;
 
 // Hacky lua console
 std::array<char, 256> inputBuffer;
@@ -80,7 +79,6 @@ void main_loop()
     EndMode3D();
 
     RaylibImGui::Begin();
-    ImGui::NewFrame();
 
     ImGui::Begin("Lua console");
     float rotationPeriod = (std::numbers::pi * 2.0f) / rotationSpeed / 1000.0f;
@@ -132,7 +130,6 @@ void main_loop()
     ImGui::EndChild();
     ImGui::End();
 
-    ImGui::Render();
     RaylibImGui::End();
 
     EndDrawing();
@@ -186,10 +183,10 @@ int main()
     lua_pushnumber(luaState, std::numbers::pi * 2.0f / 3000.0f);
     lua_setglobal(luaState, "rotation_speed");
 
-    guiContext = ImGui::CreateContext();
     last = std::chrono::high_resolution_clock::now();
 
     RaylibImGui::Init();
+
 #ifdef PLATFORM_WEB
     emscripten_set_main_loop(main_loop, 0, 1);
 #else
