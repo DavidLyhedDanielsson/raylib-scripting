@@ -104,7 +104,7 @@ void main_loop()
     ImGui::Text("Rotation period");
     if (ImGui::IsItemHovered())
     {
-        ImGui::SetTooltip("How long it takes to rotate 1 lap");
+        ImGui::SetTooltip("How long it takes to rotate 1 revolution");
     }
     // Console input
     if (ImGui::InputText("Input", inputBuffer.data(), 256, ImGuiInputTextFlags_EnterReturnsTrue))
