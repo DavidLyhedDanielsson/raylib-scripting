@@ -181,9 +181,8 @@ int main()
     camera.projection = CAMERA_PERSPECTIVE;
     SetCameraMode(camera, CAMERA_FREE);
 
-    // Bob comes from https://quaternius.com/. Thanks Quaternius!
-    // model = LoadModel(AssetPath("Bob/glTF/Bob.gltf").data());
-    model = LoadModel(AssetPath("Bob.glb").data());
+    // Insurgent comes from https://quaternius.com/. Thanks Quaternius!
+    model = LoadModel(AssetPath("Insurgent/glTF/Insurgent.gltf").data());
 
     // Create lua state and perform initial setup
     luaState = luaL_newstate();
