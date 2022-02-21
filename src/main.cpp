@@ -59,6 +59,8 @@ void main_loop()
 
     RaylibImGui::Begin();
 
+    World::DrawImgui();
+
     ImGui::Begin("Lua console");
     ImGui::SameLine();
     if (ImGui::InputText("Input", inputBuffer.data(), 256, ImGuiInputTextFlags_EnterReturnsTrue))
