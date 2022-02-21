@@ -15,24 +15,14 @@ extern "C"
 }
 
 #include "imgui_impl.h"
+#include "world.hpp"
 
 #ifdef PLATFORM_WEB
 #include <emscripten/emscripten.h>
 #endif
 
-// Windows clocks in at 260, linux allows 4096
-constexpr int MAX_PATH_LENGTH = 256;
-std::array<char, MAX_PATH_LENGTH> pathBuffer = {0}; // Helper to avoid dynamic allocation
-// This function is required since the file paths are different on the web and locally
-std::array<char, MAX_PATH_LENGTH> AssetPath(const char *assetName)
-{
-    snprintf(pathBuffer.data(), MAX_PATH_LENGTH, "%s/%s", DASSET_ROOT, assetName);
-    return pathBuffer;
-}
-
 // Global variables for simplicity
 Camera camera = {0};
-Model model;
 
 std::chrono::time_point<std::chrono::high_resolution_clock> last;
 
@@ -44,25 +34,14 @@ bool scrollDown = false;
 bool addCommandToHistory = false;
 std::vector<std::string> history;
 
-float rotation = 0.0f;
-
 void main_loop()
 {
+    World::Update();
+
     // Calculate time delta
     auto now = std::chrono::high_resolution_clock::now();
     float deltaMs = std::chrono::duration<float, std::milli>(now - last).count();
     last = now;
-
-    // Fetch rotation speed and update rotation
-    lua_getglobal(luaState, "rotation_speed");
-    float rotationSpeed = lua_tonumber(luaState, -1);
-    lua_pop(luaState, 1);
-    rotation += deltaMs * rotationSpeed;
-    if (isnan(rotation))
-    {
-        // if rotation ever becomes nan it will never recover, so this is just a safety check
-        rotation = 0.0f;
-    }
 
     UpdateCamera(&camera);
 
@@ -75,34 +54,13 @@ void main_loop()
     DrawText(buf, 0, 0, 20, LIGHTGRAY);
 
     BeginMode3D(camera);
-    DrawModel(model, {0.0f, 0.0f, 0.0f}, 1.0f, WHITE);
+    World::Draw();
     EndMode3D();
 
     RaylibImGui::Begin();
 
     ImGui::Begin("Lua console");
-    // Create the rotation speed slider
-    float rotationPeriod = (std::numbers::pi * 2.0f) / rotationSpeed / 1000.0f;
-    if (ImGui::SliderFloat("##rotationperiod", &rotationPeriod, 1.0f, 10.0f))
-    {
-        if (rotationPeriod < 0.01f)
-        {
-            rotationSpeed = 0.0f;
-        }
-        else
-        {
-            rotationSpeed = (std::numbers::pi * 2.0f) / (1000.0f * rotationPeriod);
-        }
-        lua_pushnumber(luaState, rotationSpeed);
-        lua_setglobal(luaState, "rotation_speed");
-    }
     ImGui::SameLine();
-    ImGui::Text("Rotation period");
-    if (ImGui::IsItemHovered())
-    {
-        ImGui::SetTooltip("How long it takes to rotate 1 revolution");
-    }
-    // Console input
     if (ImGui::InputText("Input", inputBuffer.data(), 256, ImGuiInputTextFlags_EnterReturnsTrue))
     {
         addCommandToHistory = true;
@@ -181,9 +139,6 @@ int main()
     camera.projection = CAMERA_PERSPECTIVE;
     SetCameraMode(camera, CAMERA_FREE);
 
-    // Insurgent comes from https://quaternius.com/. Thanks Quaternius!
-    model = LoadModel(AssetPath("Insurgent/glTF/Insurgent.gltf").data());
-
     // Create lua state and perform initial setup
     luaState = luaL_newstate();
     luaL_openlibs(luaState);
@@ -193,13 +148,12 @@ int main()
     lua_getglobal(luaState, "_G");
     luaL_setfuncs(luaState, printarr, 0);
     lua_pop(luaState, 1);
-    // Add rotation_speed variable. It defaults to spinning one revolution in 3000 ms
-    lua_pushnumber(luaState, std::numbers::pi * 2.0f / 3000.0f);
-    lua_setglobal(luaState, "rotation_speed");
 
     last = std::chrono::high_resolution_clock::now();
 
     RaylibImGui::Init();
+
+    World::Init();
 
 #ifdef PLATFORM_WEB
     emscripten_set_main_loop(main_loop, 0, 1);
