@@ -64,11 +64,7 @@ void main_loop()
         rotation = 0.0f;
     }
 
-    camera.position = {cosf(rotation) * 10.0f, 5.0f, sinf(rotation) * 10.0f};
-    camera.target = {0.0f, 0.0f, 0.0f};
-    camera.up = {0.0f, 1.0f, 0.0f};
-    camera.fovy = 45.0f;
-    camera.projection = CAMERA_PERSPECTIVE;
+    UpdateCamera(&camera);
 
     BeginDrawing();
 
@@ -176,6 +172,13 @@ int main()
     const int screenHeight = 450;
 
     InitWindow(screenWidth, screenHeight, "Raylib test");
+
+    camera.position = {50.0f, 50.0f, 50.0f};
+    camera.target = {0.0f, 0.0f, 0.0f};
+    camera.up = {0.0f, 1.0f, 0.0f};
+    camera.fovy = 45.0f;
+    camera.projection = CAMERA_PERSPECTIVE;
+    SetCameraMode(camera, CAMERA_FREE);
 
     // Bob comes from https://quaternius.com/. Thanks Quaternius!
     // model = LoadModel(AssetPath("Bob/glTF/Bob.gltf").data());
