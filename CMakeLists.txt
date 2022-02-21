@@ -18,7 +18,7 @@ endif ()
 
 set(LIB_DIR ${CMAKE_CURRENT_SOURCE_DIR}/libs)
 
-file(GLOB SRCS *.cpp)
+file(GLOB SRCS src/*.cpp)
 file(GLOB LUA_SRC ${LIB_DIR}/lua/*.c)
 list(REMOVE_ITEM LUA_SRC ${LIB_DIR}/lua/lua.c ${LIB_DIR}/lua/onelua.c)
 file(GLOB IMGUI_SRC ${LIB_DIR}/imgui/*.cpp ${LIB_DIR}/imgui/backends/imgui_impl_opengl3.cpp)
