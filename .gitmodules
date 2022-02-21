@@ -7,3 +7,6 @@
 [submodule "imgui"]
 	path = libs/imgui
 	url = git@github.com:ocornut/imgui.git
+[submodule "libs/imguizmo"]
+	path = libs/imguizmo
+	url = https://github.com/CedricGuillemet/ImGuizmo
