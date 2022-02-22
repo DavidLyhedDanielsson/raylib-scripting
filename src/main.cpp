@@ -18,6 +18,7 @@ extern "C"
 #include "assets.hpp"
 #include "imgui_impl.h"
 #include "world.hpp"
+#include "lua_entt_impl.hpp"
 
 #ifdef PLATFORM_WEB
 #include <emscripten/emscripten.h>
@@ -160,6 +161,19 @@ int main()
     RaylibImGui::Init();
 
     World::Init(&registry);
+
+    register_entt(luaState, &registry);
+
+    auto res = luaL_loadfile(luaState, AssetPath("lua/main.lua").data());
+    if (res != LUA_OK)
+    {
+        std::cerr << "Couldn't load main.lua or error occurred";
+        return 1;
+    }
+    lua_pcall(luaState, 0, 0, 0);
+
+    lua_getglobal(luaState, "init");
+    lua_pcall(luaState, 0, 0, 0);
 
 #ifdef PLATFORM_WEB
     emscripten_set_main_loop(main_loop, 0, 1);
