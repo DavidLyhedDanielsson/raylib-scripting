@@ -11,5 +11,9 @@
         "type_traits": "cpp",
         "array": "cpp",
         "string": "cpp"
-    }
+    },
+    "[cpp]": {
+        "editor.defaultFormatter": "xaver.clang-format",
+    },
+    "clang-format.style": "file",
 }

@@ -1,27 +1,26 @@
-#include <raylib.h>
-#include <chrono>
-#include <iostream>
-#include <stdio.h>
-#include <math.h>
-#include <cmath>
 #include <array>
-#include <vector>
+#include <chrono>
+#include <cmath>
+#include <iostream>
+#include <math.h>
 #include <numbers>
-extern "C"
-{
-#include <lua.h>
+#include <raylib.h>
+#include <stdio.h>
+#include <vector>
+extern "C" {
 #include <lauxlib.h>
+#include <lua.h>
 #include <lualib.h>
 }
 #include <entt/entt.hpp>
 
 #include "assets.hpp"
 #include "imgui_impl.h"
-#include "world.hpp"
 #include "lua_entt_impl.hpp"
+#include "world.hpp"
 
 #ifdef PLATFORM_WEB
-#include <emscripten/emscripten.h>
+    #include <emscripten/emscripten.h>
 #endif
 
 // Global variables for simplicity
@@ -29,7 +28,7 @@ Camera camera = {0};
 
 std::chrono::time_point<std::chrono::high_resolution_clock> last;
 
-lua_State *luaState;
+lua_State* luaState;
 entt::registry registry;
 
 // Hacky lua console
@@ -67,13 +66,13 @@ void main_loop()
 
     ImGui::Begin("Lua console");
     ImGui::SameLine();
-    if (ImGui::InputText("Input", inputBuffer.data(), 256, ImGuiInputTextFlags_EnterReturnsTrue))
+    if(ImGui::InputText("Input", inputBuffer.data(), 256, ImGuiInputTextFlags_EnterReturnsTrue))
     {
         addCommandToHistory = true;
         luaL_loadstring(luaState, inputBuffer.data());
         lua_pcall(luaState, 0, 0, 0);
 
-        if (addCommandToHistory)
+        if(addCommandToHistory)
         {
             history.push_back(std::string(inputBuffer.data()));
         }
@@ -85,11 +84,11 @@ void main_loop()
     }
     // Console output
     ImGui::BeginChild("Output");
-    for (int i = 0; i < history.size(); ++i)
+    for(int i = 0; i < history.size(); ++i)
     {
         ImGui::Text(history[i].c_str(), i);
     }
-    if (scrollDown)
+    if(scrollDown)
     {
         ImGui::SetScrollHereY(1.0f);
         scrollDown = false;
@@ -103,14 +102,14 @@ void main_loop()
 }
 
 // Function to write to the console output window instead of stdout when `print` is used in lua
-static int lua_print(lua_State *state)
+static int lua_print(lua_State* state)
 {
     int args = lua_gettop(state);
 
     std::string str = std::string(inputBuffer.data()) + ": ";
-    for (int i = 1; i <= args; ++i)
+    for(int i = 1; i <= args; ++i)
     {
-        if (lua_isstring(state, i))
+        if(lua_isstring(state, i))
         {
             str += lua_tostring(state, i);
         }
@@ -121,7 +120,7 @@ static int lua_print(lua_State *state)
         }
     }
 
-    if (!str.empty())
+    if(!str.empty())
     {
         history.push_back(str);
     }
@@ -165,7 +164,7 @@ int main()
     register_entt(luaState, &registry);
 
     auto res = luaL_loadfile(luaState, AssetPath("lua/main.lua").data());
-    if (res != LUA_OK)
+    if(res != LUA_OK)
     {
         std::cerr << "Couldn't load main.lua or error occurred";
         return 1;
@@ -180,7 +179,7 @@ int main()
 #else
     SetTargetFPS(60);
 
-    while (!WindowShouldClose())
+    while(!WindowShouldClose())
     {
         main_loop();
     }

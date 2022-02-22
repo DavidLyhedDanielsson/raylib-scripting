@@ -2,7 +2,7 @@
 
 namespace World
 {
-    void Init(entt::registry *);
+    void Init(entt::registry*);
     void Update();
     void Draw();
     void DrawImgui();

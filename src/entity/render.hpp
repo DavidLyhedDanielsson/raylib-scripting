@@ -4,7 +4,7 @@ namespace Component
 {
     struct Render
     {
-        const char *assetName;
+        const char* assetName;
         Model model;
     };
 }
