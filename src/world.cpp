@@ -61,13 +61,15 @@ namespace World
     void DrawImgui()
     {
         static int selectedComponent = 0;
+        int i = 0;
 
         ImGui::Begin("Entities");
-        auto printEntity = [](const entt::entity entity)
+        auto printEntity = [&i](const entt::entity entity)
         {
+            ++i;
+            ImGui::PushID(i);
             if (ImGui::TreeNode("Entity"))
             {
-
                 ::std::array<void *, (int)Component::Component::LAST> entityComponents = {};
                 // helper to reduce typing and potential copy-paste errors
 #define SetComponent(T) entityComponents[(int)Component::T] = world.registry->try_get<T>(entity)
@@ -154,6 +156,7 @@ namespace World
 
                 ImGui::TreePop();
             }
+            ImGui::PopID();
         };
         world.registry->each(printEntity);
         ImGui::End();
