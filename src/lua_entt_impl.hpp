@@ -83,19 +83,17 @@ extern "C" void register_types(lua_State* lua)
     lua_setglobal(lua, "Asset");
 }
 
-void push_closure(lua_State* lua, entt::registry* registry, lua_CFunction func, const char* name)
-{
-    lua_pushlightuserdata(lua, registry);
-    lua_pushcclosure(lua, func, 1);
-    lua_setglobal(lua, name);
-}
+#define push_closure(func)                \
+    lua_pushlightuserdata(lua, registry); \
+    lua_pushcclosure(lua, func, 1);       \
+    lua_setglobal(lua, #func);
 
 void register_entt(lua_State* lua, entt::registry* registry)
 {
     register_types(lua);
 
-    push_closure(lua, registry, CreateEntity, "CreateEntity");
-    push_closure(lua, registry, AddRenderComponent, "AddRenderComponent");
-    push_closure(lua, registry, AddTransformComponent, "AddTransformComponent");
-    push_closure(lua, registry, AddVelocityComponent, "AddVelocityComponent");
+    push_closure(CreateEntity);
+    push_closure(AddRenderComponent);
+    push_closure(AddTransformComponent);
+    push_closure(AddVelocityComponent);
 }
