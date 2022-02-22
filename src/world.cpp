@@ -32,7 +32,7 @@ namespace World
     void Init(entt::registry *registry)
     {
         // Insurgent comes from https://quaternius.com/. Thanks Quaternius!
-        const auto insurgent = LoadModel(AssetPath("Insurgent/glTF/Insurgent.gltf").data());
+        const auto insurgent = GetLoadedAsset(Asset::Insurgent);
 
         world.registry = registry;
         auto entity = world.registry->create();

@@ -15,6 +15,7 @@ extern "C"
 }
 #include <entt/entt.hpp>
 
+#include "assets.hpp"
 #include "imgui_impl.h"
 #include "world.hpp"
 
@@ -155,6 +156,7 @@ int main()
 
     last = std::chrono::high_resolution_clock::now();
 
+    LoadAssets();
     RaylibImGui::Init();
 
     World::Init(&registry);
