@@ -1,6 +1,9 @@
 #include <raylib.h>
 
-struct Render
+namespace Component
 {
-    Model model;
-};
+    struct Render
+    {
+        Model model;
+    };
+}

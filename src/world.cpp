@@ -1,7 +1,7 @@
 #include "world.hpp"
 #include <raylib.h>
 #include <entt/entt.hpp>
-#include "entity/position.hpp"
+#include "entity/transform.hpp"
 #include "entity/render.hpp"
 #include "entity/velocity.hpp"
 #include "assets.hpp"
@@ -15,14 +15,18 @@ struct WorldData
 } world;
 
 // Should contain all components so they can be enumerated
-enum class Component : int
+namespace Component
 {
-    Position = 0,
-    Velocity,
-    LAST
-};
+
+    enum class Component : int
+    {
+        Transform = 0,
+        Velocity,
+        LAST
+    };
+}
 // std::array will at least give a compile error if the size of `Component` is modified
-std::array<const char *, (int)Component::LAST> ComponentString = {"Position", "Velocity"};
+std::array<const char *, (int)Component::Component::LAST> ComponentString = {"Transform", "Velocity"};
 
 namespace World
 {
@@ -32,26 +36,26 @@ namespace World
         const auto insurgent = LoadModel(AssetPath("Insurgent/glTF/Insurgent.gltf").data());
 
         const auto entity = world.registry.create();
-        world.registry.emplace<Position>(entity, 0.0f, 0.0f, 0.0f);
-        world.registry.emplace<Velocity>(entity, 0.0f, 0.0f, 0.0f);
-        world.registry.emplace<Render>(entity, insurgent);
+        world.registry.emplace<Component::Transform>(entity, Vector3{0.0f, 0.0f, 0.0f}, QuaternionIdentity());
+        world.registry.emplace<Component::Velocity>(entity, 0.0f, 0.0f, 0.0f);
+        world.registry.emplace<Component::Render>(entity, insurgent);
     }
 
     void Update()
     {
-        for (auto [entity, position, velocity] : world.registry.view<Position, Velocity>().each())
+        for (auto [entity, transform, velocity] : world.registry.view<Component::Transform, Component::Velocity>().each())
         {
-            position.x += velocity.x;
-            position.y += velocity.y;
-            position.z += velocity.z;
+            transform.position.x += velocity.x;
+            transform.position.y += velocity.y;
+            transform.position.z += velocity.z;
         }
     }
 
     void Draw()
     {
-        for (auto [entity, position, render] : world.registry.view<Position, Render>().each())
+        for (auto [entity, transform, render] : world.registry.view<Component::Transform, Component::Render>().each())
         {
-            DrawModel(render.model, {position.x, position.y, position.z}, 1.0f, WHITE);
+            DrawModel(render.model, transform.position, 1.0f, WHITE);
         }
     }
 
@@ -65,12 +69,12 @@ namespace World
             if (ImGui::TreeNode("Entity"))
             {
 
-                ::std::array<void *, (int)Component::LAST> entityComponents = {};
+                ::std::array<void *, (int)Component::Component::LAST> entityComponents = {};
                 // helper to reduce typing and potential copy-paste errors
 #define SetComponent(T) entityComponents[(int)Component::T] = world.registry.try_get<T>(entity)
 
-                SetComponent(Position);
-                SetComponent(Velocity);
+                SetComponent(Component::Transform);
+                SetComponent(Component::Velocity);
 
                 // Display a list of components that the entity does not already have
                 if (std::find(entityComponents.begin(), entityComponents.end(), nullptr) != entityComponents.end())
@@ -83,11 +87,11 @@ namespace World
                             {
                                 switch (i)
                                 {
-                                case (int)Component::Position:
-                                    world.registry.emplace<Position>(entity, 0.0f, 0.0f, 0.0f);
+                                case (int)Component::Component::Transform:
+                                    world.registry.emplace<Component::Transform>(entity, 0.0f, 0.0f, 0.0f);
                                     break;
-                                case (int)Component::Velocity:
-                                    world.registry.emplace<Velocity>(entity, 0.0f, 0.0f, 0.0f);
+                                case (int)Component::Component::Velocity:
+                                    world.registry.emplace<Component::Velocity>(entity, 0.0f, 0.0f, 0.0f);
                                     break;
                                 default:
                                     break;
@@ -104,12 +108,12 @@ namespace World
                     ImGui::EndDisabled();
                 }
 
-                if (auto position = entityComponents[(int)Component::Position]; position)
+                if (auto transform = (Component::Transform *)entityComponents[(int)Component::Component::Transform]; transform)
                 {
-                    ImGui::InputFloat3("Position", (float *)position);
+                    ImGui::InputFloat3("Position", &(transform->position.x));
                 }
 
-                if (auto velocity = entityComponents[(int)Component::Velocity]; velocity)
+                if (auto velocity = entityComponents[(int)Component::Component::Velocity]; velocity)
                 {
                     ImGui::DragFloat3("Velocity", (float *)velocity, 0.01f, -25.0f, 25.0f);
 
@@ -119,7 +123,7 @@ namespace World
                     ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - 30.0f);
                     if (ImGui::Button("[X]"))
                     {
-                        world.registry.remove<Velocity>(entity);
+                        world.registry.remove<Component::Velocity>(entity);
                     }
                     ImGui::PopStyleColor(3);
                 }

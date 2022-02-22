@@ -1,6 +1,9 @@
-struct Velocity
+namespace Component
 {
-    float x;
-    float y;
-    float z;
-};
+    struct Velocity
+    {
+        float x;
+        float y;
+        float z;
+    };
+}
