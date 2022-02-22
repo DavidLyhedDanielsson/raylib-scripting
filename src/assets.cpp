@@ -7,6 +7,7 @@ struct AssetPair
     const char *path;
 };
 
+// Assets come from https://quaternius.com/. Thanks Quaternius!
 std::array<AssetPair, 2> assets = {
     AssetPair{"Insurgent", "Insurgent/glTF/Insurgent.gltf"},
     AssetPair{"Bob", "Bob/glTF/Bob.gltf"},

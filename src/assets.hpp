@@ -3,6 +3,7 @@
 #include <raylib.h>
 #include <array>
 
+// Assets come from https://quaternius.com/. Thanks Quaternius!
 enum class Asset
 {
     Insurgent = 0,

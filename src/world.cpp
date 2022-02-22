@@ -32,7 +32,6 @@ namespace World
 {
     void Init(entt::registry *registry)
     {
-        // Insurgent comes from https://quaternius.com/. Thanks Quaternius!
         world.registry = registry;
         auto entity = world.registry->create();
         world.registry->emplace<Component::Transform>(entity, Vector3{0.0f, 0.0f, 0.0f}, QuaternionIdentity());
