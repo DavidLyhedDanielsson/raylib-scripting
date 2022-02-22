@@ -1,6 +1,5 @@
 #include "world.hpp"
 #include <raylib.h>
-#include <entt/entt.hpp>
 #include "entity/transform.hpp"
 #include "entity/render.hpp"
 #include "entity/velocity.hpp"
@@ -11,7 +10,7 @@
 
 struct WorldData
 {
-    entt::registry registry;
+    entt::registry *registry;
 } world;
 
 // Should contain all components so they can be enumerated
@@ -30,20 +29,21 @@ std::array<const char *, (int)Component::Component::LAST> ComponentString = {"Tr
 
 namespace World
 {
-    void Init()
+    void Init(entt::registry *registry)
     {
         // Insurgent comes from https://quaternius.com/. Thanks Quaternius!
         const auto insurgent = LoadModel(AssetPath("Insurgent/glTF/Insurgent.gltf").data());
 
-        const auto entity = world.registry.create();
-        world.registry.emplace<Component::Transform>(entity, Vector3{0.0f, 0.0f, 0.0f}, QuaternionIdentity());
-        world.registry.emplace<Component::Velocity>(entity, 0.0f, 0.0f, 0.0f);
-        world.registry.emplace<Component::Render>(entity, insurgent);
+        world.registry = registry;
+        auto entity = world.registry->create();
+        world.registry->emplace<Component::Transform>(entity, Vector3{0.0f, 0.0f, 0.0f}, QuaternionIdentity());
+        world.registry->emplace<Component::Velocity>(entity, 0.0f, 0.0f, 0.0f);
+        world.registry->emplace<Component::Render>(entity, insurgent);
     }
 
     void Update()
     {
-        for (auto [entity, transform, velocity] : world.registry.view<Component::Transform, Component::Velocity>().each())
+        for (auto [entity, transform, velocity] : world.registry->view<Component::Transform, Component::Velocity>().each())
         {
             transform.position.x += velocity.x;
             transform.position.y += velocity.y;
@@ -53,7 +53,7 @@ namespace World
 
     void Draw()
     {
-        for (auto [entity, transform, render] : world.registry.view<Component::Transform, Component::Render>().each())
+        for (auto [entity, transform, render] : world.registry->view<Component::Transform, Component::Render>().each())
         {
             DrawModel(render.model, transform.position, 1.0f, WHITE);
         }
@@ -71,7 +71,7 @@ namespace World
 
                 ::std::array<void *, (int)Component::Component::LAST> entityComponents = {};
                 // helper to reduce typing and potential copy-paste errors
-#define SetComponent(T) entityComponents[(int)Component::T] = world.registry.try_get<T>(entity)
+#define SetComponent(T) entityComponents[(int)Component::T] = world.registry->try_get<T>(entity)
 
                 SetComponent(Component::Transform);
                 SetComponent(Component::Velocity);
@@ -88,10 +88,10 @@ namespace World
                                 switch (i)
                                 {
                                 case (int)Component::Component::Transform:
-                                    world.registry.emplace<Component::Transform>(entity, 0.0f, 0.0f, 0.0f);
+                                    world.registry->emplace<Component::Transform>(entity, 0.0f, 0.0f, 0.0f);
                                     break;
                                 case (int)Component::Component::Velocity:
-                                    world.registry.emplace<Component::Velocity>(entity, 0.0f, 0.0f, 0.0f);
+                                    world.registry->emplace<Component::Velocity>(entity, 0.0f, 0.0f, 0.0f);
                                     break;
                                 default:
                                     break;
@@ -123,7 +123,7 @@ namespace World
                     ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - 30.0f);
                     if (ImGui::Button("[X]"))
                     {
-                        world.registry.remove<Component::Velocity>(entity);
+                        world.registry->remove<Component::Velocity>(entity);
                     }
                     ImGui::PopStyleColor(3);
                 }
@@ -131,7 +131,7 @@ namespace World
                 ImGui::TreePop();
             }
         };
-        world.registry.each(printEntity);
+        world.registry->each(printEntity);
         ImGui::End();
     }
 }

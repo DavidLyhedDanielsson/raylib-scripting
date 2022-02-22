@@ -13,6 +13,7 @@ extern "C"
 #include <lauxlib.h>
 #include <lualib.h>
 }
+#include <entt/entt.hpp>
 
 #include "imgui_impl.h"
 #include "world.hpp"
@@ -27,6 +28,7 @@ Camera camera = {0};
 std::chrono::time_point<std::chrono::high_resolution_clock> last;
 
 lua_State *luaState;
+entt::registry registry;
 
 // Hacky lua console
 std::array<char, 256> inputBuffer;
@@ -155,7 +157,7 @@ int main()
 
     RaylibImGui::Init();
 
-    World::Init();
+    World::Init(&registry);
 
 #ifdef PLATFORM_WEB
     emscripten_set_main_loop(main_loop, 0, 1);
