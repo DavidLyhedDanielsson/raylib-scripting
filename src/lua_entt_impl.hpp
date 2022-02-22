@@ -26,8 +26,9 @@ static_assert(
     "Cannot convert from entt::entity to lua_Integer without narrowing");
 
 #define DeclareRegistry auto registry = (entt::registry*)lua_touserdata(lua, lua_upvalueindex(1))
+#define LuaFunc(Name) extern "C" int Name(lua_State* lua)
 
-extern "C" int CreateEntity(lua_State* lua)
+LuaFunc(CreateEntity)
 {
     DeclareRegistry;
     auto entity = static_cast<lua_Integer>(registry->create());
@@ -35,7 +36,7 @@ extern "C" int CreateEntity(lua_State* lua)
     return 1;
 }
 
-extern "C" int AddRenderComponent(lua_State* lua)
+LuaFunc(AddRenderComponent)
 {
     DeclareRegistry;
     auto entity = (entt::entity)luaL_checkinteger(lua, 1);
@@ -51,7 +52,7 @@ extern "C" int AddRenderComponent(lua_State* lua)
     return 0;
 }
 
-extern "C" int AddTransformComponent(lua_State* lua)
+LuaFunc(AddTransformComponent)
 {
     DeclareRegistry;
     auto entity = (entt::entity)luaL_checkinteger(lua, 1);
@@ -62,7 +63,7 @@ extern "C" int AddTransformComponent(lua_State* lua)
     return 0;
 }
 
-extern "C" int AddVelocityComponent(lua_State* lua)
+LuaFunc(AddVelocityComponent)
 {
     DeclareRegistry;
     auto entity = (entt::entity)luaL_checkinteger(lua, 1);
@@ -70,7 +71,7 @@ extern "C" int AddVelocityComponent(lua_State* lua)
     return 0;
 }
 
-extern "C" void register_types(lua_State* lua)
+void register_types(lua_State* lua)
 {
     // Available models
     lua_newtable(lua);
@@ -83,6 +84,7 @@ extern "C" void register_types(lua_State* lua)
     lua_setglobal(lua, "Asset");
 }
 
+// Adds a C function with the entt::registry as an upvalue
 #define push_closure(func)                \
     lua_pushlightuserdata(lua, registry); \
     lua_pushcclosure(lua, func, 1);       \
