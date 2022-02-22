@@ -19,13 +19,14 @@ namespace Component
 
     enum class Component : int
     {
-        Transform = 0,
+        Render = 0,
+        Transform,
         Velocity,
         LAST
     };
 }
 // std::array will at least give a compile error if the size of `Component` is modified
-std::array<const char *, (int)Component::Component::LAST> ComponentString = {"Transform", "Velocity"};
+std::array<const char *, (int)Component::Component::LAST> ComponentString = {"Render", "Transform", "Velocity"};
 
 namespace World
 {
@@ -71,6 +72,7 @@ namespace World
                 // helper to reduce typing and potential copy-paste errors
 #define SetComponent(T) entityComponents[(int)Component::T] = world.registry->try_get<T>(entity)
 
+                SetComponent(Component::Render);
                 SetComponent(Component::Transform);
                 SetComponent(Component::Velocity);
 
@@ -85,6 +87,9 @@ namespace World
                             {
                                 switch (i)
                                 {
+                                case (int)Component::Component::Render:
+                                    world.registry->emplace<Component::Render>(entity, GetAssetName(Asset::Insurgent), GetLoadedAsset(Asset::Insurgent));
+                                    break;
                                 case (int)Component::Component::Transform:
                                     world.registry->emplace<Component::Transform>(entity, 0.0f, 0.0f, 0.0f);
                                     break;
@@ -104,6 +109,27 @@ namespace World
                     ImGui::BeginDisabled();
                     ImGui::BeginCombo("##addentity", "No more components available");
                     ImGui::EndDisabled();
+                }
+
+                if (auto render = (Component::Render *)entityComponents[(int)Component::Component::Render]; render)
+                {
+                    Asset newAsset = Asset::Last;
+                    if (ImGui::BeginCombo("Asset", render->assetName))
+                    {
+                        for (Asset asset = (Asset)0; (int)asset < (int)Asset::Last; asset = (Asset)((int)asset + 1))
+                        {
+                            if (ImGui::Selectable(GetAssetName(asset), GetAssetName(asset) == render->assetName))
+                            {
+                                newAsset = asset;
+                            }
+                        }
+                        ImGui::EndCombo();
+                    }
+                    if (newAsset != Asset::Last)
+                    {
+                        render->assetName = GetAssetName(newAsset);
+                        render->model = GetLoadedAsset(newAsset);
+                    }
                 }
 
                 if (auto transform = (Component::Transform *)entityComponents[(int)Component::Component::Transform]; transform)
