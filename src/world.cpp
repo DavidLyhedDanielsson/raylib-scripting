@@ -32,13 +32,11 @@ namespace World
     void Init(entt::registry *registry)
     {
         // Insurgent comes from https://quaternius.com/. Thanks Quaternius!
-        const auto insurgent = GetLoadedAsset(Asset::Insurgent);
-
         world.registry = registry;
         auto entity = world.registry->create();
         world.registry->emplace<Component::Transform>(entity, Vector3{0.0f, 0.0f, 0.0f}, QuaternionIdentity());
         world.registry->emplace<Component::Velocity>(entity, 0.0f, 0.0f, 0.0f);
-        world.registry->emplace<Component::Render>(entity, insurgent);
+        world.registry->emplace<Component::Render>(entity, GetAssetName(Asset::Insurgent), GetLoadedAsset(Asset::Insurgent));
     }
 
     void Update()
