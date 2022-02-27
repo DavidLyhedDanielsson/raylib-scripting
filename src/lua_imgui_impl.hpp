@@ -27,7 +27,7 @@ namespace LuaImgui
         // choice, but `false` is not that great. It works so far though
         if constexpr(std::is_same_v<T, int> || std::is_same_v<T, long>)
             return i <= lua_gettop(lua) ? lua_tointeger(lua, i++) : 0;
-        else if constexpr(std::is_same_v<T, float>)
+        else if constexpr(std::is_same_v<T, float> || std::is_same_v<T, float*>)
             return i <= lua_gettop(lua) ? (float)lua_tonumber(lua, i++) : 0.0f;
         else if constexpr(std::is_same_v<T, const char*>)
             return i <= lua_gettop(lua) ? lua_tostring(lua, i++) : nullptr;
@@ -99,6 +99,77 @@ namespace LuaImgui
         return 0;
     }
 
+    template<size_t Index, typename... Types, typename... TupTypes>
+    requires(Index == sizeof...(Types)) int ReturnVals(
+        lua_State* state,
+        const std::tuple<TupTypes...>& vals)
+    {
+        return 0;
+    }
+
+    // Iterates through a tuple and returns values to lua. Docstring will be
+    // improved later.
+    template<size_t Index, typename... Types, typename... TupTypes>
+    requires(Index < sizeof...(Types)) int ReturnVals(
+        lua_State* lua,
+        const std::tuple<TupTypes...>& vals)
+    {
+        using T = std::tuple_element_t<Index, std::tuple<Types...>>;
+        if(!std::is_pointer_v<T> || std::is_same_v<T, const char*>)
+        {
+            return 0 + ReturnVals<Index + 1, Types...>(lua, vals);
+        }
+        else
+        {
+            using U = std::remove_pointer_t<std::remove_reference_t<T>>;
+            if constexpr(std::is_same_v<U, float>)
+            {
+                auto val = std::get<Index>(vals);
+                lua_pushnumber(lua, val);
+            }
+
+            return 1 + ReturnVals<Index + 1, Types...>(lua, vals);
+        }
+    }
+
+    // Converts from a tuple that owns all its elements to a tuple where some
+    // elements might be pointers. For instance from
+    // std::tuple<int, float, const char*> tup
+    // to
+    // <int, float* const char*>
+    // where the float* will be a pointer to std::get<1>(tup)
+    template<size_t Index, typename... Types, typename... TupTypes>
+    auto Convert(const std::tuple<TupTypes...>& tup)
+    {
+        using T = std::tuple_element_t<Index, std::tuple<Types...>>;
+        if constexpr(std::is_pointer_v<T> && !std::is_const_v<T> && !std::is_same_v<const char*, T>)
+        {
+            std::tuple<T> lhs = std::make_tuple((T)&std::get<Index>(tup));
+            if constexpr(Index + 1 == sizeof...(Types))
+            {
+                return lhs;
+            }
+            else
+            {
+                auto rhs = Convert<Index + 1, Types...>(tup);
+                return std::tuple_cat(lhs, rhs);
+            }
+        }
+        else
+        {
+            auto lhs = std::make_tuple(std::get<Index>(tup));
+            if constexpr(Index + 1 == sizeof...(Types))
+            {
+                return lhs;
+            }
+            else
+            {
+                auto rhs = Convert<Index + 1, Types...>(tup);
+                return std::tuple_cat(lhs, rhs);
+            }
+        }
+    }
+
     // A lua function which takes a function pointer R (*)(Args) as an upvalue,
     // using R and the Args it is possible to fetch the correct values from the
     // lua stack and call the function pointer stored in upvalue index 1
@@ -113,20 +184,28 @@ namespace LuaImgui
         // will be a const reference, but the tuple must own the value so the
         // parameter can be passed as a reference
         auto tup = GetVals<std::remove_cvref_t<Args>...>(lua, arg);
+        // std::apply will not automatically convert owned types to pointers, so
+        // a function that takes a float* must be called with a
+        // `std::tuple<float*>` and not `std::tuple<float>`. Convert performs
+        // this conversion. Any pointers in `tup2` (name will be changed) will
+        // point to members in `tup`, so `tup` needs to stick around
+        auto tup2 = Convert<0, Args...>(tup);
 
         // Call supplied function, since the types R and Args are known the cast
         // is safe.
         // Here it is assumed that the function will return something, which is
         // true for most ImGui functions, but not all. This is a WIP though
         auto f = (R(*)(Args...))lua_touserdata(lua, lua_upvalueindex(1));
-        R res = std::apply(f, tup);
+        R res = std::apply(f, tup2);
 
         SetVal<R>(lua, res);
+        // +1 for SetVal call above
+        int retCount = ReturnVals<0, Args...>(lua, tup) + 1;
 
         // It is also assumed only one return value is required, which also
         // doesn't really hold up since some functions use pointers to "return"
         // values
-        return 1;
+        return retCount;
     }
 
     // Register any function with lua without having to manually manipulate the
@@ -141,6 +220,12 @@ namespace LuaImgui
         lua_setglobal(lua, name);
     }
 
+    // Simple use case which is good enough for a proof of concept
+    bool DragFloat(const char* label, float* v)
+    {
+        return ImGui::DragFloat(label, v);
+    }
+
     void register_imgui(lua_State* lua)
     {
         // Macro could be used but `Register` is not complete yet, so there's no
@@ -150,5 +235,6 @@ namespace LuaImgui
         Register(lua, "ArrowButton", ImGui::ArrowButton);
         Register(lua, "BeginCombo", ImGui::BeginCombo);
         Register(lua, "EndCombo", ImGui::EndCombo);
+        Register(lua, "DragFloat", DragFloat);
     }
 }
