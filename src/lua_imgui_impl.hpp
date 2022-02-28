@@ -590,5 +590,35 @@ namespace LuaImgui
         QuickRegisterImgui(ColorPicker4);
         QuickRegisterImgui(ColorButton);
         QuickRegisterImgui(SetColorEditOptions);
+
+        // TreeX skipped for now since they take va_list
+
+        Register(
+            lua,
+            "Selectable",
+            static_cast<bool (*)(const char*, bool*, ImGuiSelectableFlags, const ImVec2&)>(
+                ImGui::Selectable));
+
+        QuickRegisterImgui(BeginListBox);
+        QuickRegisterImgui(EndListBox);
+        // ListBox left out on purpose
+
+        // Plot functions left out on purpose, maybe they can be added at some point
+        // Value left out on purpose
+
+        QuickRegisterImgui(BeginMenuBar);
+        QuickRegisterImgui(EndMenuBar);
+        QuickRegisterImgui(BeginMainMenuBar);
+        QuickRegisterImgui(EndMainMenuBar);
+        QuickRegisterImgui(BeginMenu);
+        QuickRegisterImgui(EndMenu);
+        Register(
+            lua,
+            "MenuItem",
+            static_cast<bool (*)(const char*, const char*, bool, bool)>(ImGui::MenuItem));
+        Register(
+            lua,
+            "MenuItemToggle",
+            static_cast<bool (*)(const char*, const char*, bool, bool)>(ImGui::MenuItem));
     }
 }
