@@ -379,6 +379,33 @@ namespace LuaImgui
         QuickRegisterImgui(GetWindowHeight);
         // GetWindowViewport
 
+        QuickRegisterImgui(SetNextWindowPos);
+        QuickRegisterImgui(SetNextWindowSize);
+        // SetNextWindowSizeConstraints
+        QuickRegisterImgui(SetNextWindowContentSize);
+        QuickRegisterImgui(SetNextWindowCollapsed);
+        QuickRegisterImgui(SetNextWindowFocus);
+        QuickRegisterImgui(SetNextWindowBgAlpha);
+        // SetNextWindowViewport
+        // SetWindowPos
+        // SetWindowSize
+        // SetWindowCollapsed
+        // SetWindowFocus
+        // SetWindowFontScale
+        Register(
+            lua,
+            "SetWindowPos",
+            static_cast<void (*)(const char*, const ImVec2&, ImGuiCond)>(ImGui::SetWindowPos));
+        Register(
+            lua,
+            "SetWindowSize",
+            static_cast<void (*)(const char*, const ImVec2&, ImGuiCond)>(ImGui::SetWindowSize));
+        Register(
+            lua,
+            "SetWindowCollapsed",
+            static_cast<void (*)(const char*, bool, ImGuiCond)>(ImGui::SetWindowCollapsed));
+        Register(lua, "SetWindowFocus", static_cast<void (*)(const char*)>(ImGui::SetWindowFocus));
+
         QuickRegisterImgui(Button);
         QuickRegisterImgui(SmallButton);
         QuickRegisterImgui(ArrowButton);
