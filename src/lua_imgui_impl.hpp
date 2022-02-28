@@ -137,6 +137,8 @@ namespace LuaImgui
             lua_pushboolean(lua, v);
         else if constexpr(std::is_same_v<T, float>)
             lua_pushnumber(lua, v);
+        else if constexpr(std::is_same_v<T, unsigned int>)
+            lua_pushinteger(lua, v);
         else if constexpr(std::is_same_v<T, ImVec2>)
         {
             lua_createtable(lua, 0, 2);
@@ -470,6 +472,12 @@ namespace LuaImgui
         QuickRegisterImgui(CalcItemWidth);
         QuickRegisterImgui(PushTextWrapPos);
         QuickRegisterImgui(PopTextWrapPos);
+
+        Register(lua, "PushID", static_cast<void (*)(const char*)>(ImGui::PushID));
+        // Rest of PushID seem c-specific
+        QuickRegisterImgui(PopID);
+        Register(lua, "GetID", static_cast<ImGuiID (*)(const char*)>(ImGui::GetID));
+        // Rest of GetID seem c-specific
 
         QuickRegisterImgui(Button);
         QuickRegisterImgui(SmallButton);
