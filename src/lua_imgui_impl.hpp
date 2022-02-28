@@ -620,5 +620,26 @@ namespace LuaImgui
             lua,
             "MenuItemToggle",
             static_cast<bool (*)(const char*, const char*, bool, bool)>(ImGui::MenuItem));
+
+        QuickRegisterImgui(BeginTooltip);
+        QuickRegisterImgui(EndTooltip);
+
+        QuickRegisterImgui(BeginPopup);
+        QuickRegisterImgui(BeginPopupModal);
+        QuickRegisterImgui(EndPopup);
+        Register(
+            lua,
+            "OpenPopup",
+            static_cast<void (*)(const char*, ImGuiPopupFlags)>(ImGui::OpenPopup));
+        Register(
+            lua,
+            "OpenPopupID",
+            static_cast<void (*)(ImGuiID, ImGuiPopupFlags)>(ImGui::OpenPopup));
+        QuickRegisterImgui(OpenPopupOnItemClick);
+        QuickRegisterImgui(CloseCurrentPopup);
+        QuickRegisterImgui(BeginPopupContextItem);
+        QuickRegisterImgui(BeginPopupContextWindow);
+        QuickRegisterImgui(BeginPopupContextVoid);
+        QuickRegisterImgui(IsPopupOpen);
     }
 }
