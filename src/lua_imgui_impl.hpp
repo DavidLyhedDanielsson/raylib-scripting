@@ -27,8 +27,45 @@ namespace LuaImgui
         // choice, but `false` is not that great. It works so far though
         if constexpr(std::is_same_v<T, int> || std::is_same_v<T, long>)
             return i <= lua_gettop(lua) ? lua_tointeger(lua, i++) : 0;
-        else if constexpr(std::is_same_v<T, float> || std::is_same_v<T, float*>)
+        else if constexpr(std::is_same_v<T, float>)
             return i <= lua_gettop(lua) ? (float)lua_tonumber(lua, i++) : 0.0f;
+        else if constexpr(std::is_same_v<T, float*>)
+        {
+            // auto tup = std::make_tuple(std::array<float, 4>{0.0f, 0.0f, 0.0f, 0.0f});
+            // std::array<float, 4>& arr = std::get<0>(tup);
+            auto arr = std::array<float, 4>{0.0f, 0.0f, 0.0f, 0.0f};
+            if(i > lua_gettop(lua))
+            {
+                return arr;
+            }
+
+            if(lua_istable(lua, i))
+            {
+                lua_len(lua, i);
+                int count = lua_tointeger(lua, -1);
+                lua_pop(lua, 1);
+                if(count > 4)
+                {
+                    // Error message at some point
+                    return arr;
+                }
+
+                for(int j = 1; j <= count; j++)
+                {
+                    lua_geti(lua, i, j);
+                    arr[j - 1] = lua_tonumber(lua, -1);
+                    lua_pop(lua, 1);
+                }
+            }
+            else
+            {
+                arr[0] = lua_tonumber(lua, i);
+            }
+
+            i++;
+
+            return arr;
+        }
         else if constexpr(std::is_same_v<T, const char*>)
             return i <= lua_gettop(lua) ? lua_tostring(lua, i++) : nullptr;
         else if constexpr(std::is_same_v<T, bool>)
@@ -119,20 +156,40 @@ namespace LuaImgui
         const std::tuple<TupTypes...>& vals)
     {
         using T = std::tuple_element_t<Index, std::tuple<Types...>>;
-        if(!std::is_pointer_v<T> || is_const_pointer_v<T>)
+        // using U = std::tuple_element_t<Index, std::tuple<TupTypes...>>;
+        if constexpr(!std::is_pointer_v<T> || is_const_pointer_v<T>)
         {
             return 0 + ReturnVals<Index + 1, Types...>(lua, vals);
         }
         else
         {
             using U = std::remove_pointer_t<std::remove_reference_t<T>>;
+            int retLength = 0;
             if constexpr(std::is_same_v<U, float>)
             {
-                auto val = std::get<Index>(vals);
-                lua_pushnumber(lua, val);
+                if(lua_istable(lua, Index + 1))
+                {
+                    lua_len(lua, Index + 1);
+                    int len = lua_tointeger(lua, -1);
+                    lua_pop(lua, 1);
+
+                    lua_createtable(lua, len, 0);
+                    for(int i = 0; i < len; ++i)
+                    {
+                        lua_pushnumber(lua, i + 1);
+                        auto val = std::get<Index>(vals).at(i);
+                        lua_pushnumber(lua, val);
+                        lua_settable(lua, -3);
+                    }
+                }
+                else
+                {
+                    lua_pushnumber(lua, std::get<Index>(vals).at(0));
+                }
+                retLength = 1;
             }
 
-            return 1 + ReturnVals<Index + 1, Types...>(lua, vals);
+            return retLength + ReturnVals<Index + 1, Types...>(lua, vals);
         }
     }
 
@@ -146,6 +203,7 @@ namespace LuaImgui
     auto Convert(const std::tuple<TupTypes...>& tup)
     {
         using T = std::tuple_element_t<Index, std::tuple<Types...>>;
+        using U = std::tuple_element_t<Index, std::tuple<TupTypes...>>;
         if constexpr(std::is_pointer_v<T> && !is_const_pointer_v<T>)
         {
             auto lhs = std::make_tuple((T)&std::get<Index>(tup));
@@ -224,12 +282,6 @@ namespace LuaImgui
         lua_setglobal(lua, name);
     }
 
-    // Simple use case which is good enough for a proof of concept
-    bool DragFloat(const char* label, float* v)
-    {
-        return ImGui::DragFloat(label, v);
-    }
-
     void register_imgui(lua_State* lua)
     {
         // Macro could be used but `Register` is not complete yet, so there's no
@@ -239,6 +291,9 @@ namespace LuaImgui
         Register(lua, "ArrowButton", ImGui::ArrowButton);
         Register(lua, "BeginCombo", ImGui::BeginCombo);
         Register(lua, "EndCombo", ImGui::EndCombo);
-        Register(lua, "DragFloat", DragFloat);
+        Register(lua, "DragFloat", ImGui::DragFloat);
+        Register(lua, "DragFloat2", ImGui::DragFloat2);
+        Register(lua, "DragFloat3", ImGui::DragFloat3);
+        Register(lua, "DragFloat4", ImGui::DragFloat4);
     }
 }
