@@ -310,8 +310,7 @@ namespace LuaImgui
     auto Convert(const std::tuple<TupTypes...>& tup)
     {
         using T = std::tuple_element_t<Index, std::tuple<Types...>>;
-        using U = std::tuple_element_t<Index, std::tuple<TupTypes...>>;
-        if constexpr(std::is_pointer_v<T> && !is_const_pointer_v<T>)
+        if constexpr(std::is_pointer_v<T> && !std::is_same_v<const char*, T>)
         {
             auto lhs = std::make_tuple((T)&std::get<Index>(tup));
             if constexpr(Index + 1 == sizeof...(Types))
