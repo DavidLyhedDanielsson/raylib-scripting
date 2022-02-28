@@ -64,7 +64,7 @@ namespace LuaImgui
             i++;
             return ImVec4{x, y, z, w};
         }
-        else if constexpr(std::is_same_v<T, float*>)
+        else if constexpr(std::is_same_v<T, float*> || std::is_same_v<T, const float*>)
         {
             auto arr = std::array<float, 4>{0.0f, 0.0f, 0.0f, 0.0f};
             if(i > lua_gettop(lua))
@@ -583,5 +583,12 @@ namespace LuaImgui
         QuickRegisterImgui(InputInt3);
         QuickRegisterImgui(InputInt4);
         // InputDouble left out on purpose
+
+        QuickRegisterImgui(ColorEdit3);
+        QuickRegisterImgui(ColorEdit4);
+        QuickRegisterImgui(ColorPicker3);
+        QuickRegisterImgui(ColorPicker4);
+        QuickRegisterImgui(ColorButton);
+        QuickRegisterImgui(SetColorEditOptions);
     }
 }
