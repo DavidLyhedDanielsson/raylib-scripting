@@ -573,5 +573,16 @@ namespace LuaImgui
         QuickRegisterImgui(SliderInt4);
         QuickRegisterImgui(VSliderFloat);
         QuickRegisterImgui(VSliderInt);
+
+        // InputText
+        QuickRegisterImgui(InputFloat);
+        QuickRegisterImgui(InputFloat2);
+        QuickRegisterImgui(InputFloat3);
+        QuickRegisterImgui(InputFloat4);
+        QuickRegisterImgui(InputInt);
+        QuickRegisterImgui(InputInt2);
+        QuickRegisterImgui(InputInt3);
+        QuickRegisterImgui(InputInt4);
+        // InputDouble left out on purpose
     }
 }
