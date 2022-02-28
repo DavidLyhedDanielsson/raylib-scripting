@@ -25,7 +25,8 @@ namespace LuaImgui
 
         // The default values here don't always hold up. `0` is an alright
         // choice, but `false` is not that great. It works so far though
-        if constexpr(std::is_same_v<T, int> || std::is_same_v<T, long>)
+        if constexpr(
+            std::is_same_v<T, int> || std::is_same_v<T, long> || std::is_same_v<T, unsigned int>)
             return i <= lua_gettop(lua) ? lua_tointeger(lua, i++) : 0;
         else if constexpr(std::is_same_v<T, float>)
             return i <= lua_gettop(lua) ? (float)lua_tonumber(lua, i++) : 0.0f;
@@ -70,6 +71,35 @@ namespace LuaImgui
             }
             else
                 arr[0] = lua_tonumber(lua, i);
+
+            i++;
+
+            return arr;
+        }
+        else if constexpr(std::is_same_v<T, bool*>)
+        {
+            auto arr = std::array<bool, 4>{false, false, false, false};
+            if(i > lua_gettop(lua))
+                return arr;
+
+            if(lua_istable(lua, i))
+            {
+                int count = luaL_len(lua, i);
+                if(count > 4)
+                {
+                    // Error message at some point
+                    return arr;
+                }
+
+                for(int j = 1; j <= count; j++)
+                {
+                    lua_geti(lua, i, j);
+                    arr[j - 1] = lua_toboolean(lua, -1);
+                    lua_pop(lua, 1);
+                }
+            }
+            else
+                arr[0] = lua_toboolean(lua, i);
 
             i++;
 
@@ -174,6 +204,28 @@ namespace LuaImgui
                 }
                 retLength = 1;
             }
+            else if constexpr(std::is_same_v<U, bool>)
+            {
+                if(lua_istable(lua, Index + 1))
+                {
+                    int len = luaL_len(lua, Index + 1);
+                    lua_createtable(lua, len, 0);
+                    for(int i = 0; i < len; ++i)
+                    {
+                        lua_pushnumber(lua, i + 1);
+                        auto val = std::get<Index>(vals).at(i);
+                        lua_pushboolean(lua, val);
+                        lua_settable(lua, -3);
+                    }
+                }
+                else
+                {
+                    lua_pushboolean(lua, std::get<Index>(vals).at(0));
+                }
+                retLength = 1;
+            }
+            else
+                static_assert(always_false<T>);
 
             return retLength + ReturnVals<Index + 1, Types...>(lua, vals);
         }
@@ -271,6 +323,22 @@ namespace LuaImgui
     void register_imgui(lua_State* lua)
     {
 #define QuickRegisterImgui(X) Register(lua, #X, ImGui::X)
+
+        QuickRegisterImgui(Begin);
+        QuickRegisterImgui(End);
+
+        Register(
+            lua,
+            "BeginChild",
+            static_cast<bool (*)(const char*, const ImVec2&, bool, ImGuiWindowFlags)>(
+                ImGui::BeginChild));
+        Register(
+            lua,
+            "BeginChildId",
+            static_cast<bool (*)(ImGuiID, const ImVec2&, bool, ImGuiWindowFlags)>(
+                ImGui::BeginChild));
+        QuickRegisterImgui(EndChild);
+
         QuickRegisterImgui(Button);
         QuickRegisterImgui(SmallButton);
         QuickRegisterImgui(ArrowButton);
