@@ -328,7 +328,7 @@ namespace LuaImgui
             std::apply(f, tup2);
         }
 
-        retCount = ReturnVals<0, Args...>(lua, tup);
+        retCount += ReturnVals<0, Args...>(lua, tup);
 
         // It is also assumed only one return value is required, which also
         // doesn't really hold up since some functions use pointers to "return"
