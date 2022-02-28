@@ -406,6 +406,22 @@ namespace LuaImgui
             static_cast<void (*)(const char*, bool, ImGuiCond)>(ImGui::SetWindowCollapsed));
         Register(lua, "SetWindowFocus", static_cast<void (*)(const char*)>(ImGui::SetWindowFocus));
 
+        QuickRegisterImgui(GetContentRegionAvail);
+        QuickRegisterImgui(GetContentRegionMax);
+        QuickRegisterImgui(GetWindowContentRegionMin);
+        QuickRegisterImgui(GetWindowContentRegionMax);
+
+        QuickRegisterImgui(GetScrollX);
+        QuickRegisterImgui(GetScrollY);
+        QuickRegisterImgui(SetScrollX);
+        QuickRegisterImgui(SetScrollY);
+        QuickRegisterImgui(GetScrollMaxX);
+        QuickRegisterImgui(GetScrollMaxY);
+        QuickRegisterImgui(SetScrollHereX);
+        QuickRegisterImgui(SetScrollHereY);
+        QuickRegisterImgui(SetScrollFromPosX);
+        QuickRegisterImgui(SetScrollFromPosY);
+
         QuickRegisterImgui(Button);
         QuickRegisterImgui(SmallButton);
         QuickRegisterImgui(ArrowButton);
