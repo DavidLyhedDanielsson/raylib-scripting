@@ -114,12 +114,22 @@ namespace LuaImgui
 
     // SetVal should probably also be turned into an if constexpr chain
     template<typename T>
-    void SetVal(lua_State* lua, T v);
-
-    template<>
-    void SetVal(lua_State* lua, bool v)
+    void SetVal(lua_State* lua, T v)
     {
-        lua_pushboolean(lua, v);
+        if constexpr(std::is_same_v<T, bool>)
+            lua_pushboolean(lua, v);
+        else if constexpr(std::is_same_v<T, float>)
+            lua_pushboolean(lua, v);
+        else if constexpr(std::is_same_v<T, ImVec2>)
+        {
+            lua_createtable(lua, 0, 2);
+            lua_pushnumber(lua, v.x);
+            lua_setfield(lua, -2, "x");
+            lua_pushnumber(lua, v.y);
+            lua_setfield(lua, -2, "y");
+        }
+        else
+            static_assert(always_false<T>);
     }
 
     // Required for functions without parameters (I think) (?)
@@ -144,15 +154,6 @@ namespace LuaImgui
         auto current = std::make_tuple(GetVal<Arg>(state, index));
         auto rest = GetVals<Args...>(state, index);
         return std::tuple_cat(current, rest);
-    }
-
-    // Specialization for void function not taking any parameters, like
-    // ImGui::Begin
-    template<typename R = void>
-    int LuaWrapper(lua_State* state)
-    {
-        ((void (*)())lua_touserdata(state, lua_upvalueindex(1)))();
-        return 0;
     }
 
     template<size_t Index, typename... Types, typename... TupTypes>
@@ -270,6 +271,25 @@ namespace LuaImgui
         }
     }
 
+    template<typename R>
+    int LuaWrapper(lua_State* lua)
+    {
+        int retCount = 0;
+        auto f = (R(*)(void))lua_touserdata(lua, lua_upvalueindex(1));
+        if constexpr(!std::is_same_v<R, void>)
+        {
+            R res = f();
+            SetVal<R>(lua, res);
+            retCount++;
+        }
+        else
+        {
+            f();
+        }
+
+        return retCount;
+    }
+
     // A lua function which takes a function pointer R (*)(Args) as an upvalue,
     // using R and the Args it is possible to fetch the correct values from the
     // lua stack and call the function pointer stored in upvalue index 1
@@ -291,16 +311,24 @@ namespace LuaImgui
         // point to members in `tup`, so `tup` needs to stick around
         auto tup2 = Convert<0, Args...>(tup);
 
+        int retCount = 0;
         // Call supplied function, since the types R and Args are known the cast
         // is safe.
         // Here it is assumed that the function will return something, which is
         // true for most ImGui functions, but not all. This is a WIP though
         auto f = (R(*)(Args...))lua_touserdata(lua, lua_upvalueindex(1));
-        R res = std::apply(f, tup2);
+        if constexpr(!std::is_same_v<R, void>)
+        {
+            R res = std::apply(f, tup2);
+            SetVal<R>(lua, res);
+            retCount++;
+        }
+        else
+        {
+            std::apply(f, tup2);
+        }
 
-        SetVal<R>(lua, res);
-        // +1 for SetVal call above
-        int retCount = ReturnVals<0, Args...>(lua, tup) + 1;
+        retCount = ReturnVals<0, Args...>(lua, tup);
 
         // It is also assumed only one return value is required, which also
         // doesn't really hold up since some functions use pointers to "return"
@@ -338,6 +366,18 @@ namespace LuaImgui
             static_cast<bool (*)(ImGuiID, const ImVec2&, bool, ImGuiWindowFlags)>(
                 ImGui::BeginChild));
         QuickRegisterImgui(EndChild);
+
+        QuickRegisterImgui(IsWindowAppearing);
+        QuickRegisterImgui(IsWindowCollapsed);
+        QuickRegisterImgui(IsWindowFocused);
+        QuickRegisterImgui(IsWindowHovered);
+        // GetWindowDrawList
+        QuickRegisterImgui(GetWindowDpiScale);
+        QuickRegisterImgui(GetWindowPos);
+        QuickRegisterImgui(GetWindowSize);
+        QuickRegisterImgui(GetWindowWidth);
+        QuickRegisterImgui(GetWindowHeight);
+        // GetWindowViewport
 
         QuickRegisterImgui(Button);
         QuickRegisterImgui(SmallButton);
