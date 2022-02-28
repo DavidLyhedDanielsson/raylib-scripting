@@ -548,9 +548,30 @@ namespace LuaImgui
 
         QuickRegisterImgui(BeginCombo);
         QuickRegisterImgui(EndCombo);
+        // Old Combo API left out on purpose
+
         QuickRegisterImgui(DragFloat);
         QuickRegisterImgui(DragFloat2);
         QuickRegisterImgui(DragFloat3);
         QuickRegisterImgui(DragFloat4);
+        QuickRegisterImgui(DragFloatRange2);
+        QuickRegisterImgui(DragInt);
+        QuickRegisterImgui(DragInt2);
+        QuickRegisterImgui(DragInt3);
+        QuickRegisterImgui(DragInt4);
+        QuickRegisterImgui(DragIntRange2);
+        // DragScalar lef out on purpose
+
+        QuickRegisterImgui(SliderFloat);
+        QuickRegisterImgui(SliderFloat2);
+        QuickRegisterImgui(SliderFloat3);
+        QuickRegisterImgui(SliderFloat4);
+        QuickRegisterImgui(SliderAngle);
+        QuickRegisterImgui(SliderInt);
+        QuickRegisterImgui(SliderInt2);
+        QuickRegisterImgui(SliderInt3);
+        QuickRegisterImgui(SliderInt4);
+        QuickRegisterImgui(VSliderFloat);
+        QuickRegisterImgui(VSliderInt);
     }
 }
