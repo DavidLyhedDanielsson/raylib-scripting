@@ -122,6 +122,35 @@ namespace LuaImgui
 
             return arr;
         }
+        else if constexpr(std::is_same_v<T, int*>)
+        {
+            auto arr = std::array<int, 4>{0, 0, 0, 0};
+            if(i > lua_gettop(lua))
+                return arr;
+
+            if(lua_istable(lua, i))
+            {
+                int count = luaL_len(lua, i);
+                if(count > 4)
+                {
+                    // Error message at some point
+                    return arr;
+                }
+
+                for(int j = 1; j <= count; j++)
+                {
+                    lua_geti(lua, i, j);
+                    arr[j - 1] = lua_tointeger(lua, -1);
+                    lua_pop(lua, 1);
+                }
+            }
+            else
+                arr[0] = lua_tointeger(lua, i);
+
+            i++;
+
+            return arr;
+        }
         else
             // Clang gives me something like: note:
             // ‘LuaImgui::always_false<ImVec2>’ evaluates to false, meaning
@@ -241,6 +270,26 @@ namespace LuaImgui
                 else
                 {
                     lua_pushboolean(lua, std::get<Index>(vals).at(0));
+                }
+                retLength = 1;
+            }
+            else if constexpr(std::is_same_v<U, int>)
+            {
+                if(lua_istable(lua, Index + 1))
+                {
+                    int len = luaL_len(lua, Index + 1);
+                    lua_createtable(lua, len, 0);
+                    for(int i = 0; i < len; ++i)
+                    {
+                        lua_pushnumber(lua, i + 1);
+                        auto val = std::get<Index>(vals).at(i);
+                        lua_pushinteger(lua, val);
+                        lua_settable(lua, -3);
+                    }
+                }
+                else
+                {
+                    lua_pushinteger(lua, std::get<Index>(vals).at(0));
                 }
                 retLength = 1;
             }
@@ -479,9 +528,24 @@ namespace LuaImgui
         Register(lua, "GetID", static_cast<ImGuiID (*)(const char*)>(ImGui::GetID));
         // Rest of GetID seem c-specific
 
+        // TextX skipped for now since they take va_list
+
         QuickRegisterImgui(Button);
         QuickRegisterImgui(SmallButton);
+        QuickRegisterImgui(InvisibleButton);
         QuickRegisterImgui(ArrowButton);
+        // Image
+        // ImageButton
+        QuickRegisterImgui(Checkbox);
+        // CheckboxFlags left out
+        Register(lua, "RadioButton", static_cast<bool (*)(const char*, bool)>(ImGui::RadioButton));
+        Register(
+            lua,
+            "RadioButtonMult",
+            static_cast<bool (*)(const char*, int*, int)>(ImGui::RadioButton));
+        QuickRegisterImgui(ProgressBar);
+        QuickRegisterImgui(Bullet);
+
         QuickRegisterImgui(BeginCombo);
         QuickRegisterImgui(EndCombo);
         QuickRegisterImgui(DragFloat);
