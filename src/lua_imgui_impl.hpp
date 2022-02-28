@@ -29,21 +29,32 @@ namespace LuaImgui
             return i <= lua_gettop(lua) ? lua_tointeger(lua, i++) : 0;
         else if constexpr(std::is_same_v<T, float>)
             return i <= lua_gettop(lua) ? (float)lua_tonumber(lua, i++) : 0.0f;
+        else if constexpr(std::is_same_v<T, const char*>)
+            return i <= lua_gettop(lua) ? lua_tostring(lua, i++) : nullptr;
+        else if constexpr(std::is_same_v<T, bool>)
+            return i <= lua_gettop(lua) ? lua_toboolean(lua, i++) : false;
+        else if constexpr(std::is_same_v<T, ImVec2>) // Maybe this should be pushed as an array
+        {
+            if(i > lua_gettop(lua))
+                return ImVec2{0.0f, 0.0f};
+
+            lua_getfield(lua, i, "x");
+            float x = lua_tonumber(lua, -1);
+            lua_getfield(lua, i, "y");
+            float y = lua_tonumber(lua, -1);
+            lua_pop(lua, 2);
+            i++;
+            return ImVec2{x, y};
+        }
         else if constexpr(std::is_same_v<T, float*>)
         {
-            // auto tup = std::make_tuple(std::array<float, 4>{0.0f, 0.0f, 0.0f, 0.0f});
-            // std::array<float, 4>& arr = std::get<0>(tup);
             auto arr = std::array<float, 4>{0.0f, 0.0f, 0.0f, 0.0f};
             if(i > lua_gettop(lua))
-            {
                 return arr;
-            }
 
             if(lua_istable(lua, i))
             {
-                lua_len(lua, i);
-                int count = lua_tointeger(lua, -1);
-                lua_pop(lua, 1);
+                int count = luaL_len(lua, i);
                 if(count > 4)
                 {
                     // Error message at some point
@@ -58,31 +69,11 @@ namespace LuaImgui
                 }
             }
             else
-            {
                 arr[0] = lua_tonumber(lua, i);
-            }
 
             i++;
 
             return arr;
-        }
-        else if constexpr(std::is_same_v<T, const char*>)
-            return i <= lua_gettop(lua) ? lua_tostring(lua, i++) : nullptr;
-        else if constexpr(std::is_same_v<T, bool>)
-            return i <= lua_gettop(lua) ? lua_toboolean(lua, i++) : false;
-        else if constexpr(std::is_same_v<T, ImVec2>) // Maybe this should be pushed as an array
-        {
-            if(i > lua_gettop(lua))
-            {
-                return ImVec2{0.0f, 0.0f};
-            }
-            lua_getfield(lua, i, "x");
-            float x = lua_tonumber(lua, -1);
-            lua_getfield(lua, i, "y");
-            float y = lua_tonumber(lua, -1);
-            lua_pop(lua, 2);
-            i++;
-            return ImVec2{x, y};
         }
         else
             // Clang gives me something like: note:
@@ -130,9 +121,7 @@ namespace LuaImgui
     template<typename R = void>
     int LuaWrapper(lua_State* state)
     {
-        auto f = (void (*)())lua_touserdata(state, lua_upvalueindex(1));
-        f();
-
+        ((void (*)())lua_touserdata(state, lua_upvalueindex(1)))();
         return 0;
     }
 
@@ -169,10 +158,7 @@ namespace LuaImgui
             {
                 if(lua_istable(lua, Index + 1))
                 {
-                    lua_len(lua, Index + 1);
-                    int len = lua_tointeger(lua, -1);
-                    lua_pop(lua, 1);
-
+                    int len = luaL_len(lua, Index + 1);
                     lua_createtable(lua, len, 0);
                     for(int i = 0; i < len; ++i)
                     {
@@ -284,16 +270,15 @@ namespace LuaImgui
 
     void register_imgui(lua_State* lua)
     {
-        // Macro could be used but `Register` is not complete yet, so there's no
-        // need to tidy it up just yet.
-        Register(lua, "Button", ImGui::Button);
-        Register(lua, "SmallButton", ImGui::SmallButton);
-        Register(lua, "ArrowButton", ImGui::ArrowButton);
-        Register(lua, "BeginCombo", ImGui::BeginCombo);
-        Register(lua, "EndCombo", ImGui::EndCombo);
-        Register(lua, "DragFloat", ImGui::DragFloat);
-        Register(lua, "DragFloat2", ImGui::DragFloat2);
-        Register(lua, "DragFloat3", ImGui::DragFloat3);
-        Register(lua, "DragFloat4", ImGui::DragFloat4);
+#define QuickRegisterImgui(X) Register(lua, #X, ImGui::X)
+        QuickRegisterImgui(Button);
+        QuickRegisterImgui(SmallButton);
+        QuickRegisterImgui(ArrowButton);
+        QuickRegisterImgui(BeginCombo);
+        QuickRegisterImgui(EndCombo);
+        QuickRegisterImgui(DragFloat);
+        QuickRegisterImgui(DragFloat2);
+        QuickRegisterImgui(DragFloat3);
+        QuickRegisterImgui(DragFloat4);
     }
 }
