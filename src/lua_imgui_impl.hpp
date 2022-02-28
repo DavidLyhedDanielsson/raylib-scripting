@@ -107,6 +107,10 @@ namespace LuaImgui
         return 0;
     }
 
+    // Does not actually check for a T const*, but for a const T*
+    template<typename T>
+    bool constexpr is_const_pointer_v = std::is_const_v<std::remove_pointer_t<T>>;
+
     // Iterates through a tuple and returns values to lua. Docstring will be
     // improved later.
     template<size_t Index, typename... Types, typename... TupTypes>
@@ -115,7 +119,7 @@ namespace LuaImgui
         const std::tuple<TupTypes...>& vals)
     {
         using T = std::tuple_element_t<Index, std::tuple<Types...>>;
-        if(!std::is_pointer_v<T> || std::is_same_v<T, const char*>)
+        if(!std::is_pointer_v<T> || is_const_pointer_v<T>)
         {
             return 0 + ReturnVals<Index + 1, Types...>(lua, vals);
         }
@@ -142,9 +146,9 @@ namespace LuaImgui
     auto Convert(const std::tuple<TupTypes...>& tup)
     {
         using T = std::tuple_element_t<Index, std::tuple<Types...>>;
-        if constexpr(std::is_pointer_v<T> && !std::is_const_v<T> && !std::is_same_v<const char*, T>)
+        if constexpr(std::is_pointer_v<T> && !is_const_pointer_v<T>)
         {
-            std::tuple<T> lhs = std::make_tuple((T)&std::get<Index>(tup));
+            auto lhs = std::make_tuple((T)&std::get<Index>(tup));
             if constexpr(Index + 1 == sizeof...(Types))
             {
                 return lhs;
