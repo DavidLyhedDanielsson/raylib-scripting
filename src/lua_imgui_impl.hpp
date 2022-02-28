@@ -47,6 +47,23 @@ namespace LuaImgui
             i++;
             return ImVec2{x, y};
         }
+        else if constexpr(std::is_same_v<T, ImVec4>) // Maybe this should be pushed as an array
+        {
+            if(i > lua_gettop(lua))
+                return ImVec4{0.0f, 0.0f, 0.0f, 0.0f};
+
+            lua_getfield(lua, i, "x");
+            float x = lua_tonumber(lua, -1);
+            lua_getfield(lua, i, "y");
+            float y = lua_tonumber(lua, -1);
+            lua_getfield(lua, i, "z");
+            float z = lua_tonumber(lua, -1);
+            lua_getfield(lua, i, "w");
+            float w = lua_tonumber(lua, -1);
+            lua_pop(lua, 4);
+            i++;
+            return ImVec4{x, y, z, w};
+        }
         else if constexpr(std::is_same_v<T, float*>)
         {
             auto arr = std::array<float, 4>{0.0f, 0.0f, 0.0f, 0.0f};
@@ -421,6 +438,38 @@ namespace LuaImgui
         QuickRegisterImgui(SetScrollHereY);
         QuickRegisterImgui(SetScrollFromPosX);
         QuickRegisterImgui(SetScrollFromPosY);
+
+        // PushFont(ImFont * font);
+        // PopFont();
+        Register(
+            lua,
+            "PushStyleColor",
+            static_cast<void (*)(ImGuiCol, ImU32)>(ImGui::PushStyleColor));
+        Register(
+            lua,
+            "PushStyleColor4",
+            static_cast<void (*)(ImGuiCol, const ImVec4&)>(ImGui::PushStyleColor));
+        QuickRegisterImgui(PopStyleColor);
+        Register(
+            lua,
+            "PushStyleVar",
+            static_cast<void (*)(ImGuiStyleVar, float)>(ImGui::PushStyleVar));
+        Register(
+            lua,
+            "PushStyleVar2",
+            static_cast<void (*)(ImGuiStyleVar, const ImVec2& val)>(ImGui::PushStyleVar));
+        QuickRegisterImgui(PopStyleVar);
+        QuickRegisterImgui(PushAllowKeyboardFocus);
+        QuickRegisterImgui(PopAllowKeyboardFocus);
+        QuickRegisterImgui(PushButtonRepeat);
+        QuickRegisterImgui(PopButtonRepeat);
+
+        QuickRegisterImgui(PushItemWidth);
+        QuickRegisterImgui(PopItemWidth);
+        QuickRegisterImgui(SetNextItemWidth);
+        QuickRegisterImgui(CalcItemWidth);
+        QuickRegisterImgui(PushTextWrapPos);
+        QuickRegisterImgui(PopTextWrapPos);
 
         QuickRegisterImgui(Button);
         QuickRegisterImgui(SmallButton);
