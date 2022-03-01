@@ -16,6 +16,7 @@ extern "C" {
 
 #include "assets.hpp"
 #include "imgui_impl.h"
+#include "imgui_internal.hpp" // NOT the imgui_internal from imgui
 #include "lua_entt_impl.hpp"
 #include "lua_imgui_impl.hpp"
 #include "world.hpp"
@@ -110,15 +111,26 @@ void main_loop()
     {
         std::cerr << "Couldn't load gui.lua or error occurred";
     }
+    bool guiError = false;
     if(lua_pcall(luaState, 0, 0, 0) == LUA_OK)
     {
-        RaylibImGui::End();
+        if(ValidStackSize(luaContext))
+            RaylibImGui::End();
+        else
+            guiError = true;
     }
     else
     {
+        guiError = true;
+
         std::cerr << lua_tostring(luaState, -1) << std::endl;
         lua_pop(luaState, 1);
+    }
 
+    if(guiError)
+    {
+        std::cerr << "Invalid imgui state after gui.lua, check all Begin and End calls"
+                  << std::endl;
         ImGui::DestroyContext(luaContext);
         RaylibImGui::Init();
         luaContext = ImGui::GetCurrentContext();
