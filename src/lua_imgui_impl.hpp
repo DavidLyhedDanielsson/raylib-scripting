@@ -682,7 +682,37 @@ namespace LuaImgui
         QuickRegisterImgui(ColorButton);
         QuickRegisterImgui(SetColorEditOptions);
 
-        // TreeX skipped for now since they take va_list
+        using VStr = Variadic<const char*>;
+
+        Register(lua, "TreeNode", static_cast<bool (*)(const char*)>(ImGui::TreeNode));
+        Register(
+            lua,
+            "TreeNodeID",
+            +[](const char* id, VStr var) {
+                return ImGui::TreeNode(id, "%s", var.strcpy().data());
+            });
+        Register(
+            lua,
+            "TreeNodeEx",
+            static_cast<bool (*)(const char*, ImGuiTreeNodeFlags)>(ImGui::TreeNodeEx));
+        Register(
+            lua,
+            "TreeNodeExID",
+            +[](const char* id, ImGuiTreeNodeFlags flags, VStr var) {
+                return ImGui::TreeNodeEx(id, flags, "%s", var.strcpy().data());
+            });
+        Register(lua, "TreePush", static_cast<void (*)(const char*)>(ImGui::TreePush));
+        QuickRegisterImgui(TreePop);
+        QuickRegisterImgui(GetTreeNodeToLabelSpacing);
+        Register(
+            lua,
+            "CollapsingHeader",
+            static_cast<bool (*)(const char*, ImGuiTreeNodeFlags)>(ImGui::CollapsingHeader));
+        Register(
+            lua,
+            "CollapsingHeaderToggle",
+            static_cast<bool (*)(const char*, bool*, ImGuiTreeNodeFlags)>(ImGui::CollapsingHeader));
+        QuickRegisterImgui(SetNextItemOpen);
 
         Register(
             lua,
