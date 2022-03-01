@@ -12,6 +12,51 @@ extern "C" {
 
 namespace LuaImgui
 {
+    constexpr int MAX_VARIADIC_ARG_COUNT = 32;
+    constexpr int STRING_BUFFER_LENGTH = 256;
+
+    template<typename T>
+    struct Variadic
+    {
+        using value_type = T;
+        std::array<T, MAX_VARIADIC_ARG_COUNT> arr;
+        int count;
+
+        // strcpy_s isn't a requirement in the standard and sprintf has at least
+        // some overhead. Fingers crossed that the compiler will optimize this
+        // to at least sprintf performance
+        inline std::array<char, STRING_BUFFER_LENGTH> strcpy()
+        {
+            std::array<char, STRING_BUFFER_LENGTH> buffer;
+            int writtenCharacters = 0;
+            for(int i = 0; i < count; ++i)
+            {
+                for(int j = 0; writtenCharacters < STRING_BUFFER_LENGTH - 1;
+                    ++writtenCharacters, ++j)
+                {
+                    if(arr[i][j] == '\0')
+                        break;
+                    buffer[writtenCharacters] = arr[i][j];
+                }
+
+                if(writtenCharacters == STRING_BUFFER_LENGTH - 1)
+                    break;
+            }
+            buffer[writtenCharacters] = '\0';
+            return buffer;
+        }
+    };
+
+    template<typename>
+    struct is_variadic: std::false_type
+    {
+    };
+
+    template<typename T>
+    struct is_variadic<Variadic<T>>: std::true_type
+    {
+    };
+
     // https://stackoverflow.com/questions/53945490/how-to-assert-that-a-constexpr-if-else-clause-never-happen
     template<class...>
     constexpr std::false_type always_false{};
@@ -150,6 +195,15 @@ namespace LuaImgui
             i++;
 
             return arr;
+        }
+        else if constexpr(is_variadic<T>::value)
+        {
+            auto var = Variadic<typename T::value_type>();
+            // Eat the rest of the arguments. Nom nom nom
+            var.count = std::min(lua_gettop(lua) - i + 1, MAX_VARIADIC_ARG_COUNT);
+            for(int j = 0; i <= lua_gettop(lua); ++i, ++j)
+                var.arr.at(j) = lua_tostring(lua, i);
+            return var;
         }
         else
             // Clang gives me something like: note:
@@ -527,7 +581,14 @@ namespace LuaImgui
         Register(lua, "GetID", static_cast<ImGuiID (*)(const char*)>(ImGui::GetID));
         // Rest of GetID seem c-specific
 
-        // TextX skipped for now since they take va_list
+        // https://stackoverflow.com/questions/18889028/a-positive-lambda-what-sorcery-is-this?noredirect=1&lq=1
+        // Below is the "correct" answer but the link above captures the feeling
+        // of seeing +lambda for the first time
+        // https://stackoverflow.com/questions/17822131
+        Register(
+            lua,
+            "Text",
+            +[](Variadic<const char*> var) { return ImGui::Text("%s", var.strcpy().data()); });
 
         QuickRegisterImgui(Button);
         QuickRegisterImgui(SmallButton);
