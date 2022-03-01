@@ -441,7 +441,9 @@ void RaylibImGui::Begin()
 
     ImGui_ImplOpenGL3_NewFrame();
 
-    if (!(io.ConfigFlags & ImGuiConfigFlags_NoMouseCursorChange))
+
+    // This requires a check if the mouse isn't already hidden my raylib
+    /*if (!(io.ConfigFlags & ImGuiConfigFlags_NoMouseCursorChange))
     {
         ImGuiMouseCursor imguiCursor = ImGui::GetMouseCursor();
         if (io.MouseDrawCursor || imguiCursor == ImGuiMouseCursor_None)
@@ -452,7 +454,7 @@ void RaylibImGui::Begin()
         {
             ShowCursor();
         }
-    }
+    }*/
 
     // Avoids having to pass in delta time
     double currentTime = GetTime();
