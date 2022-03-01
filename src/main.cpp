@@ -17,6 +17,7 @@ extern "C" {
 #include "assets.hpp"
 #include "imgui_impl.h"
 #include "lua_entt_impl.hpp"
+#include "lua_imgui_impl.hpp"
 #include "world.hpp"
 
 #ifdef PLATFORM_WEB
@@ -36,6 +37,8 @@ std::array<char, 256> inputBuffer;
 bool scrollDown = false;
 bool addCommandToHistory = false;
 std::vector<std::string> history;
+
+ImGuiContext* luaContext;
 
 void main_loop()
 {
@@ -98,6 +101,31 @@ void main_loop()
 
     RaylibImGui::End();
 
+    auto backupContext = ImGui::GetCurrentContext();
+    ImGui::SetCurrentContext(luaContext);
+    RaylibImGui::Begin();
+
+    auto res = luaL_loadfile(luaState, AssetPath("lua/gui.lua").data());
+    if(res != LUA_OK)
+    {
+        std::cerr << "Couldn't load gui.lua or error occurred";
+    }
+    if(lua_pcall(luaState, 0, 0, 0) == LUA_OK)
+    {
+        RaylibImGui::End();
+    }
+    else
+    {
+        std::cerr << lua_tostring(luaState, -1) << std::endl;
+        lua_pop(luaState, 1);
+
+        ImGui::DestroyContext(luaContext);
+        RaylibImGui::Init();
+        luaContext = ImGui::GetCurrentContext();
+    }
+
+    ImGui::SetCurrentContext(backupContext);
+
     EndDrawing();
 }
 
@@ -148,6 +176,10 @@ int main()
     luaState = luaL_newstate();
     luaL_openlibs(luaState);
 
+    RaylibImGui::Init();
+    luaContext = ImGui::GetCurrentContext();
+    ImGui::SetCurrentContext(nullptr);
+
     // Use our own print function
     const luaL_Reg printarr[] = {{"print", lua_print}, {NULL, NULL}};
     lua_getglobal(luaState, "_G");
@@ -162,6 +194,7 @@ int main()
     World::Init(&registry);
 
     register_entt(luaState, &registry);
+    LuaImgui::register_imgui(luaState);
 
     auto res = luaL_loadfile(luaState, AssetPath("lua/main.lua").data());
     if(res != LUA_OK)
