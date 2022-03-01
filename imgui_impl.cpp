@@ -419,7 +419,7 @@ void RaylibImGui::Begin()
     {
         io.AddMousePosEvent((float)GetMouseX(), (float)GetMouseY());
         const static int mouseButtons[] = {MOUSE_BUTTON_LEFT,
-                                           MOUSE_BUTTON_LEFT,
+                                           MOUSE_BUTTON_RIGHT,
                                            MOUSE_BUTTON_MIDDLE};
         for (int i = 0; i < 3; ++i)
         {
