@@ -471,21 +471,25 @@ namespace LuaImgui
 
     void register_imgui(lua_State* lua)
     {
+#define STR(X) #X
+#define CONCAT(x, y) x##y
 #define QuickRegisterImgui(X) Register(lua, #X, ImGui::X)
+// Macro to register an overloaded function with the same name as the ImGui function
+#define QuickRegisterImguiOverload(X, type) Register(lua, #X, static_cast<type>(ImGui::X))
+// Macro to register an overloaded function with a different name then the ImGui function by
+// appending a suffix to it
+#define QuickRegisterImguiUOverload(X, suff, type) \
+    Register(lua, #X #suff, static_cast<type>(ImGui::X))
 
         QuickRegisterImgui(Begin);
         QuickRegisterImgui(End);
-
-        Register(
-            lua,
-            "BeginChild",
-            static_cast<bool (*)(const char*, const ImVec2&, bool, ImGuiWindowFlags)>(
-                ImGui::BeginChild));
-        Register(
-            lua,
-            "BeginChildId",
-            static_cast<bool (*)(ImGuiID, const ImVec2&, bool, ImGuiWindowFlags)>(
-                ImGui::BeginChild));
+        QuickRegisterImguiOverload(
+            BeginChild,
+            bool (*)(const char*, const ImVec2&, bool, ImGuiWindowFlags));
+        QuickRegisterImguiUOverload(
+            BeginChild,
+            ID,
+            bool (*)(ImGuiID, const ImVec2&, bool, ImGuiWindowFlags));
         QuickRegisterImgui(EndChild);
 
         QuickRegisterImgui(IsWindowAppearing);
@@ -513,19 +517,10 @@ namespace LuaImgui
         // SetWindowCollapsed
         // SetWindowFocus
         // SetWindowFontScale
-        Register(
-            lua,
-            "SetWindowPos",
-            static_cast<void (*)(const char*, const ImVec2&, ImGuiCond)>(ImGui::SetWindowPos));
-        Register(
-            lua,
-            "SetWindowSize",
-            static_cast<void (*)(const char*, const ImVec2&, ImGuiCond)>(ImGui::SetWindowSize));
-        Register(
-            lua,
-            "SetWindowCollapsed",
-            static_cast<void (*)(const char*, bool, ImGuiCond)>(ImGui::SetWindowCollapsed));
-        Register(lua, "SetWindowFocus", static_cast<void (*)(const char*)>(ImGui::SetWindowFocus));
+        QuickRegisterImguiOverload(SetWindowPos, void (*)(const char*, const ImVec2&, ImGuiCond));
+        QuickRegisterImguiOverload(SetWindowSize, void (*)(const char*, const ImVec2&, ImGuiCond));
+        QuickRegisterImguiOverload(SetWindowCollapsed, void (*)(const char*, bool, ImGuiCond));
+        QuickRegisterImguiOverload(SetWindowFocus, void (*)(const char*));
 
         QuickRegisterImgui(GetContentRegionAvail);
         QuickRegisterImgui(GetContentRegionMax);
@@ -545,23 +540,11 @@ namespace LuaImgui
 
         // PushFont(ImFont * font);
         // PopFont();
-        Register(
-            lua,
-            "PushStyleColor",
-            static_cast<void (*)(ImGuiCol, ImU32)>(ImGui::PushStyleColor));
-        Register(
-            lua,
-            "PushStyleColor4",
-            static_cast<void (*)(ImGuiCol, const ImVec4&)>(ImGui::PushStyleColor));
+        QuickRegisterImguiUOverload(PushStyleColor, Packed, void (*)(ImGuiCol, ImU32));
+        QuickRegisterImguiOverload(PushStyleColor, void (*)(ImGuiCol, const ImVec4&));
         QuickRegisterImgui(PopStyleColor);
-        Register(
-            lua,
-            "PushStyleVar",
-            static_cast<void (*)(ImGuiStyleVar, float)>(ImGui::PushStyleVar));
-        Register(
-            lua,
-            "PushStyleVar2",
-            static_cast<void (*)(ImGuiStyleVar, const ImVec2& val)>(ImGui::PushStyleVar));
+        QuickRegisterImguiOverload(PushStyleVar, void (*)(ImGuiStyleVar, float));
+        QuickRegisterImguiUOverload(PushStyleVar, 2, void (*)(ImGuiStyleVar, const ImVec2& val));
         QuickRegisterImgui(PopStyleVar);
         QuickRegisterImgui(PushAllowKeyboardFocus);
         QuickRegisterImgui(PopAllowKeyboardFocus);
@@ -575,11 +558,13 @@ namespace LuaImgui
         QuickRegisterImgui(PushTextWrapPos);
         QuickRegisterImgui(PopTextWrapPos);
 
-        Register(lua, "PushID", static_cast<void (*)(const char*)>(ImGui::PushID));
+        QuickRegisterImguiOverload(PushID, void (*)(const char*));
         // Rest of PushID seem c-specific
         QuickRegisterImgui(PopID);
-        Register(lua, "GetID", static_cast<ImGuiID (*)(const char*)>(ImGui::GetID));
+        QuickRegisterImguiOverload(GetID, ImGuiID(*)(const char*));
         // Rest of GetID seem c-specific
+
+        using VStr = Variadic<const char*>;
 
         // https://stackoverflow.com/questions/18889028/a-positive-lambda-what-sorcery-is-this?noredirect=1&lq=1
         // Below is the "correct" answer but the link above captures the feeling
@@ -588,37 +573,31 @@ namespace LuaImgui
         Register(
             lua,
             "Text",
-            +[](Variadic<const char*> var) { return ImGui::Text("%s", var.strcpy().data()); });
+            +[](VStr var) { return ImGui::Text("%s", var.strcpy().data()); });
         Register(
             lua,
             "TextColored",
-            +[](const ImVec4& col, Variadic<const char*> var) {
+            +[](const ImVec4& col, VStr var) {
                 return ImGui::TextColored(col, "%s", var.strcpy().data());
             });
         Register(
             lua,
             "TextDisabled",
-            +[](Variadic<const char*> var) {
-                return ImGui::TextDisabled("%s", var.strcpy().data());
-            });
+            +[](VStr var) { return ImGui::TextDisabled("%s", var.strcpy().data()); });
         Register(
             lua,
             "TextWrapped",
-            +[](Variadic<const char*> var) {
-                return ImGui::TextWrapped("%s", var.strcpy().data());
-            });
+            +[](VStr var) { return ImGui::TextWrapped("%s", var.strcpy().data()); });
         Register(
             lua,
             "LabelText",
-            +[](const char* label, Variadic<const char*> var) {
+            +[](const char* label, VStr var) {
                 return ImGui::LabelText(label, "%s", var.strcpy().data());
             });
         Register(
             lua,
             "BulletText",
-            +[](Variadic<const char*> var) {
-                return ImGui::BulletText("%s", var.strcpy().data());
-            });
+            +[](VStr var) { return ImGui::BulletText("%s", var.strcpy().data()); });
 
         QuickRegisterImgui(Button);
         QuickRegisterImgui(SmallButton);
@@ -628,11 +607,8 @@ namespace LuaImgui
         // ImageButton
         QuickRegisterImgui(Checkbox);
         // CheckboxFlags left out
-        Register(lua, "RadioButton", static_cast<bool (*)(const char*, bool)>(ImGui::RadioButton));
-        Register(
-            lua,
-            "RadioButtonMult",
-            static_cast<bool (*)(const char*, int*, int)>(ImGui::RadioButton));
+        QuickRegisterImguiOverload(RadioButton, bool (*)(const char*, bool));
+        QuickRegisterImguiUOverload(RadioButton, Mult, bool (*)(const char*, int*, int));
         QuickRegisterImgui(ProgressBar);
         QuickRegisterImgui(Bullet);
 
@@ -682,9 +658,7 @@ namespace LuaImgui
         QuickRegisterImgui(ColorButton);
         QuickRegisterImgui(SetColorEditOptions);
 
-        using VStr = Variadic<const char*>;
-
-        Register(lua, "TreeNode", static_cast<bool (*)(const char*)>(ImGui::TreeNode));
+        QuickRegisterImguiOverload(TreeNode, bool (*)(const char*));
         Register(
             lua,
             "TreeNodeID",
@@ -701,24 +675,19 @@ namespace LuaImgui
             +[](const char* id, ImGuiTreeNodeFlags flags, VStr var) {
                 return ImGui::TreeNodeEx(id, flags, "%s", var.strcpy().data());
             });
-        Register(lua, "TreePush", static_cast<void (*)(const char*)>(ImGui::TreePush));
+        QuickRegisterImguiOverload(TreePush, void (*)(const char*));
         QuickRegisterImgui(TreePop);
         QuickRegisterImgui(GetTreeNodeToLabelSpacing);
-        Register(
-            lua,
-            "CollapsingHeader",
-            static_cast<bool (*)(const char*, ImGuiTreeNodeFlags)>(ImGui::CollapsingHeader));
-        Register(
-            lua,
-            "CollapsingHeaderToggle",
-            static_cast<bool (*)(const char*, bool*, ImGuiTreeNodeFlags)>(ImGui::CollapsingHeader));
+        QuickRegisterImguiOverload(CollapsingHeader, bool (*)(const char*, ImGuiTreeNodeFlags));
+        QuickRegisterImguiUOverload(
+            CollapsingHeader,
+            Toggle,
+            bool (*)(const char*, bool*, ImGuiTreeNodeFlags));
         QuickRegisterImgui(SetNextItemOpen);
 
-        Register(
-            lua,
-            "Selectable",
-            static_cast<bool (*)(const char*, bool*, ImGuiSelectableFlags, const ImVec2&)>(
-                ImGui::Selectable));
+        QuickRegisterImguiOverload(
+            Selectable,
+            bool (*)(const char*, bool*, ImGuiSelectableFlags, const ImVec2&));
 
         QuickRegisterImgui(BeginListBox);
         QuickRegisterImgui(EndListBox);
@@ -733,14 +702,11 @@ namespace LuaImgui
         QuickRegisterImgui(EndMainMenuBar);
         QuickRegisterImgui(BeginMenu);
         QuickRegisterImgui(EndMenu);
-        Register(
-            lua,
-            "MenuItem",
-            static_cast<bool (*)(const char*, const char*, bool, bool)>(ImGui::MenuItem));
-        Register(
-            lua,
-            "MenuItemToggle",
-            static_cast<bool (*)(const char*, const char*, bool, bool)>(ImGui::MenuItem));
+        QuickRegisterImguiOverload(MenuItem, bool (*)(const char*, const char*, bool, bool));
+        QuickRegisterImguiUOverload(
+            MenuItem,
+            Toggle,
+            bool (*)(const char*, const char*, bool, bool));
 
         QuickRegisterImgui(BeginTooltip);
         QuickRegisterImgui(EndTooltip);
@@ -748,14 +714,8 @@ namespace LuaImgui
         QuickRegisterImgui(BeginPopup);
         QuickRegisterImgui(BeginPopupModal);
         QuickRegisterImgui(EndPopup);
-        Register(
-            lua,
-            "OpenPopup",
-            static_cast<void (*)(const char*, ImGuiPopupFlags)>(ImGui::OpenPopup));
-        Register(
-            lua,
-            "OpenPopupID",
-            static_cast<void (*)(ImGuiID, ImGuiPopupFlags)>(ImGui::OpenPopup));
+        QuickRegisterImguiOverload(OpenPopup, void (*)(const char*, ImGuiPopupFlags));
+        QuickRegisterImguiUOverload(OpenPopup, ID, void (*)(ImGuiID, ImGuiPopupFlags));
         QuickRegisterImgui(OpenPopupOnItemClick);
         QuickRegisterImgui(CloseCurrentPopup);
         QuickRegisterImgui(BeginPopupContextItem);
