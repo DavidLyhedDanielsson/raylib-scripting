@@ -220,7 +220,7 @@ namespace LuaImgui
             lua_pushboolean(lua, v);
         else if constexpr(std::is_same_v<T, int>)
             lua_pushinteger(lua, v);
-        else if constexpr(std::is_same_v<T, float>)
+        else if constexpr(std::is_same_v<T, float> || std::is_same_v<T, double>)
             lua_pushnumber(lua, v);
         else if constexpr(std::is_same_v<T, unsigned int>)
             lua_pushinteger(lua, v);
@@ -233,6 +233,18 @@ namespace LuaImgui
             lua_setfield(lua, -2, "x");
             lua_pushnumber(lua, v.y);
             lua_setfield(lua, -2, "y");
+        }
+        else if constexpr(std::is_same_v<T, ImVec4>)
+        {
+            lua_createtable(lua, 0, 2);
+            lua_pushnumber(lua, v.x);
+            lua_setfield(lua, -2, "x");
+            lua_pushnumber(lua, v.y);
+            lua_setfield(lua, -2, "y");
+            lua_pushnumber(lua, v.z);
+            lua_setfield(lua, -2, "z");
+            lua_pushnumber(lua, v.w);
+            lua_setfield(lua, -2, "w");
         }
         else
             static_assert(always_false<T>);
@@ -746,5 +758,83 @@ namespace LuaImgui
         QuickRegisterImgui(TableSetBgColor);
 
         // Columns left out on purpose
+
+        QuickRegisterImgui(BeginTabBar);
+        QuickRegisterImgui(EndTabBar);
+        QuickRegisterImgui(BeginTabItem);
+        QuickRegisterImgui(EndTabItem);
+        QuickRegisterImgui(TabItemButton);
+        QuickRegisterImgui(SetTabItemClosed);
+
+        QuickRegisterImgui(BeginDisabled);
+        QuickRegisterImgui(EndDisabled);
+
+        QuickRegisterImgui(SetItemDefaultFocus);
+        QuickRegisterImgui(SetKeyboardFocusHere);
+
+        QuickRegisterImgui(IsItemHovered);
+        QuickRegisterImgui(IsItemActive);
+        QuickRegisterImgui(IsItemFocused);
+        QuickRegisterImgui(IsItemClicked);
+        QuickRegisterImgui(IsItemVisible);
+        QuickRegisterImgui(IsItemEdited);
+        QuickRegisterImgui(IsItemActivated);
+        QuickRegisterImgui(IsItemDeactivated);
+        QuickRegisterImgui(IsItemDeactivatedAfterEdit);
+        QuickRegisterImgui(IsItemToggledOpen);
+        QuickRegisterImgui(IsAnyItemHovered);
+        QuickRegisterImgui(IsAnyItemActive);
+        QuickRegisterImgui(IsAnyItemFocused);
+        QuickRegisterImgui(GetItemRectMin);
+        QuickRegisterImgui(GetItemRectMax);
+        QuickRegisterImgui(GetItemRectSize);
+        QuickRegisterImgui(SetItemAllowOverlap);
+
+        // Lots of missing stuff here that has to do with draw lists
+        QuickRegisterImgui(GetTime);
+        QuickRegisterImgui(GetFrameCount);
+        QuickRegisterImgui(GetStyleColorName);
+        QuickRegisterImgui(BeginChildFrame);
+        QuickRegisterImgui(EndChildFrame);
+        QuickRegisterImgui(CalcTextSize);
+        QuickRegisterImgui(ColorConvertU32ToFloat4);
+        QuickRegisterImgui(ColorConvertFloat4ToU32);
+        QuickRegisterImgui(ColorConvertRGBtoHSV);
+        QuickRegisterImgui(ColorConvertHSVtoRGB);
+
+        QuickRegisterImgui(IsKeyDown);
+        QuickRegisterImgui(IsKeyPressed);
+        QuickRegisterImgui(IsKeyReleased);
+        QuickRegisterImgui(GetKeyPressedAmount);
+        QuickRegisterImgui(GetKeyName);
+        QuickRegisterImgui(CaptureKeyboardFromApp);
+
+        QuickRegisterImgui(IsMouseDown);
+        QuickRegisterImgui(IsMouseClicked);
+        QuickRegisterImgui(IsMouseReleased);
+        QuickRegisterImgui(IsMouseDoubleClicked);
+        QuickRegisterImgui(GetMouseClickedCount);
+        QuickRegisterImgui(IsMouseHoveringRect);
+        // QuickRegisterImgui(IsMousePosValid); // Takes a pointer that shouldn't actually be
+        // returned, skip it for now until it is required
+        // IsAnyMouseDown will be obsolete
+        QuickRegisterImgui(GetMousePos);
+        QuickRegisterImgui(GetMousePosOnOpeningCurrentPopup);
+        QuickRegisterImgui(IsMouseDragging);
+        QuickRegisterImgui(GetMouseDragDelta);
+        QuickRegisterImgui(ResetMouseDragDelta);
+        QuickRegisterImgui(GetMouseCursor);
+        QuickRegisterImgui(SetMouseCursor);
+        QuickRegisterImgui(CaptureMouseFromApp);
+
+        QuickRegisterImgui(GetClipboardText);
+        QuickRegisterImgui(SetClipboardText);
+
+        QuickRegisterImgui(LoadIniSettingsFromDisk);
+        QuickRegisterImgui(LoadIniSettingsFromMemory);
+        QuickRegisterImgui(SaveIniSettingsToDisk);
+        QuickRegisterImgui(SaveIniSettingsToMemory);
+
+        // And that's everything
     }
 }
