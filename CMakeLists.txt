@@ -5,6 +5,8 @@ project(raylib_test VERSION 0.1.0)
 set(CMAKE_CXX_STANDARD 20)
 set(OpenGL_GL_PREFERENCE GLVND)
 
+add_definitions(-DIMGUI_DISABLE_OBSOLETE_FUNCTIONS)
+
 if (EMSCRIPTEN)
   add_compile_definitions(DASSET_ROOT=\"assets\")
   add_compile_definitions(DPLATFORM_WEB)

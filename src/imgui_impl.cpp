@@ -123,7 +123,7 @@ ImGuiKey TranslateKey(KeyboardKey key)
         case KEY_KP_MULTIPLY: return ImGuiKey_KeypadMultiply;
         case KEY_KP_SUBTRACT: return ImGuiKey_KeypadSubtract;
         case KEY_KP_ADD: return ImGuiKey_KeypadAdd;
-        case KEY_KP_ENTER: return ImGuiKey_KeyPadEnter;
+        case KEY_KP_ENTER: return ImGuiKey_KeypadEnter;
         case KEY_KP_EQUAL: return ImGuiKey_KeypadEqual;
         default: return -1;
     }
