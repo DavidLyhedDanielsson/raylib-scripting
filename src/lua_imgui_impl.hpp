@@ -589,6 +589,36 @@ namespace LuaImgui
             lua,
             "Text",
             +[](Variadic<const char*> var) { return ImGui::Text("%s", var.strcpy().data()); });
+        Register(
+            lua,
+            "TextColored",
+            +[](const ImVec4& col, Variadic<const char*> var) {
+                return ImGui::TextColored(col, "%s", var.strcpy().data());
+            });
+        Register(
+            lua,
+            "TextDisabled",
+            +[](Variadic<const char*> var) {
+                return ImGui::TextDisabled("%s", var.strcpy().data());
+            });
+        Register(
+            lua,
+            "TextWrapped",
+            +[](Variadic<const char*> var) {
+                return ImGui::TextWrapped("%s", var.strcpy().data());
+            });
+        Register(
+            lua,
+            "LabelText",
+            +[](const char* label, Variadic<const char*> var) {
+                return ImGui::LabelText(label, "%s", var.strcpy().data());
+            });
+        Register(
+            lua,
+            "BulletText",
+            +[](Variadic<const char*> var) {
+                return ImGui::BulletText("%s", var.strcpy().data());
+            });
 
         QuickRegisterImgui(Button);
         QuickRegisterImgui(SmallButton);
