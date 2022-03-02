@@ -4,7 +4,7 @@
 #include <raylib.h>
 
 // Assets come from https://quaternius.com/. Thanks Quaternius!
-enum class Asset
+enum class Asset : int
 {
     Insurgent = 0,
     Bob,
