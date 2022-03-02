@@ -19,6 +19,7 @@ extern "C" {
 #include "imgui/imgui_internal.hpp" // NOT the imgui_internal from imgui
 #include "lua/lua_entt_impl.hpp"
 #include "lua/lua_imgui_impl.hpp"
+#include "lua/lua_raylib_impl.hpp"
 #include "world.hpp"
 
 #ifdef PLATFORM_WEB
@@ -207,6 +208,7 @@ int main()
 
     LuaEntt::Register(luaState, &registry);
     LuaImGui::Register(luaState);
+    LuaRaylib::Register(luaState);
 
     auto res = luaL_loadfile(luaState, AssetPath("lua/main.lua").data());
     if(res != LUA_OK)
