@@ -9,7 +9,7 @@
  * code is available.
  */
 
-#include "imgui_impl.h"
+#include "imgui_impl.hpp"
 #include <raylib.h>
 
 #include <algorithm>
