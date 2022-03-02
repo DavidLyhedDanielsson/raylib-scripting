@@ -16,5 +16,8 @@ static_assert(
     sizeof(lua_Integer) >= sizeof(entt::entity),
     "Cannot convert from entt::entity to lua_Integer without narrowing");
 
-void register_types(lua_State* lua);
-void register_entt(lua_State* lua, entt::registry* registry);
+namespace LuaEntt
+{
+    void RegisterTypes(lua_State* lua);
+    void Register(lua_State* lua, entt::registry* registry);
+}

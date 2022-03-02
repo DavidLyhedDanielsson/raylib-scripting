@@ -205,8 +205,8 @@ int main()
 
     World::Init(&registry);
 
-    register_entt(luaState, &registry);
-    LuaImgui::register_imgui(luaState);
+    LuaEntt::Register(luaState, &registry);
+    LuaImGui::Register(luaState);
 
     auto res = luaL_loadfile(luaState, AssetPath("lua/main.lua").data());
     if(res != LUA_OK)
