@@ -9,8 +9,6 @@ extern "C" {
 #include <tuple>
 #include <type_traits>
 
-// Needed for ImVec2 and ImVec4
-#include <imgui.h>
 // Needed for Vector2
 #include <raylib.h>
 
@@ -85,36 +83,6 @@ namespace LuaRegister
             return i <= lua_gettop(lua) ? lua_tostring(lua, i++) : nullptr;
         else if constexpr(std::is_same_v<T, bool>)
             return i <= lua_gettop(lua) ? lua_toboolean(lua, i++) : false;
-        else if constexpr(std::is_same_v<T, ImVec2>) // Maybe this should be pushed as an array
-        {
-            if(i > lua_gettop(lua))
-                return ImVec2{0.0f, 0.0f};
-
-            lua_getfield(lua, i, "x");
-            float x = lua_tonumber(lua, -1);
-            lua_getfield(lua, i, "y");
-            float y = lua_tonumber(lua, -1);
-            lua_pop(lua, 2);
-            i++;
-            return ImVec2{x, y};
-        }
-        else if constexpr(std::is_same_v<T, ImVec4>) // Maybe this should be pushed as an array
-        {
-            if(i > lua_gettop(lua))
-                return ImVec4{0.0f, 0.0f, 0.0f, 0.0f};
-
-            lua_getfield(lua, i, "x");
-            float x = lua_tonumber(lua, -1);
-            lua_getfield(lua, i, "y");
-            float y = lua_tonumber(lua, -1);
-            lua_getfield(lua, i, "z");
-            float z = lua_tonumber(lua, -1);
-            lua_getfield(lua, i, "w");
-            float w = lua_tonumber(lua, -1);
-            lua_pop(lua, 4);
-            i++;
-            return ImVec4{x, y, z, w};
-        }
         else if constexpr(std::is_same_v<T, float*> || std::is_same_v<T, const float*>)
         {
             auto arr = std::array<float, 4>{0.0f, 0.0f, 0.0f, 0.0f};
@@ -261,26 +229,6 @@ namespace LuaRegister
             lua_pushinteger(lua, v);
         else if constexpr(std::is_same_v<T, const char*>)
             lua_pushstring(lua, v);
-        else if constexpr(std::is_same_v<T, ImVec2>)
-        {
-            lua_createtable(lua, 0, 2);
-            lua_pushnumber(lua, v.x);
-            lua_setfield(lua, -2, "x");
-            lua_pushnumber(lua, v.y);
-            lua_setfield(lua, -2, "y");
-        }
-        else if constexpr(std::is_same_v<T, ImVec4>)
-        {
-            lua_createtable(lua, 0, 2);
-            lua_pushnumber(lua, v.x);
-            lua_setfield(lua, -2, "x");
-            lua_pushnumber(lua, v.y);
-            lua_setfield(lua, -2, "y");
-            lua_pushnumber(lua, v.z);
-            lua_setfield(lua, -2, "z");
-            lua_pushnumber(lua, v.w);
-            lua_setfield(lua, -2, "w");
-        }
         else if constexpr(std::is_same_v<T, Vector2>)
         {
             lua_createtable(lua, 0, 2);

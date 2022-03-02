@@ -12,6 +12,67 @@
 #define LuaImguiQuickRegisterUOverload(X, suff, type) \
     LuaRegister::Register(lua, #X #suff, static_cast<type>(ImGui::X))
 
+namespace LuaRegister
+{
+    template<>
+    void SetVal(lua_State* lua, ImVec2 v)
+    {
+        lua_createtable(lua, 0, 2);
+        lua_pushnumber(lua, v.x);
+        lua_setfield(lua, -2, "x");
+        lua_pushnumber(lua, v.y);
+        lua_setfield(lua, -2, "y");
+    }
+
+    template<>
+    void SetVal(lua_State* lua, ImVec4 v)
+    {
+        lua_createtable(lua, 0, 2);
+        lua_pushnumber(lua, v.x);
+        lua_setfield(lua, -2, "x");
+        lua_pushnumber(lua, v.y);
+        lua_setfield(lua, -2, "y");
+        lua_pushnumber(lua, v.z);
+        lua_setfield(lua, -2, "z");
+        lua_pushnumber(lua, v.w);
+        lua_setfield(lua, -2, "w");
+    }
+
+    template<>
+    auto GetVal<ImVec2>(lua_State* lua, int& i)
+    {
+        if(i > lua_gettop(lua))
+            return ImVec2{0.0f, 0.0f};
+
+        lua_getfield(lua, i, "x");
+        float x = lua_tonumber(lua, -1);
+        lua_getfield(lua, i, "y");
+        float y = lua_tonumber(lua, -1);
+        lua_pop(lua, 2);
+        i++;
+        return ImVec2{x, y};
+    }
+
+    template<>
+    auto GetVal<ImVec4>(lua_State* lua, int& i)
+    {
+        if(i > lua_gettop(lua))
+            return ImVec4{0.0f, 0.0f, 0.0f, 0.0f};
+
+        lua_getfield(lua, i, "x");
+        float x = lua_tonumber(lua, -1);
+        lua_getfield(lua, i, "y");
+        float y = lua_tonumber(lua, -1);
+        lua_getfield(lua, i, "z");
+        float z = lua_tonumber(lua, -1);
+        lua_getfield(lua, i, "w");
+        float w = lua_tonumber(lua, -1);
+        lua_pop(lua, 4);
+        i++;
+        return ImVec4{x, y, z, w};
+    }
+}
+
 namespace LuaImGui
 {
     void Register(lua_State* lua)
