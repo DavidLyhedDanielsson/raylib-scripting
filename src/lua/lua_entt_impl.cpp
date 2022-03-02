@@ -11,10 +11,10 @@ extern "C" {
 #include <functional>
 #include <type_traits>
 
-#include "assets.hpp"
-#include "entity/render.hpp"
-#include "entity/transform.hpp"
-#include "entity/velocity.hpp"
+#include "../assets.hpp"
+#include "../entity/render.hpp"
+#include "../entity/transform.hpp"
+#include "../entity/velocity.hpp"
 
 #define DeclareRegistry auto registry = (entt::registry*)lua_touserdata(lua, lua_upvalueindex(1))
 #define LuaFunc(Name) extern "C" int Name(lua_State* lua)

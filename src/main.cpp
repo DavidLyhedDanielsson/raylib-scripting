@@ -15,10 +15,10 @@ extern "C" {
 #include <entt/entt.hpp>
 
 #include "assets.hpp"
-#include "imgui_impl.h"
-#include "imgui_internal.hpp" // NOT the imgui_internal from imgui
-#include "lua_entt_impl.hpp"
-#include "lua_imgui_impl.hpp"
+#include "imgui/imgui_impl.h"
+#include "imgui/imgui_internal.hpp" // NOT the imgui_internal from imgui
+#include "lua/lua_entt_impl.hpp"
+#include "lua/lua_imgui_impl.hpp"
 #include "world.hpp"
 
 #ifdef PLATFORM_WEB
