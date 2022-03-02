@@ -9,9 +9,6 @@ extern "C" {
 #include <tuple>
 #include <type_traits>
 
-// Needed for Vector2
-#include <raylib.h>
-
 namespace LuaRegister
 {
     constexpr int MAX_VARIADIC_ARG_COUNT = 32;
@@ -229,36 +226,6 @@ namespace LuaRegister
             lua_pushinteger(lua, v);
         else if constexpr(std::is_same_v<T, const char*>)
             lua_pushstring(lua, v);
-        else if constexpr(std::is_same_v<T, Vector2>)
-        {
-            lua_createtable(lua, 0, 2);
-            lua_pushnumber(lua, v.x);
-            lua_setfield(lua, -2, "x");
-            lua_pushnumber(lua, v.y);
-            lua_setfield(lua, -2, "y");
-        }
-        else if constexpr(std::is_same_v<T, Vector3>)
-        {
-            lua_createtable(lua, 0, 2);
-            lua_pushnumber(lua, v.x);
-            lua_setfield(lua, -2, "x");
-            lua_pushnumber(lua, v.y);
-            lua_setfield(lua, -2, "y");
-            lua_pushnumber(lua, v.z);
-            lua_setfield(lua, -2, "z");
-        }
-        else if constexpr(std::is_same_v<T, Vector4>)
-        {
-            lua_createtable(lua, 0, 2);
-            lua_pushnumber(lua, v.x);
-            lua_setfield(lua, -2, "x");
-            lua_pushnumber(lua, v.y);
-            lua_setfield(lua, -2, "y");
-            lua_pushnumber(lua, v.z);
-            lua_setfield(lua, -2, "z");
-            lua_pushnumber(lua, v.w);
-            lua_setfield(lua, -2, "w");
-        }
         else
             static_assert(always_false<T>);
     }
