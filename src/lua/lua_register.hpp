@@ -60,27 +60,31 @@ namespace LuaRegister
     template<class...>
     constexpr std::false_type always_false{};
 
+    template<typename T, typename... Other>
+    struct is_any: std::bool_constant<(std::is_same_v<T, Other> || ...)>
+    {
+    };
+    template<typename T, typename... Other>
+    inline constexpr bool is_any_v = is_any<T, Other...>::value;
+
     template<typename T>
     auto GetVal(lua_State* lua, int& i)
     {
-        // if constexpr seems a bit shorter and surprisingly tidier than
+        // `if constexpr` seems a bit shorter and surprisingly tidier than
         // template specialization
         static_assert(!std::is_reference_v<T>);
 
         // The default values here don't always hold up. `0` is an alright
         // choice, but `false` is not that great. It works so far though
-        if constexpr(
-            std::is_same_v<
-                T,
-                int> || std::is_same_v<T, long> || std::is_same_v<T, unsigned int> || std::is_same_v<T, long unsigned int> || std::is_same_v<T, long long int>)
-            return i <= lua_gettop(lua) ? lua_tointeger(lua, i++) : 0;
-        else if constexpr(std::is_same_v<T, float>)
-            return i <= lua_gettop(lua) ? (float)lua_tonumber(lua, i++) : 0.0f;
+        if constexpr(is_any_v<T, int, long, unsigned int, long unsigned int, long long int>)
+            return i <= lua_gettop(lua) ? (T)lua_tointeger(lua, i++) : 0;
+        else if constexpr(is_any_v<T, float, double>)
+            return i <= lua_gettop(lua) ? (T)lua_tonumber(lua, i++) : 0.0f;
         else if constexpr(std::is_same_v<T, const char*>)
             return i <= lua_gettop(lua) ? lua_tostring(lua, i++) : nullptr;
         else if constexpr(std::is_same_v<T, bool>)
             return i <= lua_gettop(lua) ? lua_toboolean(lua, i++) : false;
-        else if constexpr(std::is_same_v<T, float*> || std::is_same_v<T, const float*>)
+        else if constexpr(is_any_v<T, float*, const float*>)
         {
             auto arr = std::array<float, 4>{0.0f, 0.0f, 0.0f, 0.0f};
             if(i > lua_gettop(lua))
@@ -220,9 +224,9 @@ namespace LuaRegister
             lua_pushboolean(lua, v);
         else if constexpr(std::is_same_v<T, int>)
             lua_pushinteger(lua, v);
-        else if constexpr(std::is_same_v<T, float> || std::is_same_v<T, double>)
+        else if constexpr(is_any_v<T, float, double>)
             lua_pushnumber(lua, v);
-        else if constexpr(std::is_same_v<T, unsigned int> || std::is_same_v<T, long long int>)
+        else if constexpr(is_any_v<T, unsigned int, long long int>)
             lua_pushinteger(lua, v);
         else if constexpr(std::is_same_v<T, const char*>)
             lua_pushstring(lua, v);
@@ -317,7 +321,7 @@ namespace LuaRegister
                 }
                 retLength = 1;
             }
-            else if constexpr(std::is_same_v<U, int> || std::is_same_v<U, long unsigned int>)
+            else if constexpr(is_any_v<U, int, long unsigned int>)
             {
                 if(lua_istable(lua, Index + 1))
                 {
