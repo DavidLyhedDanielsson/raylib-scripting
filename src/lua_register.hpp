@@ -9,6 +9,9 @@ extern "C" {
 #include <tuple>
 #include <type_traits>
 
+// Needed for ImVec2 and ImVec4
+#include <imgui.h>
+
 namespace LuaRegister
 {
     constexpr int MAX_VARIADIC_ARG_COUNT = 32;
@@ -278,12 +281,6 @@ namespace LuaRegister
         }
         else
             static_assert(always_false<T>);
-    }
-
-    // Required for functions without parameters (I think) (?)
-    std::tuple<> GetVals(lua_State* state, int& index)
-    {
-        return std::tuple<>();
     }
 
     template<typename Arg>
