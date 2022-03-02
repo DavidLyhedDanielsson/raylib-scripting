@@ -72,7 +72,7 @@ namespace LuaRegister
         if constexpr(
             std::is_same_v<
                 T,
-                int> || std::is_same_v<T, long> || std::is_same_v<T, unsigned int> || std::is_same_v<T, long unsigned int>)
+                int> || std::is_same_v<T, long> || std::is_same_v<T, unsigned int> || std::is_same_v<T, long unsigned int> || std::is_same_v<T, long long int>)
             return i <= lua_gettop(lua) ? lua_tointeger(lua, i++) : 0;
         else if constexpr(std::is_same_v<T, float>)
             return i <= lua_gettop(lua) ? (float)lua_tonumber(lua, i++) : 0.0f;
@@ -252,7 +252,7 @@ namespace LuaRegister
             lua_pushinteger(lua, v);
         else if constexpr(std::is_same_v<T, float> || std::is_same_v<T, double>)
             lua_pushnumber(lua, v);
-        else if constexpr(std::is_same_v<T, unsigned int>)
+        else if constexpr(std::is_same_v<T, unsigned int> || std::is_same_v<T, long long int>)
             lua_pushinteger(lua, v);
         else if constexpr(std::is_same_v<T, const char*>)
             lua_pushstring(lua, v);
