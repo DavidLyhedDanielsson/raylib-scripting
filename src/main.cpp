@@ -93,11 +93,14 @@ void main_loop()
     {
         ImGui::Text(history[i].c_str(), i);
     }
-    if(scrollDown)
+
+    static size_t last_history_size = 0;
+    if(scrollDown || last_history_size != history.size())
     {
         ImGui::SetScrollHereY(1.0f);
         scrollDown = false;
     }
+    last_history_size = history.size();
     ImGui::EndChild();
     ImGui::End();
 

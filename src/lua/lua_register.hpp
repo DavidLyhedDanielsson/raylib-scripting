@@ -176,9 +176,7 @@ namespace LuaRegister
     }
 
     template<size_t Index, typename... Types, typename... TupTypes>
-    requires(Index == sizeof...(Types)) int ReturnVals(
-        lua_State* state,
-        const std::tuple<TupTypes...>& vals)
+    requires(Index == sizeof...(Types)) int ReturnVals(lua_State*, const std::tuple<TupTypes...>&)
     {
         return 0;
     }
