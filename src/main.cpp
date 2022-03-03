@@ -15,6 +15,7 @@ extern "C" {
 #include <entt/entt.hpp>
 
 #include "assets.hpp"
+#include "camera.hpp"
 #include "imgui/imgui_impl.hpp"
 #include "imgui/imgui_internal.hpp" // NOT the imgui_internal from imgui
 #include "lua/lua_entt_impl.hpp"
@@ -27,7 +28,6 @@ extern "C" {
 #endif
 
 // Global variables for simplicity
-Camera camera = {0};
 
 std::chrono::time_point<std::chrono::high_resolution_clock> last;
 
@@ -208,7 +208,7 @@ int main()
 
     LuaEntt::Register(luaState, &registry);
     LuaImGui::Register(luaState);
-    LuaRaylib::Register(luaState);
+    LuaRaylib::Register(luaState, &registry);
 
     auto res = luaL_loadfile(luaState, AssetPath("lua/main.lua").data());
     if(res != LUA_OK)
