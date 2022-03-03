@@ -62,9 +62,10 @@ namespace LuaRegister
 
     // Because some lua_toX are macros it cannot be used in the LuaGetFunc
     // specialization
-    inline lua_Integer luaToInteger(lua_State* lua, int i) { return lua_tointeger(lua, i); }
-    inline lua_Number luaToNumber(lua_State* lua, int i) { return lua_tonumber(lua, i); }
-    inline const char* luaToString(lua_State* lua, int i) { return lua_tostring(lua, i); }
+    inline lua_Integer luaToInteger(lua_State* lua, int& i) { return lua_tointeger(lua, i++); }
+    inline lua_Number luaToNumber(lua_State* lua, int& i) { return lua_tonumber(lua, i++); }
+    inline int luaToBoolean(lua_State* lua, int& i) { return lua_toboolean(lua, i++); }
+    inline const char* luaToString(lua_State* lua, int& i) { return lua_tostring(lua, i++); }
 
     template<typename T>
     constexpr auto LuaGetFunc = nullptr;
@@ -89,6 +90,18 @@ namespace LuaRegister
     template<> inline constexpr auto LuaSetFunc<double> = lua_pushnumber;
     template<> inline constexpr auto LuaSetFunc<bool> = lua_pushboolean;
     template<> inline constexpr auto LuaSetFunc<const char*> = lua_pushstring;
+
+    template<typename T>
+    constexpr auto GetDefault = 0;
+    template<> inline constexpr auto GetDefault<int> = 0;
+    template<> inline constexpr auto GetDefault<unsigned int> = 0;
+    template<> inline constexpr auto GetDefault<long> = 0;
+    template<> inline constexpr auto GetDefault<unsigned long> = 0;
+    template<> inline constexpr auto GetDefault<long long> = 0;
+    template<> inline constexpr auto GetDefault<float> = 0.0f;
+    template<> inline constexpr auto GetDefault<double> = 0.0;
+    template<> inline constexpr auto GetDefault<bool> = false;
+    template<> inline constexpr auto GetDefault<const char*> = nullptr;
     // clang-format on
 
     template<typename T>
@@ -108,7 +121,7 @@ namespace LuaRegister
         else if constexpr(std::is_pointer_v<T> && !std::is_same_v<T, const char*>)
         {
             using NakedT = std::remove_const_t<std::remove_pointer_t<T>>;
-            auto arr = std::array<NakedT, 4>{0};
+            auto arr = std::array<NakedT, 4>{GetDefault<NakedT>};
             if(i > lua_gettop(lua))
                 return arr;
 
@@ -124,7 +137,8 @@ namespace LuaRegister
                 for(int j = 1; j <= count; j++)
                 {
                     lua_geti(lua, i, j);
-                    arr[j - 1] = LuaGetFunc<NakedT>(lua, -1);
+                    int index = -1; // Need a temp here since LuaGetFunc takes a ref
+                    arr[j - 1] = LuaGetFunc<NakedT>(lua, index);
                     lua_pop(lua, 1);
                 }
             }
@@ -139,16 +153,8 @@ namespace LuaRegister
         {
             // If there is some error here about LuaGetFunc it is because it isn't
             // specialized for type T
-            // TODO: 0 as a default?
-            return i <= lua_gettop(lua) ? (T)LuaGetFunc<T>(lua, i++) : 0;
+            return i <= lua_gettop(lua) ? (T)LuaGetFunc<T>(lua, i) : GetDefault<T>;
         }
-    }
-
-    // SetVal should probably also be turned into an if constexpr chain
-    template<typename T>
-    void SetVal(lua_State* lua, T v)
-    {
-        LuaSetFunc<T>(lua, v);
     }
 
     template<typename Arg>
@@ -311,7 +317,7 @@ namespace LuaRegister
         if constexpr(!std::is_same_v<R, void>)
         {
             R res = f();
-            SetVal<R>(lua, res);
+            LuaSetFunc<R>(lua, res);
             retCount++;
         }
         else
@@ -352,7 +358,7 @@ namespace LuaRegister
         if constexpr(!std::is_same_v<R, void>)
         {
             R res = std::apply(f, tup2);
-            SetVal<R>(lua, res);
+            LuaSetFunc<R>(lua, res);
             retCount++;
         }
         else
@@ -390,7 +396,7 @@ namespace LuaRegister
         if constexpr(!std::is_same_v<R, void>)
         {
             R res = f(instance);
-            SetVal<R>(lua, res);
+            LuaSetFunc<R>(lua, res);
             retCount++;
         }
         else
@@ -416,7 +422,7 @@ namespace LuaRegister
         if constexpr(!std::is_same_v<R, void>)
         {
             R res = std::apply(f, tup3);
-            SetVal<R>(lua, res);
+            LuaSetFunc<R>(lua, res);
             retCount++;
         }
         else
