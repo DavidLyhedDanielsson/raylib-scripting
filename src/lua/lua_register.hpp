@@ -46,174 +46,90 @@ namespace LuaRegister
         }
     };
 
-    template<typename>
-    struct is_variadic: std::false_type
-    {
-    };
-
-    template<typename T>
-    struct is_variadic<Variadic<T>>: std::true_type
-    {
-    };
+    // Disable formatting so this section can be made short and pretty
+    // clang-format off
+    template<typename> struct is_variadic: std::false_type {};
+    template<typename T> struct is_variadic<Variadic<T>>: std::true_type {};
 
     // https://stackoverflow.com/questions/53945490/how-to-assert-that-a-constexpr-if-else-clause-never-happen
     template<class...>
     constexpr std::false_type always_false{};
 
     template<typename T, typename... Other>
-    struct is_any: std::bool_constant<(std::is_same_v<T, Other> || ...)>
-    {
-    };
+    struct is_any: std::bool_constant<(std::is_same_v<T, Other> || ...)> {};
     template<typename T, typename... Other>
     inline constexpr bool is_any_v = is_any<T, Other...>::value;
+
+    // Because some lua_toX are macros it cannot be used in the LuaFunc
+    // specialization
+    inline lua_Integer luaToInteger(lua_State* lua, int i) { return lua_tointeger(lua, i); }
+    inline lua_Number luaToNumber(lua_State* lua, int i) { return lua_tonumber(lua, i); }
+    inline const char* luaToString(lua_State* lua, int i) { return lua_tostring(lua, i); }
+
+    template<typename T>
+    constexpr auto LuaFunc = nullptr;
+    template<> inline constexpr auto LuaFunc<int> = luaToInteger;
+    template<> inline constexpr auto LuaFunc<unsigned int> = luaToInteger;
+    template<> inline constexpr auto LuaFunc<long> = luaToInteger;
+    template<> inline constexpr auto LuaFunc<unsigned long> = luaToInteger;
+    template<> inline constexpr auto LuaFunc<long long> = luaToInteger;
+    template<> inline constexpr auto LuaFunc<float> = luaToNumber;
+    template<> inline constexpr auto LuaFunc<double> = luaToNumber;
+    template<> inline constexpr auto LuaFunc<bool> = lua_toboolean;
+    template<> inline constexpr auto LuaFunc<const char*> = luaToString;
+    // clang-format on
 
     template<typename T>
     auto GetVal(lua_State* lua, int& i)
     {
-        // `if constexpr` seems a bit shorter and surprisingly tidier than
-        // template specialization
         static_assert(!std::is_reference_v<T>);
 
-        // The default values here don't always hold up. `0` is an alright
-        // choice, but `false` is not that great. It works so far though
-        if constexpr(is_any_v<T, int, long, unsigned int, long unsigned int, long long int>)
-            return i <= lua_gettop(lua) ? (T)lua_tointeger(lua, i++) : 0;
-        else if constexpr(is_any_v<T, float, double>)
-            return i <= lua_gettop(lua) ? (T)lua_tonumber(lua, i++) : 0.0f;
-        else if constexpr(std::is_same_v<T, const char*>)
-            return i <= lua_gettop(lua) ? lua_tostring(lua, i++) : nullptr;
-        else if constexpr(std::is_same_v<T, bool>)
-            return i <= lua_gettop(lua) ? lua_toboolean(lua, i++) : false;
-        else if constexpr(is_any_v<T, float*, const float*>)
-        {
-            auto arr = std::array<float, 4>{0.0f, 0.0f, 0.0f, 0.0f};
-            if(i > lua_gettop(lua))
-                return arr;
-
-            if(lua_istable(lua, i))
-            {
-                int count = luaL_len(lua, i);
-                if(count > 4)
-                {
-                    // Error message at some point
-                    return arr;
-                }
-
-                for(int j = 1; j <= count; j++)
-                {
-                    lua_geti(lua, i, j);
-                    arr[j - 1] = lua_tonumber(lua, -1);
-                    lua_pop(lua, 1);
-                }
-            }
-            else
-                arr[0] = lua_tonumber(lua, i);
-
-            i++;
-
-            return arr;
-        }
-        else if constexpr(std::is_same_v<T, long unsigned int*>)
-        {
-            auto arr = std::array<long unsigned int, 4>{0, 0, 0, 0};
-            if(i > lua_gettop(lua))
-                return arr;
-
-            if(lua_istable(lua, i))
-            {
-                int count = luaL_len(lua, i);
-                if(count > 4)
-                {
-                    // Error message at some point
-                    return arr;
-                }
-
-                for(int j = 1; j <= count; j++)
-                {
-                    lua_geti(lua, i, j);
-                    arr[j - 1] = lua_tointeger(lua, -1);
-                    lua_pop(lua, 1);
-                }
-            }
-            else
-                arr[0] = lua_tointeger(lua, i);
-
-            i++;
-
-            return arr;
-        }
-        else if constexpr(std::is_same_v<T, bool*>)
-        {
-            auto arr = std::array<bool, 4>{false, false, false, false};
-            if(i > lua_gettop(lua))
-                return arr;
-
-            if(lua_istable(lua, i))
-            {
-                int count = luaL_len(lua, i);
-                if(count > 4)
-                {
-                    // Error message at some point
-                    return arr;
-                }
-
-                for(int j = 1; j <= count; j++)
-                {
-                    lua_geti(lua, i, j);
-                    arr[j - 1] = lua_toboolean(lua, -1);
-                    lua_pop(lua, 1);
-                }
-            }
-            else
-                arr[0] = lua_toboolean(lua, i);
-
-            i++;
-
-            return arr;
-        }
-        else if constexpr(std::is_same_v<T, int*>)
-        {
-            auto arr = std::array<int, 4>{0, 0, 0, 0};
-            if(i > lua_gettop(lua))
-                return arr;
-
-            if(lua_istable(lua, i))
-            {
-                int count = luaL_len(lua, i);
-                if(count > 4)
-                {
-                    // Error message at some point
-                    return arr;
-                }
-
-                for(int j = 1; j <= count; j++)
-                {
-                    lua_geti(lua, i, j);
-                    arr[j - 1] = lua_tointeger(lua, -1);
-                    lua_pop(lua, 1);
-                }
-            }
-            else
-                arr[0] = lua_tointeger(lua, i);
-
-            i++;
-
-            return arr;
-        }
-        else if constexpr(is_variadic<T>::value)
+        if constexpr(is_variadic<T>::value)
         {
             auto var = Variadic<typename T::value_type>();
             // Eat the rest of the arguments. Nom nom nom
             var.count = std::min(lua_gettop(lua) - i + 1, MAX_VARIADIC_ARG_COUNT);
             for(int j = 0; i <= lua_gettop(lua); ++i, ++j)
-                var.arr.at(j) = lua_tostring(lua, i);
+                var.arr.at(j) = LuaFunc<typename T::value_type>(lua, i);
             return var;
         }
+        else if constexpr(std::is_pointer_v<T> && !std::is_same_v<T, const char*>)
+        {
+            using NakedT = std::remove_const_t<std::remove_pointer_t<T>>;
+            auto arr = std::array<NakedT, 4>{0};
+            if(i > lua_gettop(lua))
+                return arr;
+
+            if(lua_istable(lua, i))
+            {
+                int count = luaL_len(lua, i);
+                if(count > 4)
+                {
+                    // Error message at some point
+                    return arr;
+                }
+
+                for(int j = 1; j <= count; j++)
+                {
+                    lua_geti(lua, i, j);
+                    arr[j - 1] = LuaFunc<NakedT>(lua, -1);
+                    lua_pop(lua, 1);
+                }
+            }
+            else
+                arr[0] = LuaFunc<NakedT>(lua, i);
+
+            i++;
+
+            return arr;
+        }
         else
-            // Clang gives me something like: note:
-            // ‘LuaImgui::always_false<ImVec2>’ evaluates to false, meaning
-            // ImVec2 is not implemented in the if constexpr chain above
-            static_assert(always_false<T>);
+        {
+            // If there is some error here about LuaFunc it is because it isn't
+            // specialized for type T
+            // TODO: 0 as a default?
+            return i <= lua_gettop(lua) ? (T)LuaFunc<T>(lua, i++) : 0;
+        }
     }
 
     // SetVal should probably also be turned into an if constexpr chain
