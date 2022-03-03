@@ -77,6 +77,18 @@ namespace LuaRegister
     template<> inline constexpr auto LuaGetFunc<double> = luaToNumber;
     template<> inline constexpr auto LuaGetFunc<bool> = lua_toboolean;
     template<> inline constexpr auto LuaGetFunc<const char*> = luaToString;
+
+    template<typename T>
+    constexpr auto LuaSetFunc = nullptr;
+    template<> inline constexpr auto LuaSetFunc<int> = lua_pushinteger;
+    template<> inline constexpr auto LuaSetFunc<unsigned int> = lua_pushinteger;
+    template<> inline constexpr auto LuaSetFunc<long> = lua_pushinteger;
+    template<> inline constexpr auto LuaSetFunc<unsigned long> = lua_pushinteger;
+    template<> inline constexpr auto LuaSetFunc<long long> = lua_pushinteger;
+    template<> inline constexpr auto LuaSetFunc<float> = lua_pushnumber;
+    template<> inline constexpr auto LuaSetFunc<double> = lua_pushnumber;
+    template<> inline constexpr auto LuaSetFunc<bool> = lua_pushboolean;
+    template<> inline constexpr auto LuaSetFunc<const char*> = lua_pushstring;
     // clang-format on
 
     template<typename T>
@@ -136,18 +148,7 @@ namespace LuaRegister
     template<typename T>
     void SetVal(lua_State* lua, T v)
     {
-        if constexpr(std::is_same_v<T, bool>)
-            lua_pushboolean(lua, v);
-        else if constexpr(std::is_same_v<T, int>)
-            lua_pushinteger(lua, v);
-        else if constexpr(is_any_v<T, float, double>)
-            lua_pushnumber(lua, v);
-        else if constexpr(is_any_v<T, unsigned int, long long int>)
-            lua_pushinteger(lua, v);
-        else if constexpr(std::is_same_v<T, const char*>)
-            lua_pushstring(lua, v);
-        else
-            static_assert(always_false<T>);
+        LuaSetFunc<T>(lua, v);
     }
 
     template<typename Arg>
