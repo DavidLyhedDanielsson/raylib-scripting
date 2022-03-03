@@ -60,23 +60,23 @@ namespace LuaRegister
     template<typename T, typename... Other>
     inline constexpr bool is_any_v = is_any<T, Other...>::value;
 
-    // Because some lua_toX are macros it cannot be used in the LuaFunc
+    // Because some lua_toX are macros it cannot be used in the LuaGetFunc
     // specialization
     inline lua_Integer luaToInteger(lua_State* lua, int i) { return lua_tointeger(lua, i); }
     inline lua_Number luaToNumber(lua_State* lua, int i) { return lua_tonumber(lua, i); }
     inline const char* luaToString(lua_State* lua, int i) { return lua_tostring(lua, i); }
 
     template<typename T>
-    constexpr auto LuaFunc = nullptr;
-    template<> inline constexpr auto LuaFunc<int> = luaToInteger;
-    template<> inline constexpr auto LuaFunc<unsigned int> = luaToInteger;
-    template<> inline constexpr auto LuaFunc<long> = luaToInteger;
-    template<> inline constexpr auto LuaFunc<unsigned long> = luaToInteger;
-    template<> inline constexpr auto LuaFunc<long long> = luaToInteger;
-    template<> inline constexpr auto LuaFunc<float> = luaToNumber;
-    template<> inline constexpr auto LuaFunc<double> = luaToNumber;
-    template<> inline constexpr auto LuaFunc<bool> = lua_toboolean;
-    template<> inline constexpr auto LuaFunc<const char*> = luaToString;
+    constexpr auto LuaGetFunc = nullptr;
+    template<> inline constexpr auto LuaGetFunc<int> = luaToInteger;
+    template<> inline constexpr auto LuaGetFunc<unsigned int> = luaToInteger;
+    template<> inline constexpr auto LuaGetFunc<long> = luaToInteger;
+    template<> inline constexpr auto LuaGetFunc<unsigned long> = luaToInteger;
+    template<> inline constexpr auto LuaGetFunc<long long> = luaToInteger;
+    template<> inline constexpr auto LuaGetFunc<float> = luaToNumber;
+    template<> inline constexpr auto LuaGetFunc<double> = luaToNumber;
+    template<> inline constexpr auto LuaGetFunc<bool> = lua_toboolean;
+    template<> inline constexpr auto LuaGetFunc<const char*> = luaToString;
     // clang-format on
 
     template<typename T>
@@ -90,7 +90,7 @@ namespace LuaRegister
             // Eat the rest of the arguments. Nom nom nom
             var.count = std::min(lua_gettop(lua) - i + 1, MAX_VARIADIC_ARG_COUNT);
             for(int j = 0; i <= lua_gettop(lua); ++i, ++j)
-                var.arr.at(j) = LuaFunc<typename T::value_type>(lua, i);
+                var.arr.at(j) = LuaGetFunc<typename T::value_type>(lua, i);
             return var;
         }
         else if constexpr(std::is_pointer_v<T> && !std::is_same_v<T, const char*>)
@@ -112,12 +112,12 @@ namespace LuaRegister
                 for(int j = 1; j <= count; j++)
                 {
                     lua_geti(lua, i, j);
-                    arr[j - 1] = LuaFunc<NakedT>(lua, -1);
+                    arr[j - 1] = LuaGetFunc<NakedT>(lua, -1);
                     lua_pop(lua, 1);
                 }
             }
             else
-                arr[0] = LuaFunc<NakedT>(lua, i);
+                arr[0] = LuaGetFunc<NakedT>(lua, i);
 
             i++;
 
@@ -125,10 +125,10 @@ namespace LuaRegister
         }
         else
         {
-            // If there is some error here about LuaFunc it is because it isn't
+            // If there is some error here about LuaGetFunc it is because it isn't
             // specialized for type T
             // TODO: 0 as a default?
-            return i <= lua_gettop(lua) ? (T)LuaFunc<T>(lua, i++) : 0;
+            return i <= lua_gettop(lua) ? (T)LuaGetFunc<T>(lua, i++) : 0;
         }
     }
 
