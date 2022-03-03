@@ -27,6 +27,8 @@ file(GLOB IMGUI_SRC ${LIB_DIR}/imgui/*.cpp ${LIB_DIR}/imgui/backends/imgui_impl_
 
 add_subdirectory(${LIB_DIR}/raylib)
 link_libraries(raylib)
-include_directories(${LIB_DIR}/raylib/src ${LIB_DIR}/lua ${LIB_DIR}/imgui ${LIB_DIR}/imgui/backends ${LIB_DIR}/entt/src)
+include_directories(SYSTEM ${LIB_DIR}/raylib/src ${LIB_DIR}/lua ${LIB_DIR}/imgui ${LIB_DIR}/imgui/backends ${LIB_DIR}/entt/src)
 
 add_executable(raylib_test ${SRCS} ${LUA_SRC} ${IMGUI_SRC})
+
+set_source_files_properties(${SRCS} PROPERTIES COMPILE_FLAGS "-Wall -Wextra -Wpedantic")
