@@ -1,50 +1,67 @@
-if single == nil then
-    single = 1
-    double = { 1, 2 }
-    triple = { 1, 2, 3 }
-    quad = { 1, 2, 3, 4 }
-    window_open = true
-    radio_val = 0
-    range_min = 5
-    range_max = 10
-    color = {1, 1, 1, 1}
+if setup == nil then
+    setup = true
+
+    render_component = false
+    transform_component = false
+    velocity_component = false
+
+    ordered_assets = {}
+    for asset in pairs(Asset) do
+        table.insert(ordered_assets, asset)
+    end
+    table.sort(ordered_assets)
+
+    selected_mesh = 1
 end
 
-Begin("Lua window", window_open)
+function raylib()
 
--- pos = GetWindowPos()
-
-BeginChild("ChildArea", {x = 0, y = 100})
-
-Button("Hello there!")
-Button("Hello there!")
-Button("Hello there!")
-Button("Hello there!")
-SmallButton("Another hello")
-ArrowButton("Left", 0)
-if BeginCombo("Dropdown", "preview", 0) then
-    EndCombo()
 end
-EndChild()
 
-_, single = DragFloat("Single", single, 2.5, 0, 50)
-_, double = DragFloat2("Double", double, 2.5, 0, 50)
-_, triple = DragFloat3("Triple", triple, 2.5, 0, 50)
-_, quad = DragFloat4("Quad", quad, 2.5, 0, 50)
+function imgui() 
+    Begin("Entity creator")
 
-_, range_min, range_max = DragFloatRange2("Range", range_min, range_max, 1.0, 0, 100)
+    _, render_component = Checkbox("Render component", render_component)
+    if render_component then
+        if BeginCombo("Mesh", ordered_assets[selected_mesh]) then
+            local new_selected = -1
+            for i = 1, #ordered_assets do
+                if Selectable(ordered_assets[i], i == selected_mesh) then
+                    new_selected = i
+                end
+            end
+            if new_selected ~= -1 then
+            selected_mesh = new_selected 
+            end
+            EndCombo() 
+        end
+    end
+    _, transform_component = Checkbox("Transform component", transform_component)
+    _, velocity_component = Checkbox("Velocity component", velocity_component)
 
-_, radio_val = RadioButtonMult("First", radio_val, 0)
-_, radio_val = RadioButtonMult("Second", radio_val, 1)
-_, radio_val = RadioButtonMult("Third", radio_val, 2)
+    if Button("Create Entity") then
+        local entity = CreateEntity()
+        if render_component then
+            AddRenderComponent(entity, Asset[ordered_assets[selected_mesh]])
+        end
+        if transform_component then
+            AddTransformComponent(entity)
+        end
+        if velocity_component then
+            AddVelocityComponent(entity)
+        end
+    end
 
-_, color = ColorPicker4("Color", color);
+    End()
 
-Text("Hello")
-TextColored({x = 1.0, y = 0.5, z = 0.1, w = 1.0}, "Hello")
-TextDisabled("Noooo")
-TextWrapped("Wroawroicawh rjlcjahwrljcawh rlicujks chflkajseahcf jkelh asjelkehfla slkjh alskjefh akcslejfh lkj")
-LabelText("Label", "And value")
-BulletText("Completed")
-
-End()
+    if IsMouseClicked(0) then
+        local ray = GetMouseRay(GetMousePos())
+        print(ray.position.x, ", ", ray.position.y, ", ", ray.position.z)
+        print(ray.direction.x, ", ", ray.direction.y, ", ", ray.direction.z)
+        if GetRayCollision(ray) then
+            print("Hit")
+        else 
+            print("No hit")
+        end
+    end
+end

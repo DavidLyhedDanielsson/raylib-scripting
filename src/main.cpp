@@ -61,8 +61,35 @@ void main_loop()
     sprintf(buf, "Frame time: %f", deltaMs);
     DrawText(buf, 0, 0, 20, LIGHTGRAY);
 
+    auto res = luaL_loadfile(luaState, AssetPath("lua/gui.lua").data());
+    bool guiError = false;
+    if(res != LUA_OK)
+    {
+        std::cerr << "Couldn't load gui.lua or error occurred" << std::endl;
+        std::cerr << lua_tostring(luaState, -1) << std::endl;
+        guiError = true;
+    }
+    if(lua_pcall(luaState, 0, 0, 0) != LUA_OK)
+    {
+        std::cerr << "Error when executing gui.lua" << std::endl;
+        std::cerr << lua_tostring(luaState, -1) << std::endl;
+        guiError = true;
+    }
+
     BeginMode3D(camera);
     World::Draw();
+
+    if(!guiError)
+    {
+        lua_getglobal(luaState, "raylib");
+        if(lua_pcall(luaState, 0, 0, 0) != LUA_OK)
+        {
+            std::cerr << "Error when executing gui.lua:raylib" << std::endl;
+            std::cerr << lua_tostring(luaState, -1) << std::endl;
+            guiError = true;
+        }
+    }
+
     EndMode3D();
 
     RaylibImGui::Begin();
@@ -110,12 +137,7 @@ void main_loop()
     ImGui::SetCurrentContext(luaContext);
     RaylibImGui::Begin();
 
-    auto res = luaL_loadfile(luaState, AssetPath("lua/gui.lua").data());
-    if(res != LUA_OK)
-    {
-        std::cerr << "Couldn't load gui.lua or error occurred";
-    }
-    bool guiError = false;
+    lua_getglobal(luaState, "imgui");
     if(lua_pcall(luaState, 0, 0, 0) == LUA_OK)
     {
         if(ValidStackSize(luaContext))
