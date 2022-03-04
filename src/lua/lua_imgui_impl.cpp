@@ -42,18 +42,17 @@ namespace LuaRegister
     };
 
     template<>
-    constexpr auto LuaGetFunc<ImVec2> = [](lua_State* lua, int& i) {
+    constexpr auto LuaGetFunc<ImVec2> = [](lua_State* lua, int i) {
         lua_getfield(lua, i, "x");
         float x = lua_tonumber(lua, -1);
         lua_getfield(lua, i, "y");
         float y = lua_tonumber(lua, -1);
         lua_pop(lua, 2);
-        i++;
         return ImVec2{x, y};
     };
 
     template<>
-    constexpr auto LuaGetFunc<ImVec4> = [](lua_State* lua, int& i) {
+    constexpr auto LuaGetFunc<ImVec4> = [](lua_State* lua, int i) {
         lua_getfield(lua, i, "x");
         float x = lua_tonumber(lua, -1);
         lua_getfield(lua, i, "y");
@@ -63,7 +62,6 @@ namespace LuaRegister
         lua_getfield(lua, i, "w");
         float w = lua_tonumber(lua, -1);
         lua_pop(lua, 4);
-        i++;
         return ImVec4{x, y, z, w};
     };
 }

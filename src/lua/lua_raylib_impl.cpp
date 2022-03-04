@@ -64,17 +64,16 @@ namespace LuaRegister
     };
 
     template<>
-    constexpr auto LuaGetFunc<Vector2> = [](lua_State* lua, int& i) {
+    constexpr auto LuaGetFunc<Vector2> = [](lua_State* lua, int i) {
         lua_getfield(lua, i, "x");
         float x = lua_tonumber(lua, -1);
         lua_getfield(lua, i, "y");
         float y = lua_tonumber(lua, -1);
         lua_pop(lua, 2);
-        i++;
         return Vector2{x, y};
     };
     template<>
-    constexpr auto LuaGetFunc<Vector3> = [](lua_State* lua, int& i) {
+    constexpr auto LuaGetFunc<Vector3> = [](lua_State* lua, int i) {
         lua_getfield(lua, i, "x");
         float x = lua_tonumber(lua, -1);
         lua_getfield(lua, i, "y");
@@ -82,11 +81,10 @@ namespace LuaRegister
         lua_getfield(lua, i, "z");
         float z = lua_tonumber(lua, -1);
         lua_pop(lua, 3);
-        i++;
         return Vector3{x, y, z};
     };
     template<>
-    constexpr auto LuaGetFunc<BoundingBox> = [](lua_State* lua, int& i) {
+    constexpr auto LuaGetFunc<BoundingBox> = [](lua_State* lua, int i) {
         lua_getfield(lua, i, "min");
         int index = lua_gettop(lua);
         auto min = LuaGetFunc<Vector3>(lua, index);
@@ -95,12 +93,11 @@ namespace LuaRegister
         auto max = LuaGetFunc<Vector3>(lua, index);
 
         lua_pop(lua, 2);
-        i++;
 
         return BoundingBox{min, max};
     };
     template<>
-    constexpr auto LuaGetFunc<Ray> = [](lua_State* lua, int& i) {
+    constexpr auto LuaGetFunc<Ray> = [](lua_State* lua, int i) {
         lua_getfield(lua, i, "position");
         int index = lua_gettop(lua);
         auto position = LuaGetFunc<Vector3>(lua, index);
@@ -109,12 +106,11 @@ namespace LuaRegister
         auto direction = LuaGetFunc<Vector3>(lua, index);
 
         lua_pop(lua, 2);
-        i++;
 
         return Ray{position, direction};
     };
     template<>
-    constexpr auto LuaGetFunc<Color> = [](lua_State* lua, int& i) {
+    constexpr auto LuaGetFunc<Color> = [](lua_State* lua, int i) {
         lua_getfield(lua, i, "r");
         unsigned char r = lua_tointeger(lua, -1);
         lua_getfield(lua, i, "g");
@@ -124,7 +120,6 @@ namespace LuaRegister
         lua_getfield(lua, i, "a");
         unsigned char a = lua_tointeger(lua, -1);
         lua_pop(lua, 4);
-        i++;
         return Color{r, g, b, a};
     };
 }
