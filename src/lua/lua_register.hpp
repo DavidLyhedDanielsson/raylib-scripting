@@ -47,6 +47,11 @@ namespace LuaRegister
         }
     };
 
+    struct Placeholder
+    {
+        lua_Integer stackIndex;
+    };
+
     // Disable formatting so this section can be made short and pretty
     // clang-format off
     template<typename> struct is_variadic: std::false_type {};
@@ -118,6 +123,14 @@ namespace LuaRegister
             for(int j = 0; i <= lua_gettop(lua); ++i, ++j)
                 var.arr.at(j) = LuaGetFunc<typename T::value_type>(lua, i);
             return var;
+        }
+        else if constexpr(std::is_same_v<T, lua_State*>)
+        {
+            return lua;
+        }
+        else if constexpr(std::is_same_v<T, Placeholder>)
+        {
+            return Placeholder{.stackIndex = i++};
         }
         else if constexpr(std::is_pointer_v<T> && !std::is_same_v<T, const char*>)
         {
@@ -262,7 +275,8 @@ namespace LuaRegister
                 }
                 retLength = 1;
             }
-            else
+            // Do nothing if T is of type lua_State* or Placeholder
+            else if constexpr(!is_any_v<T, lua_State*, Placeholder>)
                 static_assert(always_false<T>);
 
             return retLength + ReturnVals<Index + 1, Types...>(lua, vals);
@@ -279,6 +293,12 @@ namespace LuaRegister
     auto Convert(const std::tuple<TupTypes...>& tup)
     {
         using T = std::tuple_element_t<Index, std::tuple<Types...>>;
+        if constexpr(std::is_same_v<T, lua_State*>)
+        {
+            auto lhs = std::make_tuple(std::get<Index>(tup));
+            auto rhs = Convert<Index + 1, Types...>(tup);
+            return std::tuple_cat(lhs, rhs);
+        }
         if constexpr(std::is_pointer_v<T> && !std::is_same_v<const char*, T>)
         {
             auto lhs = std::make_tuple((T)&std::get<Index>(tup));
