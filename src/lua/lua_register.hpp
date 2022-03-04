@@ -76,7 +76,7 @@ namespace LuaRegister
     template<> inline constexpr auto LuaGetFunc<long long> = luaToInteger;
     template<> inline constexpr auto LuaGetFunc<float> = luaToNumber;
     template<> inline constexpr auto LuaGetFunc<double> = luaToNumber;
-    template<> inline constexpr auto LuaGetFunc<bool> = lua_toboolean;
+    template<> inline constexpr auto LuaGetFunc<bool> = luaToBoolean;
     template<> inline constexpr auto LuaGetFunc<const char*> = luaToString;
 
     template<typename T>
