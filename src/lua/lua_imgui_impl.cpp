@@ -155,6 +155,30 @@ namespace LuaImGui
         LuaImguiQuickRegister(PushTextWrapPos);
         LuaImguiQuickRegister(PopTextWrapPos);
 
+        LuaImguiQuickRegister(Separator);
+        LuaImguiQuickRegister(SameLine);
+        LuaImguiQuickRegister(NewLine);
+        LuaImguiQuickRegister(Spacing);
+        LuaImguiQuickRegister(Dummy);
+        LuaImguiQuickRegister(Indent);
+        LuaImguiQuickRegister(Unindent);
+        LuaImguiQuickRegister(BeginGroup);
+        LuaImguiQuickRegister(EndGroup);
+        LuaImguiQuickRegister(GetCursorPos);
+        LuaImguiQuickRegister(GetCursorPosX);
+        LuaImguiQuickRegister(GetCursorPosY);
+        LuaImguiQuickRegister(SetCursorPos);
+        LuaImguiQuickRegister(SetCursorPosX);
+        LuaImguiQuickRegister(SetCursorPosY);
+        LuaImguiQuickRegister(GetCursorStartPos);
+        LuaImguiQuickRegister(GetCursorScreenPos);
+        LuaImguiQuickRegister(SetCursorScreenPos);
+        LuaImguiQuickRegister(AlignTextToFramePadding);
+        LuaImguiQuickRegister(GetTextLineHeight);
+        LuaImguiQuickRegister(GetTextLineHeightWithSpacing);
+        LuaImguiQuickRegister(GetFrameHeight);
+        LuaImguiQuickRegister(GetFrameHeightWithSpacing);
+
         LuaImguiQuickRegisterOverload(PushID, void (*)(const char*));
         // Rest of PushID seem c-specific
         LuaImguiQuickRegister(PopID);
