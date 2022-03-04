@@ -6,6 +6,7 @@ extern "C" {
 #include <lualib.h>
 }
 
+#include <array>
 #include <tuple>
 #include <type_traits>
 

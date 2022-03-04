@@ -218,7 +218,7 @@ namespace LuaRaylib
                     else
                     {
                         transform =
-                            Component::Transform{Vector3(0.0f, 0.0f, 0.0f), QuaternionIdentity()};
+                            Component::Transform{Vector3{0.0f, 0.0f, 0.0f}, QuaternionIdentity()};
                     }
 
                     const Model& model = render.model;
