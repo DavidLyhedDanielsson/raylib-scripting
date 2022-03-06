@@ -15,10 +15,37 @@ if setup == nil then
 end
 
 function raylib()
-
 end
 
-function imgui() 
+function imgui()
+    Begin("Entity search")
+        _, renderComp = Checkbox("Render", renderComp or false)
+        SameLine()
+        _, transformComp = Checkbox("Transform", transformComp or false)
+        SameLine()
+        _, velocityComp = Checkbox("Velocity", velocityComp or false)
+
+        if Button("Search") then
+            local filters = {}
+            if renderComp then table.insert(filters, "render") end
+            if transformComp then table.insert(filters, "transform") end
+            if velocityComp then table.insert(filters, "velocity") end
+
+            search_results = {}
+            EnttForEach(
+                function(entity)
+                    table.insert(search_results, entity)
+                end
+            , table.unpack(filters))
+        end
+
+        if search_results then
+            for _, val in ipairs(search_results) do
+                Text(val)
+            end
+        end
+    End()
+
     Begin("Entity creator")
 
     _, render_component = Checkbox("Render component", render_component)
