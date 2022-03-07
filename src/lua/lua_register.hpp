@@ -12,9 +12,14 @@ extern "C" {
 
 namespace LuaRegister
 {
+    // Maximum number of variadic arguments in a lua function
     constexpr int MAX_VARIADIC_ARG_COUNT = 32;
+    // Length of statically allocate dstring buffer used to collect variadic
+    // string arguments
     constexpr int STRING_BUFFER_LENGTH = 256;
 
+    // Used when calling `Register` to indicate that all parameters including
+    // and after this parameter are variadic
     template<typename T>
     struct Variadic
     {
@@ -47,6 +52,8 @@ namespace LuaRegister
         }
     };
 
+    // Used when calling 'Register' to indicate that this parameter should be
+    // ignored. It will instead contain the stack index of this parameter
     struct Placeholder
     {
         lua_Integer stackIndex;
@@ -56,15 +63,14 @@ namespace LuaRegister
     // clang-format off
     template<typename> struct is_variadic: std::false_type {};
     template<typename T> struct is_variadic<Variadic<T>>: std::true_type {};
+    template<typename T, typename... Other> struct is_any: std::bool_constant<(std::is_same_v<T, Other> || ...)> {};
+    template<typename T, typename... Other> inline constexpr bool is_any_v = is_any<T, Other...>::value;
+    // Does not actually check for a T const*, but for a const T*
+    template<typename T> bool constexpr is_const_pointer_v = std::is_const_v<std::remove_pointer_t<T>>;
 
     // https://stackoverflow.com/questions/53945490/how-to-assert-that-a-constexpr-if-else-clause-never-happen
     template<class...>
     constexpr std::false_type always_false{};
-
-    template<typename T, typename... Other>
-    struct is_any: std::bool_constant<(std::is_same_v<T, Other> || ...)> {};
-    template<typename T, typename... Other>
-    inline constexpr bool is_any_v = is_any<T, Other...>::value;
 
     // Because some lua_toX are macros it cannot be used in the LuaGetFunc
     // specialization
@@ -73,6 +79,8 @@ namespace LuaRegister
     inline int luaToBoolean(lua_State* lua, int i) { return lua_toboolean(lua, i); }
     inline const char* luaToString(lua_State* lua, int i) { return lua_tostring(lua, i); }
 
+    // To be able to pass arguments of type T from lua to C++, this function and
+    // GetDefault must be specified for the type T
     template<typename T>
     constexpr auto LuaGetFunc = nullptr;
     template<> inline constexpr auto LuaGetFunc<int> = luaToInteger;
@@ -87,19 +95,6 @@ namespace LuaRegister
     template<> inline constexpr auto LuaGetFunc<const char*> = luaToString;
 
     template<typename T>
-    constexpr auto LuaSetFunc = nullptr;
-    template<> inline constexpr auto LuaSetFunc<int> = lua_pushinteger;
-    template<> inline constexpr auto LuaSetFunc<unsigned int> = lua_pushinteger;
-    template<> inline constexpr auto LuaSetFunc<long> = lua_pushinteger;
-    template<> inline constexpr auto LuaSetFunc<unsigned long> = lua_pushinteger;
-    template<> inline constexpr auto LuaSetFunc<long long> = lua_pushinteger;
-    template<> inline constexpr auto LuaSetFunc<unsigned long long> = lua_pushinteger;
-    template<> inline constexpr auto LuaSetFunc<float> = lua_pushnumber;
-    template<> inline constexpr auto LuaSetFunc<double> = lua_pushnumber;
-    template<> inline constexpr auto LuaSetFunc<bool> = lua_pushboolean;
-    template<> inline constexpr auto LuaSetFunc<const char*> = lua_pushstring;
-
-    template<typename T>
     constexpr auto GetDefault = 0;
     template<> inline constexpr auto GetDefault<int> = 0;
     template<> inline constexpr auto GetDefault<unsigned int> = 0;
@@ -111,10 +106,54 @@ namespace LuaRegister
     template<> inline constexpr auto GetDefault<double> = 0.0;
     template<> inline constexpr auto GetDefault<bool> = false;
     template<> inline constexpr auto GetDefault<const char*> = nullptr;
+
+    // To be able to return arguments of type T from C++ to lua, this function
+    // must be specified for the type T
+    template<typename T>
+    constexpr auto LuaSetFunc = nullptr;
+    template<> inline constexpr auto LuaSetFunc<int> = lua_pushinteger;
+    template<> inline constexpr auto LuaSetFunc<unsigned int> = lua_pushinteger;
+    template<> inline constexpr auto LuaSetFunc<long> = lua_pushinteger;
+    template<> inline constexpr auto LuaSetFunc<unsigned long> = lua_pushinteger;
+    template<> inline constexpr auto LuaSetFunc<long long> = lua_pushinteger;
+    template<> inline constexpr auto LuaSetFunc<unsigned long long> = lua_pushinteger;
+    template<> inline constexpr auto LuaSetFunc<float> = lua_pushnumber;
+    template<> inline constexpr auto LuaSetFunc<double> = lua_pushnumber;
+    template<> inline constexpr auto LuaSetFunc<bool> = lua_pushboolean;
+    template<> inline constexpr auto LuaSetFunc<const char*> = lua_pushstring;
     // clang-format on
 
+    /**
+     * @brief "Converts" the object at lua stack index \p stackIndex to a C++
+     * type.
+     *
+     * The type of the return value follows:
+     * - Any primitive type is converted to type T.
+     * - A <tt>const char*</tt> will return lua_tostring <b>without taking
+     *   ownership of the string</b>.
+     * - A pointer will return a <tt>std::array<T></tt>. If lua_istable return
+     *   true, then \p lua_len is used to determine how many times \p LuaGetFunc
+     *   will be called, otherwise only the first index will be set. The size of
+     *   the array is always 4 .
+     * - A \p Placeholder will return a \p Placeholder and nothing will be
+     *   parsed. @see Placeholder.
+     * - A \p lua_State* will simply return the \p lua parameter and nothing
+     *   will be parsed.
+     * - A \p Variadic will convert parameters from \p stackIndex until
+     *   \p lua_gettop is reached and return a \p Variadic<T>.
+     *
+     * @see LuaGetFunc
+     * @see GetDefault
+     * @see LuaSetFunc
+     *
+     * @tparam T The type to convert to. The type must have a LuaGetFunc and
+     * GetDefault specialization
+     * @param lua
+     * @param stackIndex
+     * @return auto See full description
+     */
     template<typename T>
-    auto GetVal(lua_State* lua, int& i)
+    auto GetParameter(lua_State* lua, int& stackIndex)
     {
         static_assert(!std::is_reference_v<T>);
 
@@ -122,9 +161,9 @@ namespace LuaRegister
         {
             auto var = Variadic<typename T::value_type>();
             // Eat the rest of the arguments. Nom nom nom
-            var.count = std::min(lua_gettop(lua) - i + 1, MAX_VARIADIC_ARG_COUNT);
-            for(int j = 0; i <= lua_gettop(lua); ++i, ++j)
-                var.arr.at(j) = LuaGetFunc<typename T::value_type>(lua, i);
+            var.count = std::min(lua_gettop(lua) - stackIndex + 1, MAX_VARIADIC_ARG_COUNT);
+            for(int j = 0; stackIndex <= lua_gettop(lua); ++stackIndex, ++j)
+                var.arr.at(j) = LuaGetFunc<typename T::value_type>(lua, stackIndex);
             return var;
         }
         else if constexpr(std::is_same_v<T, lua_State*>)
@@ -133,18 +172,18 @@ namespace LuaRegister
         }
         else if constexpr(std::is_same_v<T, Placeholder>)
         {
-            return Placeholder{.stackIndex = i++};
+            return Placeholder{.stackIndex = stackIndex++};
         }
         else if constexpr(std::is_pointer_v<T> && !std::is_same_v<T, const char*>)
         {
             using NakedT = std::remove_const_t<std::remove_pointer_t<T>>;
             auto arr = std::array<NakedT, 4>{GetDefault<NakedT>};
-            if(i > lua_gettop(lua))
+            if(stackIndex > lua_gettop(lua))
                 return arr;
 
-            if(lua_istable(lua, i))
+            if(lua_istable(lua, stackIndex))
             {
-                int count = luaL_len(lua, i);
+                int count = luaL_len(lua, stackIndex);
                 if(count > 4)
                 {
                     // Error message at some point
@@ -153,15 +192,15 @@ namespace LuaRegister
 
                 for(int j = 1; j <= count; j++)
                 {
-                    lua_geti(lua, i, j);
+                    lua_geti(lua, stackIndex, j);
                     arr[j - 1] = LuaGetFunc<NakedT>(lua, -1);
                     lua_pop(lua, 1);
                 }
             }
             else
-                arr[0] = LuaGetFunc<NakedT>(lua, i);
+                arr[0] = LuaGetFunc<NakedT>(lua, stackIndex);
 
-            i++;
+            stackIndex++;
 
             return arr;
         }
@@ -169,26 +208,38 @@ namespace LuaRegister
         {
             // If there is some error here about LuaGetFunc it is because it isn't
             // specialized for type T
-            return i <= lua_gettop(lua) ? (T)LuaGetFunc<T>(lua, i++) : GetDefault<T>;
+            return stackIndex <= lua_gettop(lua) ? (T)LuaGetFunc<T>(lua, stackIndex++)
+                                                 : GetDefault<T>;
         }
     }
 
-    template<typename Arg>
-    auto GetVals(lua_State* state, int& index)
-    {
-        return std::make_tuple(GetVal<Arg>(state, index));
-    }
-
-    // Use `requires` to disambiguate this from the GetVals above
+    /**
+     * @brief Given a lua state with X parameters on the stack, convert
+     * parameters to the types of \p Arg and \p Args
+     *
+     * @tparam Arg
+     * @tparam Args
+     * @param state
+     * @param stackIndex
+     * @return std::tuple<Arg, Args...> @see GetParameter for possible types of
+     * \p Arg and \p Args
+     */
     template<typename Arg, typename... Args>
-    requires(sizeof...(Args) > 0) auto GetVals(lua_State* state, int& index)
+    auto GetParameters(lua_State* state, int& stackIndex)
     {
-        // `current` must be set first to preserve the order of fetching from
-        // the stack. Argument order of execution is undefined, so local
-        // variables are required
-        auto current = std::make_tuple(GetVal<Arg>(state, index));
-        auto rest = GetVals<Args...>(state, index);
-        return std::tuple_cat(current, rest);
+        if constexpr(sizeof...(Args) > 0)
+        {
+            // `current` must be set first to preserve the order of fetching from
+            // the stack. Argument order of execution is undefined, so local
+            // variables are required
+            auto current = std::make_tuple(GetParameter<Arg>(state, stackIndex));
+            auto rest = GetParameters<Args...>(state, stackIndex);
+            return std::tuple_cat(current, rest);
+        }
+        else
+        {
+            return std::make_tuple(GetParameter<Arg>(state, stackIndex));
+        }
     }
 
     template<size_t Index, typename... Types, typename... TupTypes>
@@ -197,22 +248,37 @@ namespace LuaRegister
         return 0;
     }
 
-    // Does not actually check for a T const*, but for a const T*
-    template<typename T>
-    bool constexpr is_const_pointer_v = std::is_const_v<std::remove_pointer_t<T>>;
-
-    // Iterates through a tuple and returns values to lua. Docstring will be
-    // improved later.
-    template<size_t Index, typename... Types, typename... TupTypes>
-    requires(Index < sizeof...(Types)) int ReturnVals(
+    /**
+     * @brief Given a lua stack index, a paramter pack of types, and a tuple,
+     * returns values from \p vals that should be returned to lua based on the
+     * types of \p Types
+     *
+     * For instance:
+     * \code{.cpp}
+     * auto vals = std::make_tuple(1, 2, "Hello", Vector2{ 1.0f, 2.0f }, 3);
+     * ReturnVals<int, int*, const char*, Vector2, const int*>(lua, vals);
+     * \endcode
+     *
+     * Will push the int \p 2, the string \p Hello and type \p Vector2
+     *
+     * Note that \p 3 is not pushed since it is a const int*, and should not be
+     * returned to lua since it will not be modified by C++
+     *
+     * @tparam StackIndex Current stack index. Since this is a recursive
+     * function it will probably only be called with the value 0
+     * @tparam Types
+     * @tparam TupTypes
+     * @param vals
+     */
+    template<size_t StackIndex, typename... Types, typename... TupTypes>
+    requires(StackIndex < sizeof...(Types)) int ReturnVals(
         lua_State* lua,
         const std::tuple<TupTypes...>& vals)
     {
-        using T = std::tuple_element_t<Index, std::tuple<Types...>>;
-        // using U = std::tuple_element_t<Index, std::tuple<TupTypes...>>;
+        using T = std::tuple_element_t<StackIndex, std::tuple<Types...>>;
         if constexpr(!std::is_pointer_v<T> || is_const_pointer_v<T>)
         {
-            return 0 + ReturnVals<Index + 1, Types...>(lua, vals);
+            return 0 + ReturnVals<StackIndex + 1, Types...>(lua, vals);
         }
         else
         {
@@ -220,61 +286,62 @@ namespace LuaRegister
             int retLength = 0;
             if constexpr(std::is_same_v<U, float>)
             {
-                if(lua_istable(lua, Index + 1))
+                if(lua_istable(lua, StackIndex + 1))
                 {
-                    int len = luaL_len(lua, Index + 1);
+                    int len = luaL_len(lua, StackIndex + 1);
                     lua_createtable(lua, len, 0);
                     for(int i = 0; i < len; ++i)
                     {
                         lua_pushnumber(lua, i + 1);
-                        auto val = std::get<Index>(vals).at(i);
+                        auto val = std::get<StackIndex>(vals).at(i);
                         lua_pushnumber(lua, val);
                         lua_settable(lua, -3);
                     }
                 }
                 else
                 {
-                    lua_pushnumber(lua, std::get<Index>(vals).at(0));
+                    lua_pushnumber(lua, std::get<StackIndex>(vals).at(0));
                 }
                 retLength = 1;
             }
             else if constexpr(std::is_same_v<U, bool>)
             {
-                if(lua_istable(lua, Index + 1))
+                if(lua_istable(lua, StackIndex + 1))
                 {
-                    int len = luaL_len(lua, Index + 1);
+                    int len = luaL_len(lua, StackIndex + 1);
                     lua_createtable(lua, len, 0);
                     for(int i = 0; i < len; ++i)
                     {
                         lua_pushnumber(lua, i + 1);
-                        auto val = std::get<Index>(vals).at(i);
+                        auto val = std::get<StackIndex>(vals).at(i);
                         lua_pushboolean(lua, val);
                         lua_settable(lua, -3);
                     }
                 }
                 else
                 {
-                    lua_pushboolean(lua, std::get<Index>(vals).at(0));
+                    lua_pushboolean(lua, std::get<StackIndex>(vals).at(0));
                 }
                 retLength = 1;
             }
-            else if constexpr(is_any_v<U, int, unsigned int, long, unsigned long, long long, unsigned long long>)
+            else if constexpr(
+                is_any_v<U, int, unsigned int, long, unsigned long, long long, unsigned long long>)
             {
-                if(lua_istable(lua, Index + 1))
+                if(lua_istable(lua, StackIndex + 1))
                 {
-                    int len = luaL_len(lua, Index + 1);
+                    int len = luaL_len(lua, StackIndex + 1);
                     lua_createtable(lua, len, 0);
                     for(int i = 0; i < len; ++i)
                     {
                         lua_pushnumber(lua, i + 1);
-                        auto val = std::get<Index>(vals).at(i);
+                        auto val = std::get<StackIndex>(vals).at(i);
                         lua_pushinteger(lua, val);
                         lua_settable(lua, -3);
                     }
                 }
                 else
                 {
-                    lua_pushinteger(lua, std::get<Index>(vals).at(0));
+                    lua_pushinteger(lua, std::get<StackIndex>(vals).at(0));
                 }
                 retLength = 1;
             }
@@ -282,54 +349,75 @@ namespace LuaRegister
             else if constexpr(!is_any_v<T, lua_State*, Placeholder>)
                 static_assert(always_false<T>);
 
-            return retLength + ReturnVals<Index + 1, Types...>(lua, vals);
+            return retLength + ReturnVals<StackIndex + 1, Types...>(lua, vals);
         }
     }
 
-    // Converts from a tuple that owns all its elements to a tuple where some
-    // elements might be pointers. For instance from
-    // std::tuple<int, float, const char*> tup
-    // to
-    // <int, float* const char*>
-    // where the float* will be a pointer to std::get<1>(tup)
-    template<size_t Index, typename... Types, typename... TupTypes>
+    /**
+     * @brief Given a tuple that owns all of its values i.e. containing no
+     * pointers or references, returns a tuple which can contain pointers to the
+     * elements of \p tup depending on \p TargetTypes
+     *
+     * For instance:
+     * \code {.cpp}
+     * auto vals = std::make_tuple(123, "Hello", 1.0f, 3);
+     * auto converted = Convert<int*, const char* float, int>(vals);
+     * \endcode
+     * Will create a tuple where index 0 points to vals[0] and index 1 points to
+     * vals[1]. Index 2 and 3 will be copied from vals
+     *
+     * @tparam StackIndex Current stack index. Since this is a recursive
+     * function it will probably only be called with the value 0
+     * @tparam TargetTypes
+     * @tparam TupTypes
+     * @param tup
+     * @return auto
+     */
+    template<size_t StackIndex, typename... TargetTypes, typename... TupTypes>
     auto Convert(const std::tuple<TupTypes...>& tup)
     {
-        using T = std::tuple_element_t<Index, std::tuple<Types...>>;
+        using T = std::tuple_element_t<StackIndex, std::tuple<TargetTypes...>>;
         if constexpr(std::is_same_v<T, lua_State*>)
         {
-            auto lhs = std::make_tuple(std::get<Index>(tup));
-            auto rhs = Convert<Index + 1, Types...>(tup);
+            auto lhs = std::make_tuple(std::get<StackIndex>(tup));
+            auto rhs = Convert<StackIndex + 1, TargetTypes...>(tup);
             return std::tuple_cat(lhs, rhs);
         }
         if constexpr(std::is_pointer_v<T> && !std::is_same_v<const char*, T>)
         {
-            auto lhs = std::make_tuple((T)&std::get<Index>(tup));
-            if constexpr(Index + 1 == sizeof...(Types))
+            auto lhs = std::make_tuple((T)&std::get<StackIndex>(tup));
+            if constexpr(StackIndex + 1 == sizeof...(TargetTypes))
             {
                 return lhs;
             }
             else
             {
-                auto rhs = Convert<Index + 1, Types...>(tup);
+                auto rhs = Convert<StackIndex + 1, TargetTypes...>(tup);
                 return std::tuple_cat(lhs, rhs);
             }
         }
         else
         {
-            auto lhs = std::make_tuple(std::get<Index>(tup));
-            if constexpr(Index + 1 == sizeof...(Types))
+            auto lhs = std::make_tuple(std::get<StackIndex>(tup));
+            if constexpr(StackIndex + 1 == sizeof...(TargetTypes))
             {
                 return lhs;
             }
             else
             {
-                auto rhs = Convert<Index + 1, Types...>(tup);
+                auto rhs = Convert<StackIndex + 1, TargetTypes...>(tup);
                 return std::tuple_cat(lhs, rhs);
             }
         }
     }
 
+    /**
+     * @brief Specialization of LuaWrapper for a function which takes no
+     * parameters
+     *
+     * @see LuaWrapper for detailed comments
+     * @see Register for the function that calls this function
+     */
     template<typename R>
     int LuaWrapper(lua_State* lua)
     {
@@ -349,20 +437,29 @@ namespace LuaRegister
         return retCount;
     }
 
-    // A lua function which takes a function pointer R (*)(Args) as an upvalue,
-    // using R and the Args it is possible to fetch the correct values from the
-    // lua stack and call the function pointer stored in upvalue index 1
+    /**
+     * @brief A lua function which takes a function pointer R (*)(Args) as an
+     * upvalue
+     *
+     * Using \p R and \p Args it is possible to fetch the correct values from
+     * the lua stack and call the function pointer stored in upvalue index 1
+     *
+     * @see Register for the function that calls this function
+     *
+     * @tparam R
+     * @tparam Args
+     */
     template<typename R, typename... Args>
     requires(sizeof...(Args) > 0) int LuaWrapper(lua_State* lua)
     {
-        // `arg` needs to be a local variable so it can be passed to GetVals -
+        // `arg` needs to be a local variable so it can be passed to GetParameters -
         // which takes a reference
         // Keeps track of which stack index to fetch the next parameter from
         int arg = 1;
         // If a function takes a constant reference one of the types in Args
         // will be a const reference, but the tuple must own the value so the
         // parameter can be passed as a reference
-        auto tup = GetVals<std::remove_cvref_t<Args>...>(lua, arg);
+        auto tup = GetParameters<std::remove_cvref_t<Args>...>(lua, arg);
         // std::apply will not automatically convert owned types to pointers, so
         // a function that takes a float* must be called with a
         // `std::tuple<float*>` and not `std::tuple<float>`. Convert performs
@@ -395,8 +492,34 @@ namespace LuaRegister
         return retCount;
     }
 
-    // Register any function with lua without having to manually manipulate the
-    // stack to fetch parameters.
+    /**
+     * @brief Register any function as a lua function where the lua parameters
+     * should be of types <tt>Args</tt>. All parameters will be taken from the
+     * lua stack and \p f will be called if all parameters could be successfully
+     * fetched
+     *
+     * C++ lambdas can be registered as such (note the unary plus +):
+     * \code {.cpp}
+     * Register(lua, "SomeFunc", +[]() { });
+     * \endcode
+     *
+     * C++ functions with overloads need to be cast to their correct overload as
+     * such:
+     * \code {.cpp}
+     * void SomeFunc(int a);
+     * int SomeFunc(int a, float b);
+     *
+     * Register(lua, "SomeFunc", static_cast<void (*)(int)>(SomeFunc));
+     * Register(lua, "SomeFuncAdvanced", static_cast<int (*)(int, float)>(SomeFunc));
+     * \endcode
+     *
+     * @tparam R return type of the function to register. Should be able to be
+     * auto-deduced
+     * @tparam Args parameter types of the function to register. Should be able to be auto-deduced
+     * @param lua
+     * @param name name to register in lua
+     * @param f
+     */
     template<typename R, typename... Args>
     void Register(lua_State* lua, const char* name, R (*f)(Args...))
     {
@@ -407,7 +530,13 @@ namespace LuaRegister
         lua_setglobal(lua, name);
     }
 
-    // Same as LuaWrapper but with an additional upvalue of type T
+    /**
+     * @brief Specialization of LuaWrapperMember for a function which takes no
+     * parameters.
+     *
+     * @see LuaWrapper for detailed comments
+     * @see RegisterMember for the function that calls this function
+     */
     template<typename T, typename R>
     int LuaWrapperMember(lua_State* lua)
     {
@@ -428,12 +557,17 @@ namespace LuaRegister
         return retCount;
     }
 
-    // Same as LuaWrapper but with an additional upvalue of type T
+    /**
+     * @brief Same as LuaWrapper but with an additional upvalue of type \p T
+     *
+     * @see LuaWrapper for detailed comments
+     * @see RegisterMember for the function that calls this function
+     */
     template<typename T, typename R, typename... Args>
     requires(sizeof...(Args) > 0) int LuaWrapperMember(lua_State* lua)
     {
         int arg = 1;
-        auto tup = GetVals<std::remove_cvref_t<Args>...>(lua, arg);
+        auto tup = GetParameters<std::remove_cvref_t<Args>...>(lua, arg);
         auto tup2 = Convert<0, Args...>(tup);
 
         int retCount = 0;
@@ -455,7 +589,20 @@ namespace LuaRegister
         return retCount;
     }
 
-    // Same as Register but with an additional upvalue of type T
+    /**
+     * @brief Same as Register but with an additional upvalue of type T. Can be
+     * used to register functions that need some sort of context
+     *
+     * @see Register for more detailed comments
+     *
+     * @tparam T
+     * @tparam R
+     * @tparam Args
+     * @param lua
+     * @param name
+     * @param instance
+     * @param f
+     */
     template<typename T, typename R, typename... Args>
     void RegisterMember(lua_State* lua, const char* name, T instance, R (*f)(T, Args...))
     {
