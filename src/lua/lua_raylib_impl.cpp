@@ -103,7 +103,7 @@ namespace LuaRegister
         auto position = LuaGetFunc<Vector3>(lua, index);
 
         lua_getfield(lua, i, "direction");
-        auto direction = LuaGetFunc<Vector3>(lua, index);
+        auto direction = LuaGetFunc<Vector3>(lua, index + 1);
 
         lua_pop(lua, 2);
 
