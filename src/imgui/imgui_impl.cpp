@@ -345,7 +345,10 @@ void RaylibImGui::Begin()
 
     // Avoids having to pass in delta time
     double currentTime = GetTime();
-    io.DeltaTime = lastTime > 0.0 ? (float)(currentTime - lastTime) : (float)(1.0f / 60.0f);
+    double delta = currentTime - lastTime;
+    if(delta < 0.0f)
+        delta = 1.0f / 60.0f;
+    io.DeltaTime = lastTime > 0.0 ? (float)(delta) : (float)(1.0f / 60.0f);
     lastTime = currentTime;
 
     ImGui::NewFrame();
