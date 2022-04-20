@@ -1,6 +1,8 @@
 #include "assets.hpp"
 #include <string>
 
+#include <config.h>
+
 struct AssetPair
 {
     const char* name;
@@ -29,7 +31,16 @@ void LoadAssets()
     for(int i = 0; i < (int)Asset::Last; ++i)
     {
         auto path = AssetPath(assets[i].path);
-        loadedAssets[i] = LoadModel(path.data());
+        auto model = LoadModel(path.data());
+        for(int i = 0; i < model.materialCount; ++i) {
+            for(int j = 0; j < MAX_MATERIAL_MAPS; ++j) {
+                if(model.materials[i].maps[j].texture.id != 0) {
+                    SetTextureFilter(model.materials[i].maps[j].texture, TEXTURE_FILTER_ANISOTROPIC_16X);
+                    GenTextureMipmaps(&model.materials[i].maps[j].texture);
+                }
+            }
+        }
+        loadedAssets[i] = model;
     }
 }
 
