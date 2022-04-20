@@ -79,6 +79,7 @@ namespace LuaRegister
     template<> inline constexpr auto LuaGetFunc<unsigned int> = luaToInteger;
     template<> inline constexpr auto LuaGetFunc<long> = luaToInteger;
     template<> inline constexpr auto LuaGetFunc<unsigned long> = luaToInteger;
+    template<> inline constexpr auto LuaGetFunc<unsigned long long> = luaToInteger;
     template<> inline constexpr auto LuaGetFunc<long long> = luaToInteger;
     template<> inline constexpr auto LuaGetFunc<float> = luaToNumber;
     template<> inline constexpr auto LuaGetFunc<double> = luaToNumber;
@@ -91,6 +92,7 @@ namespace LuaRegister
     template<> inline constexpr auto LuaSetFunc<unsigned int> = lua_pushinteger;
     template<> inline constexpr auto LuaSetFunc<long> = lua_pushinteger;
     template<> inline constexpr auto LuaSetFunc<unsigned long> = lua_pushinteger;
+    template<> inline constexpr auto LuaSetFunc<unsigned long long> = lua_pushinteger;
     template<> inline constexpr auto LuaSetFunc<long long> = lua_pushinteger;
     template<> inline constexpr auto LuaSetFunc<float> = lua_pushnumber;
     template<> inline constexpr auto LuaSetFunc<double> = lua_pushnumber;
@@ -103,6 +105,7 @@ namespace LuaRegister
     template<> inline constexpr auto GetDefault<unsigned int> = 0;
     template<> inline constexpr auto GetDefault<long> = 0;
     template<> inline constexpr auto GetDefault<unsigned long> = 0;
+    template<> inline constexpr auto GetDefault<unsigned long long> = 0;
     template<> inline constexpr auto GetDefault<long long> = 0;
     template<> inline constexpr auto GetDefault<float> = 0.0f;
     template<> inline constexpr auto GetDefault<double> = 0.0;
@@ -255,7 +258,7 @@ namespace LuaRegister
                 }
                 retLength = 1;
             }
-            else if constexpr(is_any_v<U, int, long unsigned int>)
+            else if constexpr(is_any_v<U, int, long unsigned int, unsigned long long>)
             {
                 if(lua_istable(lua, Index + 1))
                 {
