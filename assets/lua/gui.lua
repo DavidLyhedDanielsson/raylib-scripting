@@ -19,31 +19,31 @@ end
 
 function imgui()
     Begin("Entity search")
-        _, renderComp = Checkbox("Render", renderComp or false)
-        SameLine()
-        _, transformComp = Checkbox("Transform", transformComp or false)
-        SameLine()
-        _, velocityComp = Checkbox("Velocity", velocityComp or false)
+    _, renderComp = Checkbox("Render", renderComp or false)
+    SameLine()
+    _, transformComp = Checkbox("Transform", transformComp or false)
+    SameLine()
+    _, velocityComp = Checkbox("Velocity", velocityComp or false)
 
-        if Button("Search") then
-            local filters = {}
-            if renderComp then table.insert(filters, "render") end
-            if transformComp then table.insert(filters, "transform") end
-            if velocityComp then table.insert(filters, "velocity") end
+    if Button("Search") then
+        local filters = {}
+        if renderComp then table.insert(filters, "render") end
+        if transformComp then table.insert(filters, "transform") end
+        if velocityComp then table.insert(filters, "velocity") end
 
-            search_results = {}
-            EnttForEach(
-                function(entity)
-                    table.insert(search_results, entity)
-                end
-            , table.unpack(filters))
-        end
-
-        if search_results then
-            for _, val in ipairs(search_results) do
-                Text(val)
+        search_results = {}
+        EnttForEach(
+            function(entity)
+                table.insert(search_results, entity)
             end
+            , table.unpack(filters))
+    end
+
+    if search_results then
+        for _, val in ipairs(search_results) do
+            Text(val)
         end
+    end
     End()
 
     Begin("Entity creator")
@@ -58,9 +58,9 @@ function imgui()
                 end
             end
             if new_selected ~= -1 then
-            selected_mesh = new_selected 
+                selected_mesh = new_selected
             end
-            EndCombo() 
+            EndCombo()
         end
     end
     _, transform_component = Checkbox("Transform component", transform_component)
@@ -83,11 +83,9 @@ function imgui()
 
     if IsMouseClicked(0) then
         local ray = GetMouseRay(GetMousePos())
-        print(ray.position.x, ", ", ray.position.y, ", ", ray.position.z)
-        print(ray.direction.x, ", ", ray.direction.y, ", ", ray.direction.z)
         if GetRayCollision(ray) then
             print("Hit")
-        else 
+        else
             print("No hit")
         end
     end
