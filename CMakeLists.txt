@@ -31,4 +31,10 @@ include_directories(SYSTEM ${LIB_DIR}/raylib/src ${LIB_DIR}/lua ${LIB_DIR}/imgui
 
 add_executable(raylib_test ${SRCS} ${LUA_SRC} ${IMGUI_SRC})
 
-set_source_files_properties(${SRCS} PROPERTIES COMPILE_FLAGS "-Wall -Wextra -Wpedantic")
+# Don't set global compile options, there are warnings in the dependencies that
+# won't be fixed
+if (MSVC)
+    set_source_files_properties(${SRCS} PROPERTIES COMPILE_FLAGS "/W4")
+else()
+    set_source_files_properties(${SRCS} PROPERTIES COMPILE_FLAGS "-Wall -Wextra -Wpedantic")
+endif()
