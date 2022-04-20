@@ -201,6 +201,7 @@ int main()
     const int screenHeight = 450;
 
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
+    SetConfigFlags(FLAG_MSAA_4X_HINT);
     InitWindow(screenWidth, screenHeight, "Raylib test");
 
     camera.position = {50.0f, 50.0f, 50.0f};
