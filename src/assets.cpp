@@ -32,10 +32,15 @@ void LoadAssets()
     {
         auto path = AssetPath(assets[i].path);
         auto model = LoadModel(path.data());
-        for(int i = 0; i < model.materialCount; ++i) {
-            for(int j = 0; j < MAX_MATERIAL_MAPS; ++j) {
-                if(model.materials[i].maps[j].texture.id != 0) {
-                    SetTextureFilter(model.materials[i].maps[j].texture, TEXTURE_FILTER_ANISOTROPIC_16X);
+        for(int i = 0; i < model.materialCount; ++i)
+        {
+            for(int j = 0; j < MAX_MATERIAL_MAPS; ++j)
+            {
+                if(model.materials[i].maps[j].texture.id != 0)
+                {
+                    SetTextureFilter(
+                        model.materials[i].maps[j].texture,
+                        TEXTURE_FILTER_ANISOTROPIC_16X);
                     GenTextureMipmaps(&model.materials[i].maps[j].texture);
                 }
             }

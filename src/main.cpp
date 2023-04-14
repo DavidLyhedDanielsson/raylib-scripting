@@ -22,7 +22,7 @@ extern "C" {
 #include "lua/lua_imgui_impl.hpp"
 #include "lua/lua_raylib_impl.hpp"
 #include "world.hpp"
-
+// #include <Windows.h>
 #ifdef PLATFORM_WEB
     #include <emscripten/emscripten.h>
 #endif
@@ -197,8 +197,8 @@ static int lua_print(lua_State* state)
 
 int main()
 {
-    const int screenWidth = 800;
-    const int screenHeight = 450;
+    const int screenWidth = 1280;
+    const int screenHeight = 720;
 
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     SetConfigFlags(FLAG_MSAA_4X_HINT);

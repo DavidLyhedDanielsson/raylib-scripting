@@ -4,6 +4,7 @@ project(raylib_test VERSION 0.1.0)
 # Used mostly for convenience things like std::numbers::pi and std::make_array
 set(CMAKE_CXX_STANDARD 20)
 set(OpenGL_GL_PREFERENCE GLVND)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 add_definitions(-DIMGUI_DISABLE_OBSOLETE_FUNCTIONS)
 
