@@ -1,12 +1,13 @@
 #include <array>
 #include <chrono>
 #include <cmath>
+#include <external/raylib.hpp>
 #include <iostream>
 #include <math.h>
 #include <numbers>
-#include <raylib.h>
 #include <stdio.h>
 #include <vector>
+
 extern "C" {
 #include <lauxlib.h>
 #include <lua.h>
@@ -116,7 +117,7 @@ void main_loop()
     }
     // Console output
     ImGui::BeginChild("Output");
-    for(int i = 0; i < history.size(); ++i)
+    for(uint32_t i = 0; i < history.size(); ++i)
     {
         ImGui::Text(history[i].c_str(), i);
     }

@@ -4,7 +4,7 @@ project(raylib_test VERSION 0.1.0)
 # Used mostly for convenience things like std::numbers::pi and std::make_array
 set(CMAKE_CXX_STANDARD 20)
 set(OpenGL_GL_PREFERENCE GLVND)
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON) # clangd wants this, it is not mandatory
 
 add_definitions(-DIMGUI_DISABLE_OBSOLETE_FUNCTIONS)
 
@@ -19,23 +19,64 @@ else()
   add_compile_definitions(DASSET_ROOT=\"${CMAKE_CURRENT_SOURCE_DIR}/assets\")
 endif ()
 
+## Libraries
+# Disable warnings for all library source files
+get_directory_property(PROJECT_COMPILE_OPTIONS COMPILE_OPTIONS)
+if (MSVC)
+    add_compile_options("/w")
+else()
+    add_compile_options("-Wno-everything")
+endif()
+
 set(LIB_DIR ${CMAKE_CURRENT_SOURCE_DIR}/libs)
 
-file(GLOB SRCS src/*.cpp src/lua/*.cpp src/imgui/*.cpp)
+file(GLOB IMGUI_SRC ${LIB_DIR}/imgui/*.cpp ${LIB_DIR}/imgui/backends/imgui_impl_opengl3.cpp)
 file(GLOB LUA_SRC ${LIB_DIR}/lua/*.c)
 list(REMOVE_ITEM LUA_SRC ${LIB_DIR}/lua/lua.c ${LIB_DIR}/lua/onelua.c)
-file(GLOB IMGUI_SRC ${LIB_DIR}/imgui/*.cpp ${LIB_DIR}/imgui/backends/imgui_impl_opengl3.cpp)
-
 add_subdirectory(${LIB_DIR}/raylib)
-link_libraries(raylib)
-include_directories(SYSTEM ${LIB_DIR}/raylib/src ${LIB_DIR}/lua ${LIB_DIR}/imgui ${LIB_DIR}/imgui/backends ${LIB_DIR}/entt/src)
 
-add_executable(raylib_test ${SRCS} ${LUA_SRC} ${IMGUI_SRC})
-
-# Don't set global compile options, there are warnings in the dependencies that
-# won't be fixed
+# Restore warnings and include source files belonging to this project
 if (MSVC)
-    set_source_files_properties(${SRCS} PROPERTIES COMPILE_FLAGS "/W4")
+    add_compile_options("/W4")
 else()
-    set_source_files_properties(${SRCS} PROPERTIES COMPILE_FLAGS "-Wall -Wextra -Wpedantic")
+    add_compile_options("-Wall -Wextra -Wpedantic")
 endif()
+
+## Executable
+set(SRC
+    assets.cpp assets.hpp
+    camera.cpp camera.hpp
+    main.cpp
+    world.cpp world.hpp
+    external/raylib.hpp
+    entity/render.hpp
+    entity/transform.hpp
+    entity/velocity.hpp
+    imgui/imgui_impl.cpp imgui/imgui_impl.hpp
+    imgui/imgui_internal.cpp imgui/imgui_internal.hpp
+    lua/lua_entt_impl.cpp lua/lua_entt_impl.hpp
+    lua/lua_imgui_impl.cpp lua/lua_imgui_impl.hpp
+    lua/lua_raylib_impl.cpp lua/lua_raylib_impl.hpp
+    lua/lua_register.hpp
+)
+list(TRANSFORM SRC PREPEND ${CMAKE_CURRENT_SOURCE_DIR}/src/)
+
+add_executable(raylib_test
+    ${SRC}
+    ${CUSTOM_IMGUI_SRC}
+    ${LUA_SRC}
+    ${IMGUI_SRC}
+)
+target_link_libraries(raylib_test PRIVATE
+    raylib
+)
+target_include_directories(raylib_test SYSTEM PRIVATE
+    ${LIB_DIR}/raylib/src
+    ${LIB_DIR}/lua
+    ${LIB_DIR}/imgui
+    ${LIB_DIR}/imgui/backends
+    ${LIB_DIR}/entt/src
+)
+target_include_directories(raylib_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)

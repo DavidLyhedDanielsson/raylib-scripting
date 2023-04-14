@@ -5,8 +5,9 @@
 #include "entity/velocity.hpp"
 #include <algorithm>
 #include <array>
+#include <external/raylib.hpp>
 #include <imgui.h>
-#include <raylib.h>
+
 
 struct WorldData
 {
@@ -61,7 +62,7 @@ namespace World
 
     void DrawImgui()
     {
-        static int selectedComponent = 0;
+        static uint32_t selectedComponent = 0;
         int i = 0;
 
         ImGui::Begin("Entities");
@@ -84,7 +85,7 @@ namespace World
                 {
                     if(ImGui::BeginCombo("##addcomponent", "Add component"))
                     {
-                        for(auto i = 0; i < entityComponents.size(); ++i)
+                        for(uint32_t i = 0; i < entityComponents.size(); ++i)
                         {
                             if(!entityComponents[i]
                                && ImGui::Selectable(ComponentString[i], i == selectedComponent))

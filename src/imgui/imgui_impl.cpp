@@ -10,7 +10,7 @@
  */
 
 #include "imgui_impl.hpp"
-#include <raylib.h>
+#include <external/raylib.hpp>
 
 #include <algorithm>
 #include <array>
@@ -263,7 +263,7 @@ void RaylibImGui::Begin()
 {
     ImGuiIO& io = ImGui::GetIO();
 
-    for(int i = 0; i < WATCHED_KEYS.size(); ++i)
+    for(uint32_t i = 0; i < WATCHED_KEYS.size(); ++i)
     {
         auto key = WATCHED_KEYS[i];
 

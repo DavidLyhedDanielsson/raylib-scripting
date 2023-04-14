@@ -433,10 +433,11 @@ namespace LuaImGui
         LuaImguiQuickRegister(GetClipboardText);
         LuaImguiQuickRegister(SetClipboardText);
 
-        LuaImguiQuickRegister(LoadIniSettingsFromDisk);
-        LuaImguiQuickRegister(LoadIniSettingsFromMemory);
-        LuaImguiQuickRegister(SaveIniSettingsToDisk);
-        LuaImguiQuickRegister(SaveIniSettingsToMemory);
+        // TODO: These should work!
+        // LuaImguiQuickRegister(LoadIniSettingsFromDisk);
+        // LuaImguiQuickRegister(LoadIniSettingsFromMemory);
+        // LuaImguiQuickRegister(SaveIniSettingsToDisk);
+        // LuaImguiQuickRegister(SaveIniSettingsToMemory);
 
         // And that's everything
     }

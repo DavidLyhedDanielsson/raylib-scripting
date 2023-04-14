@@ -4,7 +4,7 @@
 #include "../world.hpp"
 #include "lua_register.hpp"
 #include <entt/entt.hpp>
-#include <raylib.h>
+#include <external/raylib.hpp>
 
 #include "../entity/render.hpp"
 #include "../entity/transform.hpp"

@@ -1,3 +1,3 @@
 #include "camera.hpp"
 
-Camera camera = {0};
+Camera camera = {};

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <array>
-#include <raylib.h>
+#include <external/raylib.hpp>
 
 // Assets come from https://quaternius.com/. Thanks Quaternius!
 enum class Asset : int

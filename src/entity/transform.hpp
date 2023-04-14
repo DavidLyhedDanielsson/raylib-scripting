@@ -1,4 +1,4 @@
-#include <raymath.h>
+#include <external/raylib.hpp>
 
 namespace Component
 {

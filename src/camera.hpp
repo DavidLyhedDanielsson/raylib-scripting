@@ -1,5 +1,5 @@
 #pragma once
 
-#include <raylib.h>
+#include <external/raylib.hpp>
 
 extern Camera camera;
