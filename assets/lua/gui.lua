@@ -84,9 +84,9 @@ function imgui()
     if IsMouseClicked(0) then
         local ray = GetMouseRay(GetMousePos())
         if GetRayCollision(ray) then
-            print("Hit")
+            -- print("Hit")
         else
-            print("No hit")
+            -- print("No hit")
         end
     end
 end
