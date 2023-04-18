@@ -8,6 +8,10 @@
 #include <external/raylib.hpp>
 #include <imgui.h>
 
+#include <imgui/imgui_entity/entity_reflection.hpp>
+#include <imgui/imgui_entity/imgui_render.hpp>
+#include <imgui/imgui_entity/imgui_transform.hpp>
+#include <imgui/imgui_entity/imgui_velocity.hpp>
 
 struct WorldData
 {
@@ -63,121 +67,58 @@ namespace World
     void DrawImgui()
     {
         static uint32_t selectedComponent = 0;
-        int i = 0;
+
+        auto& registry = *world.registry;
 
         ImGui::Begin("Entities");
-        auto printEntity = [&i](const entt::entity entity) {
-            ++i;
-            ImGui::PushID(i);
-            if(ImGui::TreeNode("Entity"))
+        auto printEntity = [&](const entt::entity entity) {
+            assert((ENTT_ID_TYPE)entity <= std::numeric_limits<uint32_t>::max());
+            ImGui::PushID((int32_t)entity);
+            if(ImGui::TreeNode("Entity", "Entity %i", entity))
             {
-                ::std::array<void*, (int)Component::Component::LAST> entityComponents = {};
-                // helper to reduce typing and potential copy-paste errors
-#define SetComponent(T) entityComponents[(int)Component::T] = world.registry->try_get<T>(entity)
+                bool hasComponents = true;
+                EntityReflection::ModifyEntityOrElse(registry, entity, [&]() {
+                    ImGui::Text("No components in this entity");
+                    hasComponents = false;
+                });
 
-                SetComponent(Component::Render);
-                SetComponent(Component::Transform);
-                SetComponent(Component::Velocity);
+                bool anyMissing = EntityReflection::IsMissing<ImguiRender>(registry, entity)
+                                  || EntityReflection::IsMissing<ImguiTransform>(registry, entity)
+                                  || EntityReflection::IsMissing<ImguiVelocity>(registry, entity);
 
-                // Display a list of components that the entity does not already have
-                if(std::find(entityComponents.begin(), entityComponents.end(), nullptr)
-                   != entityComponents.end())
+                if(anyMissing)
                 {
                     if(ImGui::BeginCombo("##addcomponent", "Add component"))
                     {
-                        for(uint32_t i = 0; i < entityComponents.size(); ++i)
-                        {
-                            if(!entityComponents[i]
-                               && ImGui::Selectable(ComponentString[i], i == selectedComponent))
+                        EntityReflection::IfMissing<ImguiRender>(registry, entity, [&]() {
+                            if(ImGui::Selectable("Render", selectedComponent == 0))
                             {
-                                switch(i)
-                                {
-                                    case(int)Component::Component::Render:
-                                        world.registry->emplace<Component::Render>(
-                                            entity,
-                                            GetAssetName(Asset::Insurgent),
-                                            GetLoadedAsset(Asset::Insurgent));
-                                        break;
-                                    case(int)Component::Component::Transform:
-                                        world.registry->emplace<Component::Transform>(
-                                            entity,
-                                            0.0f,
-                                            0.0f,
-                                            0.0f);
-                                        break;
-                                    case(int)Component::Component::Velocity:
-                                        world.registry->emplace<Component::Velocity>(
-                                            entity,
-                                            0.0f,
-                                            0.0f,
-                                            0.0f);
-                                        break;
-                                    default: break;
-                                }
+                                registry.emplace<Component::Render>(
+                                    entity,
+                                    GetAssetName(Asset::Insurgent),
+                                    GetLoadedAsset(Asset::Insurgent));
                             }
-                        }
+                        });
+                        EntityReflection::IfMissing<ImguiTransform>(registry, entity, [&]() {
+                            if(ImGui::Selectable("Transform", selectedComponent == 1))
+                            {
+                                registry.emplace<Component::Transform>(entity, 0.0f, 0.0f, 0.0f);
+                            }
+                        });
+                        EntityReflection::IfMissing<ImguiVelocity>(registry, entity, [&]() {
+                            if(ImGui::Selectable("Velocity", selectedComponent == 2))
+                            {
+                                registry.emplace<Component::Velocity>(entity, 0.0f, 0.0f, 0.0f);
+                            }
+                        });
                         ImGui::EndCombo();
                     }
                 }
                 else
                 {
                     ImGui::BeginDisabled();
-                    ImGui::BeginCombo("##addentity", "No more components available");
+                    ImGui::BeginCombo("##addcomponent", "No more components available");
                     ImGui::EndDisabled();
-                }
-
-                if(auto render =
-                       (Component::Render*)entityComponents[(int)Component::Component::Render];
-                   render)
-                {
-                    Asset newAsset = Asset::Last;
-                    if(ImGui::BeginCombo("Asset", render->assetName))
-                    {
-                        for(Asset asset = (Asset)0; (int)asset < (int)Asset::Last;
-                            asset = (Asset)((int)asset + 1))
-                        {
-                            if(ImGui::Selectable(
-                                   GetAssetName(asset),
-                                   GetAssetName(asset) == render->assetName))
-                            {
-                                newAsset = asset;
-                            }
-                        }
-                        ImGui::EndCombo();
-                    }
-                    if(newAsset != Asset::Last)
-                    {
-                        render->assetName = GetAssetName(newAsset);
-                        render->model = GetLoadedAsset(newAsset);
-                    }
-                }
-
-                if(auto transform = (Component::Transform*)
-                       entityComponents[(int)Component::Component::Transform];
-                   transform)
-                {
-                    ImGui::InputFloat3("Position", &(transform->position.x));
-                }
-
-                if(auto velocity = entityComponents[(int)Component::Component::Velocity]; velocity)
-                {
-                    ImGui::DragFloat3("Velocity", (float*)velocity, 0.01f, -25.0f, 25.0f);
-
-                    ImGui::PushStyleColor(
-                        ImGuiCol_Button,
-                        ImVec4(0xcc / 255.0f, 0x24 / 255.0f, 0x1d / 255.0f, 1.0f));
-                    ImGui::PushStyleColor(
-                        ImGuiCol_ButtonHovered,
-                        ImVec4(0xd1 / 255.0f, 0x39 / 255.0f, 0x33 / 255.0f, 1.0f));
-                    ImGui::PushStyleColor(
-                        ImGuiCol_ButtonActive,
-                        ImVec4(0xb7 / 255.0f, 0x20 / 255.0f, 0x1a / 255.0f, 1.0f));
-                    ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - 30.0f);
-                    if(ImGui::Button("[X]"))
-                    {
-                        world.registry->remove<Component::Velocity>(entity);
-                    }
-                    ImGui::PopStyleColor(3);
                 }
 
                 ImGui::TreePop();
