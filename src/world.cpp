@@ -43,7 +43,9 @@ namespace World
                 ->view<Component::Transform, Component::Render>(entt::exclude<Component::Velocity>)
                 .each())
         {
+            BeginBlendMode(BLEND_ALPHA);
             DrawModel(render.model, transform.position, 1.0f, WHITE);
+            EndBlendMode();
         }
     }
 
