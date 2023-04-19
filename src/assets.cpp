@@ -17,8 +17,15 @@ std::array<char, MAX_PATH_LENGTH> AssetPath(const char* assetName)
     return pathBuffer;
 }
 
+std::optional<Shader> transparentShader;
+
 void LoadAssets()
 {
+    // There's apparently no way to find out if a mesh has transparency, so
+    // just treat all meshes as if they are transparent...
+    if(!transparentShader.has_value())
+        transparentShader = LoadShader(nullptr, AssetPath("transparent.fs").data());
+
     for(const auto& entry :
         std::filesystem::directory_iterator(std::filesystem::path(DASSET_ROOT) / "ruins"))
     {
@@ -31,6 +38,8 @@ void LoadAssets()
         auto model = LoadModel(entry.path().string().c_str());
         for(int i = 0; i < model.materialCount; ++i)
         {
+            model.materials[i].shader = transparentShader.value();
+
             for(int j = 0; j < MAX_MATERIAL_MAPS; ++j)
             {
                 if(model.materials[i].maps[j].texture.id != 0)

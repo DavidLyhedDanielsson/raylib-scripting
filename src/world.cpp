@@ -38,14 +38,12 @@ namespace World
 
     void Draw()
     {
-        for(auto [entity, transform, render] :
-            world.registry
-                ->view<Component::Transform, Component::Render>(entt::exclude<Component::Velocity>)
-                .each())
+        auto group = world.registry->group<Component::Render, Component::Transform>();
+
+        for(auto entity : group)
         {
-            BeginBlendMode(BLEND_ALPHA);
+            auto [render, transform] = group.get<Component::Render, Component::Transform>(entity);
             DrawModel(render.model, transform.position, 1.0f, WHITE);
-            EndBlendMode();
         }
     }
 
