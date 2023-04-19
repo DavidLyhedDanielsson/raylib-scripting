@@ -53,6 +53,11 @@ set(SRC
     entity/render.hpp
     entity/transform.hpp
     entity/velocity.hpp
+    entity_reflection/entity_reflection.hpp
+    entity_reflection/reflection_entity.hpp
+    entity_reflection/reflection_render.hpp
+    entity_reflection/reflection_transform.hpp
+    entity_reflection/reflection_velocity.hpp
     imgui/imgui_impl.cpp imgui/imgui_impl.hpp
     imgui/imgui_internal.cpp imgui/imgui_internal.hpp
     lua/lua_asset_impl.cpp lua/lua_asset_impl.hpp

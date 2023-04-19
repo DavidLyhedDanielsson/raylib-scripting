@@ -8,10 +8,10 @@
 #include <external/raylib.hpp>
 #include <imgui.h>
 
-#include <imgui/imgui_entity/entity_reflection.hpp>
-#include <imgui/imgui_entity/imgui_render.hpp>
-#include <imgui/imgui_entity/imgui_transform.hpp>
-#include <imgui/imgui_entity/imgui_velocity.hpp>
+#include <entity_reflection/entity_reflection.hpp>
+#include <entity_reflection/reflection_render.hpp>
+#include <entity_reflection/reflection_transform.hpp>
+#include <entity_reflection/reflection_velocity.hpp>
 
 struct WorldData
 {

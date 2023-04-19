@@ -1,6 +1,6 @@
 #pragma once
 
-#include "imgui_entity.hpp"
+#include "reflection_entity.hpp"
 #include <entity/render.hpp>
 
 #include <assets.hpp>
