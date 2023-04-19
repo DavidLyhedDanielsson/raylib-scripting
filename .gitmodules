@@ -1,6 +1,3 @@
-[submodule "raylib"]
-	path = libs/raylib
-	url = git@github.com:raysan5/raylib.git
 [submodule "lua"]
 	path = libs/lua
 	url = git@github.com:lua/lua.git
