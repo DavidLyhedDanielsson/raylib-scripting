@@ -5,7 +5,8 @@
 #include <entt/entt.hpp>
 #include <external/raylib.hpp>
 
-struct ImguiVelocity: public ImGuiEntity<ImguiVelocity, Component::Velocity, __COUNTER__>
+struct VelocityReflection
+    : public ReflectionComponent<VelocityReflection, Component::Velocity, __COUNTER__>
 {
     static void Create(entt::registry& registry, entt::entity entity)
     {
@@ -37,4 +38,5 @@ struct ImguiVelocity: public ImGuiEntity<ImguiVelocity, Component::Velocity, __C
         registry.emplace<Component::Velocity>(target, component.x, component.y, component.z);
     }
 };
-static ImguiVelocity ImguiVelocityInstance{};
+// Quick hack to call constructor and register self
+static VelocityReflection ImguiVelocityInstance{};

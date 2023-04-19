@@ -4,7 +4,8 @@
 #include <entity/transform.hpp>
 #include <external/raylib.hpp>
 
-struct ImguiTransform: public ImGuiEntity<ImguiTransform, Component::Transform, __COUNTER__>
+struct TransformReflection
+    : public ReflectionComponent<TransformReflection, Component::Transform, __COUNTER__>
 {
     static void Create(entt::registry& registry, entt::entity entity)
     {
@@ -47,4 +48,5 @@ struct ImguiTransform: public ImGuiEntity<ImguiTransform, Component::Transform, 
         registry.emplace<Component::Transform>(target, component.position, component.rotation);
     }
 };
-static ImguiTransform ImguiTransformInstance{};
+// Quick hack to call constructor and register self
+static TransformReflection ImguiTransformInstance{};

@@ -7,19 +7,19 @@
 #include <optional>
 
 template<typename Derived, typename ComponentType, size_t IDValue>
-class ImGuiEntity
+class ReflectionComponent
 {
   public:
     using Derived = Derived;
 
-    ImGuiEntity()
+    ReflectionComponent()
     {
         RegisterSelf();
     }
 
     static void RegisterSelf()
     {
-        EntityReflection::Register<ImGuiEntity<Derived, ComponentType, IDValue>>();
+        EntityReflection::Register<ReflectionComponent<Derived, ComponentType, IDValue>>();
     }
 
     // Type needs to be erased or a pointer to the function can't be created

@@ -87,9 +87,10 @@ namespace World
                         EntityReflection::DuplicateEntity(registry, entity);
                 }
 
-                bool anyMissing = EntityReflection::IsMissing<ImguiRender>(registry, entity)
-                                  || EntityReflection::IsMissing<ImguiTransform>(registry, entity)
-                                  || EntityReflection::IsMissing<ImguiVelocity>(registry, entity);
+                bool anyMissing =
+                    EntityReflection::IsMissing<RenderReflection>(registry, entity)
+                    || EntityReflection::IsMissing<TransformReflection>(registry, entity)
+                    || EntityReflection::IsMissing<VelocityReflection>(registry, entity);
 
                 if(anyMissing)
                 {
@@ -97,7 +98,7 @@ namespace World
                     {
                         if(!loadedAssets.empty())
                         {
-                            EntityReflection::IfMissing<ImguiRender>(registry, entity, [&]() {
+                            EntityReflection::IfMissing<RenderReflection>(registry, entity, [&]() {
                                 if(ImGui::Selectable("Render", selectedComponent == 0))
                                 {
                                     auto firstAsset = loadedAssets.begin();
@@ -110,13 +111,13 @@ namespace World
                         }
                         else
                             ImGui::Text("No available models");
-                        EntityReflection::IfMissing<ImguiTransform>(registry, entity, [&]() {
+                        EntityReflection::IfMissing<TransformReflection>(registry, entity, [&]() {
                             if(ImGui::Selectable("Transform", selectedComponent == 1))
                             {
                                 registry.emplace<Component::Transform>(entity, 0.0f, 0.0f, 0.0f);
                             }
                         });
-                        EntityReflection::IfMissing<ImguiVelocity>(registry, entity, [&]() {
+                        EntityReflection::IfMissing<VelocityReflection>(registry, entity, [&]() {
                             if(ImGui::Selectable("Velocity", selectedComponent == 2))
                             {
                                 registry.emplace<Component::Velocity>(entity, 0.0f, 0.0f, 0.0f);

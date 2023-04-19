@@ -5,7 +5,8 @@
 
 #include <assets.hpp>
 
-struct ImguiRender: public ImGuiEntity<ImguiRender, Component::Render, __COUNTER__>
+struct RenderReflection
+    : public ReflectionComponent<RenderReflection, Component::Render, __COUNTER__>
 {
     static void Create(entt::registry& registry, entt::entity entity)
     {
@@ -51,4 +52,5 @@ struct ImguiRender: public ImGuiEntity<ImguiRender, Component::Render, __COUNTER
         registry.emplace<Component::Render>(target, component.assetName, component.model);
     }
 };
-static ImguiRender ImguiRenderInstance{};
+// Quick hack to call constructor and register self
+static RenderReflection ImguiRenderInstance{};
