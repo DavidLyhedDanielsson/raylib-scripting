@@ -28,5 +28,13 @@ struct ImguiVelocity: public ImGuiEntity<ImguiVelocity, Component::Velocity, __C
         if(allowDeletion)
             AddRemoveButton("REMOVE VELOCITY COMPONENT", registry, entity);
     }
+
+    static void Duplicate(
+        entt::registry& registry,
+        const Component::Velocity& component,
+        entt::entity target)
+    {
+        registry.emplace<Component::Velocity>(target, component.x, component.y, component.z);
+    }
 };
 static ImguiVelocity ImguiVelocityInstance{};

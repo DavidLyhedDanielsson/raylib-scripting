@@ -9,9 +9,10 @@ struct EntityReflection
   private:
     struct Data
     {
-        bool (*hasComponent)(entt::registry&, entt::entity);
+        std::optional<void*> (*getComponent)(entt::registry&, entt::entity);
         bool (*tryViewOne)(entt::registry&, entt::entity);
         bool (*tryModifyOne)(entt::registry&, entt::entity, bool);
+        void (*tryDuplicate)(entt::registry&, entt::entity, entt::entity);
     };
 
     static std::map<uint32_t, Data>& EntityMap()
@@ -27,9 +28,10 @@ struct EntityReflection
         EntityMap().insert(std::make_pair(
             T::ID,
             Data{
-                .hasComponent = T::HasComponent,
+                .getComponent = T::GetComponent,
                 .tryViewOne = T::TryViewOne,
                 .tryModifyOne = T::TryModifyOne,
+                .tryDuplicate = T::TryDuplicate,
             }));
     }
 
@@ -55,7 +57,7 @@ struct EntityReflection
         auto iter = entityMap.find(T::ID);
         assert(iter != entityMap.end());
 
-        if(!iter->second.hasComponent(registry, entity))
+        if(!iter->second.getComponent(registry, entity))
             func();
     }
 
@@ -67,7 +69,7 @@ struct EntityReflection
         auto iter = entityMap.find(T::ID);
         assert(iter != entityMap.end());
 
-        return !iter->second.hasComponent(registry, entity);
+        return !iter->second.getComponent(registry, entity);
     }
 
     template<typename T, typename Func>
@@ -78,7 +80,15 @@ struct EntityReflection
         auto iter = entityMap.find(T::ID);
         assert(iter != entityMap.end());
 
-        if(!iter->second.hasComponent(registry, entity))
+        if(!iter->second.getComponent(registry, entity))
             func();
+    }
+
+    static entt::entity DuplicateEntity(entt::registry& registry, entt::entity entity)
+    {
+        auto newEntity = registry.create();
+        for(const auto& [id, functions] : EntityMap())
+            functions.tryDuplicate(registry, entity, newEntity);
+        return newEntity;
     }
 };

@@ -2,14 +2,11 @@
 
 #include <array>
 #include <external/raylib.hpp>
+#include <map>
+#include <string>
 
 // Assets come from https://quaternius.com/. Thanks Quaternius!
-enum class Asset : int
-{
-    Insurgent = 0,
-    Bob,
-    Last
-};
+extern std::map<std::string, Model> loadedAssets;
 
 // Windows clocks in at 260, linux allows 4096
 constexpr int MAX_PATH_LENGTH = 256;
@@ -17,6 +14,3 @@ constexpr int MAX_PATH_LENGTH = 256;
 std::array<char, MAX_PATH_LENGTH> AssetPath(const char* assetName);
 
 void LoadAssets();
-Model GetLoadedAsset(Asset asset);
-const char* GetAssetName(Asset asset);
-const char* GetAssetPath(Asset asset);

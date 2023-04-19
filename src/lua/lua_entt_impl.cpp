@@ -28,14 +28,14 @@ namespace LuaEntt
     void RegisterTypes(lua_State* lua)
     {
         // Available models
-        lua_newtable(lua);
-        for(int i = 0; i < (int)Asset::Last; ++i)
-        {
-            lua_pushstring(lua, GetAssetName((Asset)i));
-            lua_pushnumber(lua, i);
-            lua_settable(lua, -3);
-        }
-        lua_setglobal(lua, "Asset");
+        // lua_newtable(lua);
+        // for(int i = 0; i < (int)Asset::Last; ++i)
+        // {
+        //     lua_pushstring(lua, GetAssetName((Asset)i));
+        //     lua_pushnumber(lua, i);
+        //     lua_settable(lua, -3);
+        // }
+        // lua_setglobal(lua, "Asset");
     }
 
     lua_Integer CreateEntity(entt::registry* registry)
@@ -43,13 +43,10 @@ namespace LuaEntt
         return static_cast<lua_Integer>(registry->create());
     }
 
-    void AddRenderComponent(entt::registry* registry, lua_Integer entity, int assetId)
+    void AddRenderComponent(entt::registry* registry, lua_Integer entity, const char* assetId)
     {
-        auto asset = (Asset)assetId;
-        registry->emplace<Component::Render>(
-            (entt::entity)entity,
-            GetAssetName(asset),
-            GetLoadedAsset(asset));
+        if(auto iter = loadedAssets.find(assetId); iter != loadedAssets.end())
+            registry->emplace<Component::Render>((entt::entity)entity, assetId, iter->second);
     }
 
     void AddTransformComponent(entt::registry* registry, lua_Integer entity)
@@ -57,6 +54,19 @@ namespace LuaEntt
         registry->emplace<Component::Transform>(
             (entt::entity)entity,
             Vector3{0.0f, 0.0f, 0.0f},
+            QuaternionIdentity());
+    }
+
+    void AddTransformComponentAt(
+        entt::registry* registry,
+        lua_Integer entity,
+        float x,
+        float y,
+        float z)
+    {
+        registry->emplace<Component::Transform>(
+            (entt::entity)entity,
+            Vector3{x, y, z},
             QuaternionIdentity());
     }
 
@@ -74,6 +84,7 @@ namespace LuaEntt
         QuickRegister(CreateEntity);
         QuickRegister(AddRenderComponent);
         QuickRegister(AddTransformComponent);
+        QuickRegister(AddTransformComponentAt);
         QuickRegister(AddVelocityComponent);
 
         LuaRegister::RegisterMember(

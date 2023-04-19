@@ -38,5 +38,13 @@ struct ImguiTransform: public ImGuiEntity<ImguiTransform, Component::Transform, 
         if(allowDeletion)
             AddRemoveButton("REMOVE TRANSFORM COMPONENT", registry, entity);
     }
+
+    static void Duplicate(
+        entt::registry& registry,
+        const Component::Transform& component,
+        entt::entity target)
+    {
+        registry.emplace<Component::Transform>(target, component.position, component.rotation);
+    }
 };
 static ImguiTransform ImguiTransformInstance{};

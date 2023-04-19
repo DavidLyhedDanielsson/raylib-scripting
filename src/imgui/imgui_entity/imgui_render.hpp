@@ -9,10 +9,10 @@ struct ImguiRender: public ImGuiEntity<ImguiRender, Component::Render, __COUNTER
 {
     static void Create(entt::registry& registry, entt::entity entity)
     {
-        registry.emplace<Component::Render>(
-            entity,
-            GetAssetName(Asset::Insurgent),
-            GetLoadedAsset(Asset::Insurgent));
+        // registry.emplace<Component::Render>(
+        //     entity,
+        //     GetAssetName(Asset::Insurgent),
+        //     GetLoadedAsset(Asset::Insurgent));
     }
 
     static void View(Component::Render& component)
@@ -26,29 +26,29 @@ struct ImguiRender: public ImGuiEntity<ImguiRender, Component::Render, __COUNTER
         Component::Render& component,
         bool allowDeletion)
     {
-        Asset newAsset = Asset::Last;
         if(ImGui::BeginCombo("Asset", component.assetName))
         {
-            for(Asset asset = (Asset)0; (int)asset < (int)Asset::Last;
-                asset = (Asset)((int)asset + 1))
+            for(const auto& [key, value] : loadedAssets)
             {
-                if(ImGui::Selectable(
-                       GetAssetName(asset),
-                       GetAssetName(asset) == component.assetName))
+                if(ImGui::Selectable(key.c_str(), key == component.assetName))
                 {
-                    newAsset = asset;
+                    component.assetName = key.c_str(); // Not very safe but fine
+                    component.model = value;
                 }
             }
             ImGui::EndCombo();
         }
-        if(newAsset != Asset::Last)
-        {
-            component.assetName = GetAssetName(newAsset);
-            component.model = GetLoadedAsset(newAsset);
-        }
 
         if(allowDeletion)
             AddRemoveButton("REMOVE RENDER COMPONENT", registry, entity);
+    }
+
+    static void Duplicate(
+        entt::registry& registry,
+        const Component::Render& component,
+        entt::entity target)
+    {
+        registry.emplace<Component::Render>(target, component.assetName, component.model);
     }
 };
 static ImguiRender ImguiRenderInstance{};

@@ -440,5 +440,38 @@ namespace LuaImGui
         // LuaImguiQuickRegister(SaveIniSettingsToMemory);
 
         // And that's everything
+
+#define LuaImguiPushWindowFlag(flag)               \
+    lua_pushstring(lua, #flag);                    \
+    lua_pushinteger(lua, ImGuiWindowFlags_##flag); \
+    lua_settable(lua, -3);
+
+        lua_createtable(lua, 0, 0);
+        LuaImguiPushWindowFlag(None);
+        LuaImguiPushWindowFlag(NoTitleBar);
+        LuaImguiPushWindowFlag(NoResize);
+        LuaImguiPushWindowFlag(NoMove);
+        LuaImguiPushWindowFlag(NoScrollbar);
+        LuaImguiPushWindowFlag(NoScrollWithMouse);
+        LuaImguiPushWindowFlag(NoCollapse);
+        LuaImguiPushWindowFlag(AlwaysAutoResize);
+        LuaImguiPushWindowFlag(NoBackground);
+        LuaImguiPushWindowFlag(NoSavedSettings);
+        LuaImguiPushWindowFlag(NoMouseInputs);
+        LuaImguiPushWindowFlag(MenuBar);
+        LuaImguiPushWindowFlag(HorizontalScrollbar);
+        LuaImguiPushWindowFlag(NoFocusOnAppearing);
+        LuaImguiPushWindowFlag(NoBringToFrontOnFocus);
+        LuaImguiPushWindowFlag(AlwaysVerticalScrollbar);
+        LuaImguiPushWindowFlag(AlwaysHorizontalScrollbar);
+        LuaImguiPushWindowFlag(AlwaysUseWindowPadding);
+        LuaImguiPushWindowFlag(NoNavInputs);
+        LuaImguiPushWindowFlag(NoNavFocus);
+        LuaImguiPushWindowFlag(UnsavedDocument);
+        LuaImguiPushWindowFlag(NoDocking);
+        LuaImguiPushWindowFlag(NoNav);
+        LuaImguiPushWindowFlag(NoDecoration);
+        LuaImguiPushWindowFlag(NoInputs);
+        lua_setglobal(lua, "WindowFlags");
     }
 }

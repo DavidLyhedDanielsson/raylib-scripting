@@ -19,10 +19,12 @@ extern "C" {
 #include "camera.hpp"
 #include "imgui/imgui_impl.hpp"
 #include "imgui/imgui_internal.hpp" // NOT the imgui_internal from imgui
+#include "lua/lua_asset_impl.hpp"
 #include "lua/lua_entt_impl.hpp"
 #include "lua/lua_imgui_impl.hpp"
 #include "lua/lua_raylib_impl.hpp"
 #include "world.hpp"
+
 // #include <Windows.h>
 #ifdef PLATFORM_WEB
     #include <emscripten/emscripten.h>
@@ -43,6 +45,8 @@ std::vector<std::string> history;
 
 ImGuiContext* luaContext;
 
+bool imGuiWantsCursor = false;
+
 void main_loop()
 {
     World::Update();
@@ -51,8 +55,6 @@ void main_loop()
     auto now = std::chrono::high_resolution_clock::now();
     float deltaMs = std::chrono::duration<float, std::milli>(now - last).count();
     last = now;
-
-    UpdateCamera(&camera);
 
     BeginDrawing();
 
@@ -131,6 +133,9 @@ void main_loop()
     last_history_size = history.size();
     ImGui::EndChild();
     ImGui::End();
+    // This needs to be checked here, for this context. Later on it needs to be
+    // checked again for the state that is exposed to lua
+    imGuiWantsCursor = ImGui::GetIO().WantCaptureMouse;
 
     RaylibImGui::End();
 
@@ -142,7 +147,10 @@ void main_loop()
     if(lua_pcall(luaState, 0, 0, 0) == LUA_OK)
     {
         if(ValidStackSize(luaContext))
+        {
             RaylibImGui::End();
+            imGuiWantsCursor = imGuiWantsCursor || ImGui::GetIO().WantCaptureMouse;
+        }
         else
             guiError = true;
     }
@@ -164,6 +172,9 @@ void main_loop()
     }
 
     ImGui::SetCurrentContext(backupContext);
+
+    if(!imGuiWantsCursor)
+        UpdateCamera(&camera);
 
     EndDrawing();
 }
@@ -233,6 +244,7 @@ int main()
 
     World::Init(&registry);
 
+    LuaAsset::Register(luaState);
     LuaEntt::Register(luaState, &registry);
     LuaImGui::Register(luaState);
     LuaRaylib::Register(luaState, &registry);

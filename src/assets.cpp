@@ -1,20 +1,11 @@
 #include "assets.hpp"
-#include <string>
+#include <filesystem>
+#include <iostream>
 
 #include <config.h>
 
-struct AssetPair
-{
-    const char* name;
-    const char* path;
-};
-
 // Assets come from https://quaternius.com/. Thanks Quaternius!
-std::array<AssetPair, 2> assets = {
-    AssetPair{"Insurgent", "Insurgent/glTF/Insurgent.gltf"},
-    AssetPair{"Bob", "Bob/glTF/Bob.gltf"},
-};
-std::array<Model, std::size(assets)> loadedAssets = {};
+std::map<std::string, Model> loadedAssets = {};
 
 // Windows clocks in at 260, linux allows 4096
 std::array<char, MAX_PATH_LENGTH> pathBuffer = {0}; // Helper to avoid dynamic allocation
@@ -28,10 +19,16 @@ std::array<char, MAX_PATH_LENGTH> AssetPath(const char* assetName)
 
 void LoadAssets()
 {
-    for(int i = 0; i < (int)Asset::Last; ++i)
+    for(const auto& entry :
+        std::filesystem::directory_iterator(std::filesystem::path(DASSET_ROOT) / "ruins"))
     {
-        auto path = AssetPath(assets[i].path);
-        auto model = LoadModel(path.data());
+        if(!entry.is_regular_file())
+            continue;
+
+        if(entry.path().extension() != ".obj")
+            continue;
+
+        auto model = LoadModel(entry.path().string().c_str());
         for(int i = 0; i < model.materialCount; ++i)
         {
             for(int j = 0; j < MAX_MATERIAL_MAPS; ++j)
@@ -45,21 +42,7 @@ void LoadAssets()
                 }
             }
         }
-        loadedAssets[i] = model;
+
+        loadedAssets.insert(std::make_pair(entry.path().stem().string(), model));
     }
-}
-
-Model GetLoadedAsset(Asset asset)
-{
-    return loadedAssets.at((int)asset);
-}
-
-const char* GetAssetName(Asset asset)
-{
-    return assets.at((int)asset).name;
-}
-
-const char* GetAssetPath(Asset asset)
-{
-    return assets.at((int)asset).path;
 }

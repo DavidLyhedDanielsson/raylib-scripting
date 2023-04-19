@@ -4,11 +4,14 @@
 #include <cstdint>
 #include <entt/entt.hpp>
 #include <imgui.h>
+#include <optional>
 
 template<typename Derived, typename ComponentType, size_t IDValue>
 class ImGuiEntity
 {
   public:
+    using Derived = Derived;
+
     ImGuiEntity()
     {
         RegisterSelf();
@@ -19,9 +22,14 @@ class ImGuiEntity
         EntityReflection::Register<ImGuiEntity<Derived, ComponentType, IDValue>>();
     }
 
-    static bool HasComponent(entt::registry& registry, entt::entity entity)
+    // Type needs to be erased or a pointer to the function can't be created
+    static std::optional<void*> GetComponent(entt::registry& registry, entt::entity entity)
     {
-        return registry.try_get<ComponentType>(entity) != nullptr;
+        auto pointer = registry.try_get<ComponentType>(entity);
+        if(pointer)
+            return pointer;
+        else
+            return std::nullopt;
     }
 
     static bool TryViewOne(entt::registry& registry, entt::entity entity)
@@ -38,6 +46,12 @@ class ImGuiEntity
         if(component != nullptr)
             Derived::Modify(registry, entity, *component, allowDeletion);
         return component != nullptr;
+    }
+
+    static void TryDuplicate(entt::registry& registry, entt::entity source, entt::entity target)
+    {
+        if(std::optional<void*> component = GetComponent(registry, source); component)
+            Derived::Duplicate(registry, *(ComponentType*)component.value(), target);
     }
 
     constexpr static uint32_t ID = IDValue;

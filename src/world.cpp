@@ -18,25 +18,6 @@ struct WorldData
     entt::registry* registry;
 } world;
 
-// Should contain all components so they can be enumerated
-namespace Component
-{
-
-    enum class Component : int
-    {
-        Render = 0,
-        Transform,
-        Velocity,
-        LAST
-    };
-}
-// std::array will at least give a compile error if the size of `Component` is modified
-std::array<const char*, (int)Component::Component::LAST> ComponentString = {
-    "Render",
-    "Transform",
-    "Velocity",
-};
-
 namespace World
 {
     void Init(entt::registry* registry)
@@ -58,7 +39,9 @@ namespace World
     void Draw()
     {
         for(auto [entity, transform, render] :
-            world.registry->view<Component::Transform, Component::Render>().each())
+            world.registry
+                ->view<Component::Transform, Component::Render>(entt::exclude<Component::Velocity>)
+                .each())
         {
             DrawModel(render.model, transform.position, 1.0f, WHITE);
         }
@@ -76,11 +59,31 @@ namespace World
             ImGui::PushID((int32_t)entity);
             if(ImGui::TreeNode("Entity", "Entity %i", entity))
             {
+                ImGui::PushStyleColor(
+                    ImGuiCol_Button,
+                    ImVec4(0xcc / 255.0f, 0x24 / 255.0f, 0x1d / 255.0f, 1.0f));
+                ImGui::PushStyleColor(
+                    ImGuiCol_ButtonHovered,
+                    ImVec4(0xd1 / 255.0f, 0x39 / 255.0f, 0x33 / 255.0f, 1.0f));
+                ImGui::PushStyleColor(
+                    ImGuiCol_ButtonActive,
+                    ImVec4(0xb7 / 255.0f, 0x20 / 255.0f, 0x1a / 255.0f, 1.0f));
+
+                // Button should be here, but the entity is used below, so wait before deleting
+                bool deleteEntity = ImGui::Button("DELETE ENTITY");
+                ImGui::PopStyleColor(3);
+
                 bool hasComponents = true;
                 EntityReflection::ModifyEntityOrElse(registry, entity, [&]() {
                     ImGui::Text("No components in this entity");
                     hasComponents = false;
                 });
+
+                if(hasComponents)
+                {
+                    if(ImGui::Button("Duplicate entity"))
+                        EntityReflection::DuplicateEntity(registry, entity);
+                }
 
                 bool anyMissing = EntityReflection::IsMissing<ImguiRender>(registry, entity)
                                   || EntityReflection::IsMissing<ImguiTransform>(registry, entity)
@@ -90,15 +93,21 @@ namespace World
                 {
                     if(ImGui::BeginCombo("##addcomponent", "Add component"))
                     {
-                        EntityReflection::IfMissing<ImguiRender>(registry, entity, [&]() {
-                            if(ImGui::Selectable("Render", selectedComponent == 0))
-                            {
-                                registry.emplace<Component::Render>(
-                                    entity,
-                                    GetAssetName(Asset::Insurgent),
-                                    GetLoadedAsset(Asset::Insurgent));
-                            }
-                        });
+                        if(!loadedAssets.empty())
+                        {
+                            EntityReflection::IfMissing<ImguiRender>(registry, entity, [&]() {
+                                if(ImGui::Selectable("Render", selectedComponent == 0))
+                                {
+                                    auto firstAsset = loadedAssets.begin();
+                                    registry.emplace<Component::Render>(
+                                        entity,
+                                        firstAsset->first.c_str(),
+                                        firstAsset->second);
+                                }
+                            });
+                        }
+                        else
+                            ImGui::Text("No available models");
                         EntityReflection::IfMissing<ImguiTransform>(registry, entity, [&]() {
                             if(ImGui::Selectable("Transform", selectedComponent == 1))
                             {
@@ -122,6 +131,9 @@ namespace World
                 }
 
                 ImGui::TreePop();
+
+                if(deleteEntity)
+                    registry.destroy(entity);
             }
             ImGui::PopID();
         };

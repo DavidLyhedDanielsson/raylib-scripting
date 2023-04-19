@@ -21,6 +21,7 @@ endif ()
 
 ## Libraries
 # Disable warnings for all library source files
+# TODO: This doesn't exactly work since the settings aren't restored??
 get_directory_property(PROJECT_COMPILE_OPTIONS COMPILE_OPTIONS)
 if (MSVC)
     add_compile_options("/w")
@@ -54,6 +55,7 @@ set(SRC
     entity/velocity.hpp
     imgui/imgui_impl.cpp imgui/imgui_impl.hpp
     imgui/imgui_internal.cpp imgui/imgui_internal.hpp
+    lua/lua_asset_impl.cpp lua/lua_asset_impl.hpp
     lua/lua_entt_impl.cpp lua/lua_entt_impl.hpp
     lua/lua_imgui_impl.cpp lua/lua_imgui_impl.hpp
     lua/lua_raylib_impl.cpp lua/lua_raylib_impl.hpp
