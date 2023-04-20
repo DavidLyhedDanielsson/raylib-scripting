@@ -18,6 +18,8 @@
 
 #include <imgui_impl_opengl3.h>
 
+#include <ImGuizmo.h>
+
 ImGuiKey TranslateKey(KeyboardKey key)
 {
     switch(key)
@@ -349,6 +351,7 @@ void RaylibImGui::Begin()
     lastTime = currentTime;
 
     ImGui::NewFrame();
+    ImGuizmo::BeginFrame();
 }
 
 void RaylibImGui::End()

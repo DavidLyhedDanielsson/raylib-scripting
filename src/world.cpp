@@ -5,13 +5,15 @@
 #include "entity/velocity.hpp"
 #include <algorithm>
 #include <array>
-#include <external/raylib.hpp>
-#include <imgui.h>
-
+#include <camera.hpp>
 #include <entity_reflection/entity_reflection.hpp>
 #include <entity_reflection/reflection_render.hpp>
 #include <entity_reflection/reflection_transform.hpp>
 #include <entity_reflection/reflection_velocity.hpp>
+#include <external/raylib.hpp>
+#include <imgui.h>
+
+#include <ImGuizmo.h>
 
 struct WorldData
 {
@@ -52,6 +54,43 @@ namespace World
         static uint32_t selectedComponent = 0;
 
         auto& registry = *world.registry;
+
+        for(auto [entity, transform, render] :
+            world.registry->view<Component::Transform, Component::Render>().each())
+        {
+            float zero[3] = {0.0f, 0.0f, 0.0f};
+            float one[3] = {1.0f, 1.0f, 1.0f};
+            float matrix[16] = {};
+
+            ImGuizmo::RecomposeMatrixFromComponents(&transform.position.x, zero, one, matrix);
+
+            const double RL_CULL_DISTANCE_NEAR =
+                0.01; // Default projection matrix near cull distance
+            const double RL_CULL_DISTANCE_FAR =
+                1000.0; // Default projection matrix far cull distance
+
+            auto viewMatrix = MatrixTranspose(GetCameraMatrix(camera));
+            auto projMatrix = MatrixTranspose(MatrixPerspective(
+                camera.fovy * DEG2RAD,
+                ((double)GetScreenWidth() / (double)GetScreenHeight()),
+                RL_CULL_DISTANCE_NEAR,
+                RL_CULL_DISTANCE_FAR));
+
+            auto identity = MatrixIdentity();
+
+            ImGuizmo::SetOrthographic(false);
+            ImGuizmo::SetRect(0.0f, 0.0f, GetScreenWidth(), GetScreenHeight());
+            ImGuizmo::Enable(true);
+            ImGuizmo::Manipulate(
+                &viewMatrix.m0,
+                &projMatrix.m0,
+                ImGuizmo::OPERATION::TRANSLATE,
+                ImGuizmo::MODE::WORLD,
+                matrix);
+
+            ImGuizmo::DecomposeMatrixToComponents(matrix, &transform.position.x, zero, one);
+            break;
+        }
 
         ImGui::Begin("Entities");
         auto printEntity = [&](const entt::entity entity) {

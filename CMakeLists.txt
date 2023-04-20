@@ -35,6 +35,10 @@ file(GLOB IMGUI_SRC ${LIB_DIR}/imgui/*.cpp ${LIB_DIR}/imgui/backends/imgui_impl_
 file(GLOB LUA_SRC ${LIB_DIR}/lua/*.c)
 list(REMOVE_ITEM LUA_SRC ${LIB_DIR}/lua/lua.c ${LIB_DIR}/lua/onelua.c)
 add_subdirectory(${LIB_DIR}/raylib)
+set(IMGUIZMO_SRC
+    ${LIB_DIR}/imguizmo/ImGuizmo.h
+    ${LIB_DIR}/imguizmo/ImGuizmo.cpp
+)
 
 # Restore warnings and include source files belonging to this project
 if (MSVC)
@@ -73,6 +77,7 @@ add_executable(raylib_test
     ${CUSTOM_IMGUI_SRC}
     ${LUA_SRC}
     ${IMGUI_SRC}
+    ${IMGUIZMO_SRC}
 )
 target_link_libraries(raylib_test PRIVATE
     raylib
@@ -83,6 +88,7 @@ target_include_directories(raylib_test SYSTEM PRIVATE
     ${LIB_DIR}/imgui
     ${LIB_DIR}/imgui/backends
     ${LIB_DIR}/entt/src
+    ${LIB_DIR}/imguizmo
 )
 target_include_directories(raylib_test PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
