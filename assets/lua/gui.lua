@@ -15,6 +15,7 @@ function imgui()
             local entity = CreateEntity()
             AddRenderComponent(entity, value)
             AddTransformComponentAt(entity, 0, 0, 0)
+            AddTileComponent(entity)
         end
     end
 

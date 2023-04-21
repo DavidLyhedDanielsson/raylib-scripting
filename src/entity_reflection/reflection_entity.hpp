@@ -25,33 +25,72 @@ class ReflectionComponent
     // Type needs to be erased or a pointer to the function can't be created
     static std::optional<void*> GetComponent(entt::registry& registry, entt::entity entity)
     {
-        auto pointer = registry.try_get<ComponentType>(entity);
-        if(pointer)
-            return pointer;
+        if constexpr(std::is_empty_v<ComponentType>)
+        {
+            auto hasComponent = registry.any_of<ComponentType>(entity);
+            if(hasComponent)
+                return std::optional(nullptr);
+            else
+                return std::nullopt;
+        }
         else
-            return std::nullopt;
+        {
+            auto pointer = registry.try_get<ComponentType>(entity);
+            if(pointer)
+                return pointer;
+            else
+                return std::nullopt;
+        }
     }
 
     static bool TryViewOne(entt::registry& registry, entt::entity entity)
     {
-        auto component = registry.try_get<ComponentType>(entity);
-        if(component != nullptr)
-            Derived::View(*component);
-        return component != nullptr;
+        if constexpr(std::is_empty_v<ComponentType>)
+        {
+            auto hasComponent = registry.any_of<ComponentType>(entity);
+            if(hasComponent)
+                Derived::View();
+            return hasComponent;
+        }
+        else
+        {
+            auto component = registry.try_get<ComponentType>(entity);
+            if(component != nullptr)
+                Derived::View(*component);
+            return component != nullptr;
+        }
     }
 
     static bool TryModifyOne(entt::registry& registry, entt::entity entity, bool allowDeletion)
     {
-        auto component = registry.try_get<ComponentType>(entity);
-        if(component != nullptr)
-            Derived::Modify(registry, entity, *component, allowDeletion);
-        return component != nullptr;
+        if constexpr(std::is_empty_v<ComponentType>)
+        {
+            auto hasComponent = registry.any_of<ComponentType>(entity);
+            if(hasComponent)
+                Derived::Modify(registry, entity, allowDeletion);
+            return hasComponent;
+        }
+        else
+        {
+            auto component = registry.try_get<ComponentType>(entity);
+            if(component != nullptr)
+                Derived::Modify(registry, entity, *component, allowDeletion);
+            return component != nullptr;
+        }
     }
 
     static void TryDuplicate(entt::registry& registry, entt::entity source, entt::entity target)
     {
-        if(std::optional<void*> component = GetComponent(registry, source); component)
-            Derived::Duplicate(registry, *(ComponentType*)component.value(), target);
+        if constexpr(std::is_empty_v<ComponentType>)
+        {
+            if(std::optional<void*> component = GetComponent(registry, source); component)
+                Derived::Duplicate(registry, target);
+        }
+        else
+        {
+            if(std::optional<void*> component = GetComponent(registry, source); component)
+                Derived::Duplicate(registry, *(ComponentType*)component.value(), target);
+        }
     }
 
     constexpr static uint32_t ID = IDValue;

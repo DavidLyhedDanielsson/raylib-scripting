@@ -61,6 +61,7 @@ set(SRC
     entity_reflection/reflection_entity.hpp
     entity_reflection/reflection_render.hpp
     entity_reflection/reflection_transform.hpp
+    entity_reflection/reflection_tile.hpp
     entity_reflection/reflection_velocity.hpp
     imgui/imgui_impl.cpp imgui/imgui_impl.hpp
     imgui/imgui_internal.cpp imgui/imgui_internal.hpp

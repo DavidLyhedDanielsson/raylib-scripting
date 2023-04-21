@@ -1,19 +1,21 @@
 #include "world.hpp"
 #include "assets.hpp"
-#include "entity/camera.hpp"
-#include "entity/render.hpp"
-#include "entity/transform.hpp"
-#include "entity/velocity.hpp"
 #include <algorithm>
 #include <array>
+#include <cmath>
+#include <entity/camera.hpp>
+#include <entity/render.hpp>
+#include <entity/tile.hpp>
+#include <entity/transform.hpp>
+#include <entity/velocity.hpp>
 #include <entity_reflection/entity_reflection.hpp>
 #include <entity_reflection/reflection_camera.hpp>
 #include <entity_reflection/reflection_render.hpp>
+#include <entity_reflection/reflection_tile.hpp>
 #include <entity_reflection/reflection_transform.hpp>
 #include <entity_reflection/reflection_velocity.hpp>
 #include <external/raylib.hpp>
 #include <imgui.h>
-
 
 #include <ImGuizmo.h>
 
@@ -37,6 +39,14 @@ namespace World
             transform.position.x += velocity.x;
             transform.position.y += velocity.y;
             transform.position.z += velocity.z;
+        }
+
+        for(auto [entity, transform] :
+            world.registry->view<Component::Transform, Component::Tile>().each())
+        {
+            transform.position.x = std::roundf(transform.position.x);
+            transform.position.y = std::roundf(transform.position.y);
+            transform.position.z = std::roundf(transform.position.z);
         }
     }
 
@@ -136,7 +146,8 @@ namespace World
                 bool anyMissing =
                     EntityReflection::IsMissing<RenderReflection>(registry, entity)
                     || EntityReflection::IsMissing<TransformReflection>(registry, entity)
-                    || EntityReflection::IsMissing<VelocityReflection>(registry, entity);
+                    || EntityReflection::IsMissing<VelocityReflection>(registry, entity)
+                    || EntityReflection::IsMissing<TileReflection>(registry, entity);
 
                 if(anyMissing)
                 {
@@ -167,6 +178,12 @@ namespace World
                             if(ImGui::Selectable("Velocity", selectedComponent == 2))
                             {
                                 registry.emplace<Component::Velocity>(entity, 0.0f, 0.0f, 0.0f);
+                            }
+                        });
+                        EntityReflection::IfMissing<TileReflection>(registry, entity, [&]() {
+                            if(ImGui::Selectable("Tile", selectedComponent == 3))
+                            {
+                                registry.emplace<Component::Tile>(entity);
                             }
                         });
                         ImGui::EndCombo();

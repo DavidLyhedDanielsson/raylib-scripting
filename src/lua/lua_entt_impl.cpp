@@ -13,10 +13,11 @@ extern "C" {
 #include <functional>
 #include <type_traits>
 
-#include "../assets.hpp"
-#include "../entity/render.hpp"
-#include "../entity/transform.hpp"
-#include "../entity/velocity.hpp"
+#include <assets.hpp>
+#include <entity/render.hpp>
+#include <entity/tile.hpp>
+#include <entity/transform.hpp>
+#include <entity/velocity.hpp>
 
 #include <entt/entt.hpp>
 
@@ -75,6 +76,11 @@ namespace LuaEntt
         registry->emplace<Component::Velocity>((entt::entity)entity, 0.0f, 0.0f, 0.0f);
     }
 
+    void AddTileComponent(entt::registry* registry, lua_Integer entity)
+    {
+        registry->emplace<Component::Tile>((entt::entity)entity);
+    }
+
     void Register(lua_State* lua, entt::registry* registry)
     {
         RegisterTypes(lua);
@@ -86,6 +92,7 @@ namespace LuaEntt
         QuickRegister(AddTransformComponent);
         QuickRegister(AddTransformComponentAt);
         QuickRegister(AddVelocityComponent);
+        QuickRegister(AddTileComponent);
 
         LuaRegister::RegisterMember(
             lua,
