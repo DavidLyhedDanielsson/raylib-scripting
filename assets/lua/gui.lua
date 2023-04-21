@@ -6,7 +6,7 @@ function raylib()
 end
 
 function imgui()
-    SetNextWindowSize({ x = 200, y = GetScreenHeight() })
+    SetNextWindowSize({ x = 300, y = GetRenderHeight() })
     SetNextWindowPos({ x = 0, y = 0 })
     Begin("Test", 0, WindowFlags.NoTitleBar)
 

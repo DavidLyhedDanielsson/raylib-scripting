@@ -138,6 +138,8 @@ namespace LuaRaylib
         QuickRegister(GetMonitorPosition);
         QuickRegister(GetMonitorWidth);
         QuickRegister(GetMonitorHeight);
+        QuickRegister(GetRenderWidth);
+        QuickRegister(GetRenderHeight);
 
         // Window control
         QuickRegister(ToggleFullscreen);

@@ -98,7 +98,7 @@ namespace World
             auto identity = MatrixIdentity();
 
             ImGuizmo::SetOrthographic(false);
-            ImGuizmo::SetRect(0.0f, 0.0f, GetScreenWidth(), GetScreenHeight());
+            ImGuizmo::SetRect(0.0f, 0.0f, GetRenderWidth(), GetRenderHeight());
             ImGuizmo::Enable(true);
             ImGuizmo::Manipulate(
                 &viewMatrix.m0,
