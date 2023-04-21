@@ -50,7 +50,6 @@ endif()
 ## Executable
 set(SRC
     assets.cpp assets.hpp
-    camera.cpp camera.hpp
     main.cpp
     world.cpp world.hpp
     external/raylib.hpp
@@ -67,6 +66,7 @@ set(SRC
     lua/lua_asset_impl.cpp lua/lua_asset_impl.hpp
     lua/lua_entt_impl.cpp lua/lua_entt_impl.hpp
     lua/lua_imgui_impl.cpp lua/lua_imgui_impl.hpp
+    lua/lua_imguizmo_impl.cpp lua/lua_imguizmo_impl.hpp
     lua/lua_raylib_impl.cpp lua/lua_raylib_impl.hpp
     lua/lua_register.hpp
 )

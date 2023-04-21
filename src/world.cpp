@@ -1,11 +1,11 @@
 #include "world.hpp"
 #include "assets.hpp"
+#include "entity/camera.hpp"
 #include "entity/render.hpp"
 #include "entity/transform.hpp"
 #include "entity/velocity.hpp"
 #include <algorithm>
 #include <array>
-#include <camera.hpp>
 #include <entity_reflection/entity_reflection.hpp>
 #include <entity_reflection/reflection_render.hpp>
 #include <entity_reflection/reflection_transform.hpp>
@@ -58,6 +58,13 @@ namespace World
         for(auto [entity, transform, render] :
             world.registry->view<Component::Transform, Component::Render>().each())
         {
+            Camera3D camera;
+            for(auto [_, transformC, cameraC] :
+                world.registry->view<Component::Transform, Component::Camera>().each())
+            {
+                camera = cameraC.CreateRaylibCamera(transformC.position);
+            }
+
             float zero[3] = {0.0f, 0.0f, 0.0f};
             float one[3] = {1.0f, 1.0f, 1.0f};
             float matrix[16] = {};

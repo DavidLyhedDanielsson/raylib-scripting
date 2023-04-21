@@ -16,14 +16,16 @@ extern "C" {
 #include <entt/entt.hpp>
 
 #include "assets.hpp"
-#include "camera.hpp"
 #include "imgui/imgui_impl.hpp"
 #include "imgui/imgui_internal.hpp" // NOT the imgui_internal from imgui
 #include "lua/lua_asset_impl.hpp"
 #include "lua/lua_entt_impl.hpp"
 #include "lua/lua_imgui_impl.hpp"
+#include "lua/lua_imguizmo_impl.hpp"
 #include "lua/lua_raylib_impl.hpp"
 #include "world.hpp"
+#include <entity/camera.hpp>
+#include <entity/transform.hpp>
 
 // #include <Windows.h>
 #ifdef PLATFORM_WEB
@@ -77,6 +79,19 @@ void main_loop()
         std::cerr << "Error when executing gui.lua" << std::endl;
         std::cerr << lua_tostring(luaState, -1) << std::endl;
         guiError = true;
+    }
+
+    Camera camera;
+    for(auto [entity, transform, cameraComponent] :
+        registry.view<Component::Transform, Component::Camera>().each())
+    {
+        camera = Camera{
+            .position = transform.position,
+            .target = cameraComponent.target,
+            .up = cameraComponent.up,
+            .fovy = cameraComponent.fovy,
+            .projection = cameraComponent.projection,
+        };
     }
 
     BeginMode3D(camera);
@@ -176,6 +191,18 @@ void main_loop()
     if(!imGuiWantsCursor)
         UpdateCamera(&camera);
 
+    for(auto [entity, transform, cameraComponent] :
+        registry.view<Component::Transform, Component::Camera>().each())
+    {
+        transform.position = camera.position;
+        cameraComponent = {
+            .target = camera.target,
+            .up = camera.up,
+            .fovy = camera.fovy,
+            .projection = camera.projection,
+        };
+    }
+
     EndDrawing();
 }
 
@@ -216,13 +243,6 @@ int main()
     SetConfigFlags(FLAG_MSAA_4X_HINT);
     InitWindow(screenWidth, screenHeight, "Raylib test");
 
-    camera.position = {50.0f, 50.0f, 50.0f};
-    camera.target = {0.0f, 0.0f, 0.0f};
-    camera.up = {0.0f, 1.0f, 0.0f};
-    camera.fovy = 45.0f;
-    camera.projection = CAMERA_PERSPECTIVE;
-    SetCameraMode(camera, CAMERA_FREE);
-
     // Create lua state and perform initial setup
     luaState = luaL_newstate();
     luaL_openlibs(luaState);
@@ -244,9 +264,40 @@ int main()
 
     World::Init(&registry);
 
+    Vector3 cameraStartPosition = {
+        50.0f,
+        50.0f,
+        50.0f,
+    };
+    auto cameraComponent = Component::Camera{
+        .target = {0.0f, 0.0f, 0.0f},
+        .up = {0.0f, 1.0f, 0.0f},
+        .fovy = 45.0f,
+        .projection = CAMERA_PERSPECTIVE,
+    };
+    auto cameraEntity = registry.create();
+    registry.emplace<Component::Camera>(cameraEntity, cameraComponent);
+    registry.emplace<Component::Transform>(
+        cameraEntity,
+        Component::Transform{
+            50.0f,
+            50.0f,
+            50.0f,
+        });
+
+    SetCameraMode(
+        Camera{
+            .position = cameraStartPosition,
+            .target = cameraComponent.target,
+            .up = cameraComponent.up,
+            .fovy = cameraComponent.fovy,
+            .projection = cameraComponent.projection,
+        },
+        CAMERA_FREE);
     LuaAsset::Register(luaState);
     LuaEntt::Register(luaState, &registry);
     LuaImGui::Register(luaState);
+    LuaImGuizmo::Register(luaState, &registry);
     LuaRaylib::Register(luaState, &registry);
 
     auto res = luaL_loadfile(luaState, AssetPath("lua/main.lua").data());

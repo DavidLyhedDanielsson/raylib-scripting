@@ -2,6 +2,8 @@
 
 #include "lua_register.hpp"
 #include <imgui.h>
+// Needs to be after imgui
+#include <ImGuizmo.h>
 
 #define LuaImguiQuickRegister(X) LuaRegister::Register(lua, #X, ImGui::X)
 // Macro to register an overloaded function with the same name as the ImGui function

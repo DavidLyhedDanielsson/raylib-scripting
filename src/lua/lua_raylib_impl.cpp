@@ -1,13 +1,13 @@
 #include "lua_raylib_impl.hpp"
 
-#include "../camera.hpp"
-#include "../world.hpp"
 #include "lua_register.hpp"
 #include <entt/entt.hpp>
 #include <external/raylib.hpp>
+#include <world.hpp>
 
-#include "../entity/render.hpp"
-#include "../entity/transform.hpp"
+#include <entity/camera.hpp>
+#include <entity/render.hpp>
+#include <entity/transform.hpp>
 
 namespace LuaRegister
 {
@@ -191,14 +191,30 @@ namespace LuaRaylib
         QuickRegister(DrawRay);
         QuickRegister(DrawGrid);
 
-        LuaRegister::Register(
+        LuaRegister::RegisterMember(
             lua,
             "GetMouseRay",
-            +[](Vector2 mousePosition) { return GetMouseRay(mousePosition, camera); });
-        LuaRegister::Register(
+            registry,
+            +[](entt::registry* registry, Vector2 mousePosition) {
+                Camera3D camera;
+                registry->view<Component::Camera, Component::Transform>().each(
+                    [&](const Component::Camera& c, const Component::Transform& t) {
+                        camera = c.CreateRaylibCamera(t.position);
+                    });
+                return GetMouseRay(mousePosition, camera);
+            });
+        LuaRegister::RegisterMember(
             lua,
             "GetWorldToScreen",
-            +[](Vector3 world) { return GetWorldToScreen(world, camera); });
+            registry,
+            +[](entt::registry* registry, Vector3 world) {
+                Camera3D camera;
+                registry->view<Component::Camera, Component::Transform>().each(
+                    [&](const Component::Camera& c, const Component::Transform& t) {
+                        camera = c.CreateRaylibCamera(t.position);
+                    });
+                return GetWorldToScreen(world, camera);
+            });
 
         LuaRegister::RegisterMember(
             lua,
