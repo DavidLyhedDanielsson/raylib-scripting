@@ -113,6 +113,18 @@ void main_loop()
     RaylibImGui::Begin();
 
     World::DrawImgui();
+    // Imgui might update the camera
+    for(auto [entity, transform, cameraComponent] :
+        registry.view<Component::Transform, Component::Camera>().each())
+    {
+        camera = Camera{
+            .position = transform.position,
+            .target = cameraComponent.target,
+            .up = cameraComponent.up,
+            .fovy = cameraComponent.fovy,
+            .projection = cameraComponent.projection,
+        };
+    }
 
     ImGui::Begin("Lua console");
     ImGui::SameLine();

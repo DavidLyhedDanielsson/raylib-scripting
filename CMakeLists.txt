@@ -57,6 +57,7 @@ set(SRC
     entity/transform.hpp
     entity/velocity.hpp
     entity_reflection/entity_reflection.hpp
+    entity_reflection/reflection_camera.hpp
     entity_reflection/reflection_entity.hpp
     entity_reflection/reflection_render.hpp
     entity_reflection/reflection_transform.hpp
