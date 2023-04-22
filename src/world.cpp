@@ -67,49 +67,49 @@ namespace World
 
         auto& registry = *world.registry;
 
-        for(auto [entity, transform, render] :
-            world.registry->view<Component::Transform, Component::Render>().each())
-        {
-            Camera3D camera;
-            for(auto [_, transformC, cameraC] :
-                world.registry->view<Component::Transform, Component::Camera>().each())
-            {
-                camera = cameraC.CreateRaylibCamera(transformC.position);
-            }
+        // for(auto [entity, transform, render] :
+        //     world.registry->view<Component::Transform, Component::Render>().each())
+        // {
+        //     Camera3D camera;
+        //     for(auto [_, transformC, cameraC] :
+        //         world.registry->view<Component::Transform, Component::Camera>().each())
+        //     {
+        //         camera = cameraC.CreateRaylibCamera(transformC.position);
+        //     }
 
-            float zero[3] = {0.0f, 0.0f, 0.0f};
-            float one[3] = {1.0f, 1.0f, 1.0f};
-            float matrix[16] = {};
+        //     float zero[3] = {0.0f, 0.0f, 0.0f};
+        //     float one[3] = {1.0f, 1.0f, 1.0f};
+        //     float matrix[16] = {};
 
-            ImGuizmo::RecomposeMatrixFromComponents(&transform.position.x, zero, one, matrix);
+        //     ImGuizmo::RecomposeMatrixFromComponents(&transform.position.x, zero, one, matrix);
 
-            const double RL_CULL_DISTANCE_NEAR =
-                0.01; // Default projection matrix near cull distance
-            const double RL_CULL_DISTANCE_FAR =
-                1000.0; // Default projection matrix far cull distance
+        //     const double RL_CULL_DISTANCE_NEAR =
+        //         0.01; // Default projection matrix near cull distance
+        //     const double RL_CULL_DISTANCE_FAR =
+        //         1000.0; // Default projection matrix far cull distance
 
-            auto viewMatrix = MatrixTranspose(GetCameraMatrix(camera));
-            auto projMatrix = MatrixTranspose(MatrixPerspective(
-                camera.fovy * DEG2RAD,
-                ((double)GetScreenWidth() / (double)GetScreenHeight()),
-                RL_CULL_DISTANCE_NEAR,
-                RL_CULL_DISTANCE_FAR));
+        //     auto viewMatrix = MatrixTranspose(GetCameraMatrix(camera));
+        //     auto projMatrix = MatrixTranspose(MatrixPerspective(
+        //         camera.fovy * DEG2RAD,
+        //         ((double)GetScreenWidth() / (double)GetScreenHeight()),
+        //         RL_CULL_DISTANCE_NEAR,
+        //         RL_CULL_DISTANCE_FAR));
 
-            auto identity = MatrixIdentity();
+        //     auto identity = MatrixIdentity();
 
-            ImGuizmo::SetOrthographic(false);
-            ImGuizmo::SetRect(0.0f, 0.0f, GetRenderWidth(), GetRenderHeight());
-            ImGuizmo::Enable(true);
-            ImGuizmo::Manipulate(
-                &viewMatrix.m0,
-                &projMatrix.m0,
-                ImGuizmo::OPERATION::TRANSLATE,
-                ImGuizmo::MODE::WORLD,
-                matrix);
+        //     ImGuizmo::SetOrthographic(false);
+        //     ImGuizmo::SetRect(0.0f, 0.0f, GetRenderWidth(), GetRenderHeight());
+        //     ImGuizmo::Enable(true);
+        //     ImGuizmo::Manipulate(
+        //         &viewMatrix.m0,
+        //         &projMatrix.m0,
+        //         ImGuizmo::OPERATION::TRANSLATE,
+        //         ImGuizmo::MODE::WORLD,
+        //         matrix);
 
-            ImGuizmo::DecomposeMatrixToComponents(matrix, &transform.position.x, zero, one);
-            break;
-        }
+        //     ImGuizmo::DecomposeMatrixToComponents(matrix, &transform.position.x, zero, one);
+        //     break;
+        // }
 
         ImGui::Begin("Entities");
         auto printEntity = [&](const entt::entity entity) {

@@ -1,7 +1,8 @@
 #include "lua_imgui_impl.hpp"
 
 #include "lua_register.hpp"
-#include <imgui.h>
+#include <imgui.h> // TODO: Really fix these library include paths
+#include <imgui/imgui_internal.hpp>
 // Needs to be after imgui
 #include <ImGuizmo.h>
 
@@ -75,7 +76,16 @@ namespace LuaImGui
         using namespace LuaRegister;
 
         LuaImguiQuickRegister(Begin);
-        LuaImguiQuickRegister(End);
+        // LuaImguiQuickRegister(End);
+        LuaRegister::Register(
+            lua,
+            "End",
+            +[](lua_State* lua) {
+                ErrorCheckEndWindowRecover();
+                ImGui::End();
+                return 0;
+            });
+
         LuaImguiQuickRegisterOverload(
             BeginChild,
             bool (*)(const char*, const ImVec2&, bool, ImGuiWindowFlags));
@@ -83,12 +93,25 @@ namespace LuaImGui
             BeginChild,
             ID,
             bool (*)(ImGuiID, const ImVec2&, bool, ImGuiWindowFlags));
-        LuaImguiQuickRegister(EndChild);
+
+        // LuaImguiQuickRegister(EndChild);
+        LuaRegister::Register(
+            lua,
+            "EndChild",
+            +[](lua_State* lua) {
+                ErrorCheckEndWindowRecover();
+                ImGui::EndChild();
+                return 0;
+            });
 
         LuaImguiQuickRegister(IsWindowAppearing);
         LuaImguiQuickRegister(IsWindowCollapsed);
         LuaImguiQuickRegister(IsWindowFocused);
         LuaImguiQuickRegister(IsWindowHovered);
+        LuaRegister::Register(
+            lua,
+            "WantsCaptureMouse",
+            +[](lua_State* lua) { return ImGui::GetIO().WantCaptureMouse; });
         // GetWindowDrawList
         LuaImguiQuickRegister(GetWindowDpiScale);
         LuaImguiQuickRegister(GetWindowPos);
@@ -423,7 +446,7 @@ namespace LuaImGui
         // LuaImguiQuickRegister(IsMousePosValid); // Takes a pointer that shouldn't actually be
         // returned, skip it for now until it is required
         // IsAnyMouseDown will be obsolete
-        LuaImguiQuickRegister(GetMousePos);
+        // LuaImguiQuickRegister(GetMousePos);
         LuaImguiQuickRegister(GetMousePosOnOpeningCurrentPopup);
         LuaImguiQuickRegister(IsMouseDragging);
         LuaImguiQuickRegister(GetMouseDragDelta);

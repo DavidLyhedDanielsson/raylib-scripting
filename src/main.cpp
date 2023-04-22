@@ -2,6 +2,7 @@
 #include <chrono>
 #include <cmath>
 #include <external/raylib.hpp>
+#include <imgui/imgui_internal.hpp> // NOT the imgui_internal from imgui
 #include <iostream>
 #include <math.h>
 #include <numbers>
@@ -17,7 +18,6 @@ extern "C" {
 
 #include "assets.hpp"
 #include "imgui/imgui_impl.hpp"
-#include "imgui/imgui_internal.hpp" // NOT the imgui_internal from imgui
 #include "lua/lua_asset_impl.hpp"
 #include "lua/lua_entt_impl.hpp"
 #include "lua/lua_imgui_impl.hpp"
@@ -44,10 +44,6 @@ std::array<char, 256> inputBuffer;
 bool scrollDown = false;
 bool addCommandToHistory = false;
 std::vector<std::string> history;
-
-ImGuiContext* luaContext;
-
-bool imGuiWantsCursor = false;
 
 void main_loop()
 {
@@ -160,47 +156,18 @@ void main_loop()
     last_history_size = history.size();
     ImGui::EndChild();
     ImGui::End();
-    // This needs to be checked here, for this context. Later on it needs to be
-    // checked again for the state that is exposed to lua
-    imGuiWantsCursor = ImGui::GetIO().WantCaptureMouse;
+
+    lua_getglobal(luaState, "imgui");
+    if(!lua_pcall(luaState, 0, 0, 0) == LUA_OK)
+    {
+        std::cerr << lua_tostring(luaState, -1) << std::endl;
+        lua_pop(luaState, 1);
+        ErrorCheckEndWindowRecover();
+    }
 
     RaylibImGui::End();
 
-    auto backupContext = ImGui::GetCurrentContext();
-    ImGui::SetCurrentContext(luaContext);
-    RaylibImGui::Begin();
-
-    lua_getglobal(luaState, "imgui");
-    if(lua_pcall(luaState, 0, 0, 0) == LUA_OK)
-    {
-        if(ValidStackSize(luaContext))
-        {
-            RaylibImGui::End();
-            imGuiWantsCursor = imGuiWantsCursor || ImGui::GetIO().WantCaptureMouse;
-        }
-        else
-            guiError = true;
-    }
-    else
-    {
-        guiError = true;
-
-        std::cerr << lua_tostring(luaState, -1) << std::endl;
-        lua_pop(luaState, 1);
-    }
-
-    if(guiError)
-    {
-        std::cerr << "Invalid imgui state after gui.lua, check all Begin and End calls"
-                  << std::endl;
-        ImGui::DestroyContext(luaContext);
-        RaylibImGui::Init();
-        luaContext = ImGui::GetCurrentContext();
-    }
-
-    ImGui::SetCurrentContext(backupContext);
-
-    if(!imGuiWantsCursor)
+    if(!ImGui::GetIO().WantCaptureMouse)
         UpdateCamera(&camera);
 
     for(auto [entity, transform, cameraComponent] :
@@ -255,15 +222,11 @@ int main()
     SetConfigFlags(FLAG_MSAA_4X_HINT);
     SetConfigFlags(FLAG_WINDOW_HIGHDPI);
     InitWindow(screenWidth, screenHeight, "Raylib test");
+    RaylibImGui::Init();
 
     // Create lua state and perform initial setup
     luaState = luaL_newstate();
     luaL_openlibs(luaState);
-
-    RaylibImGui::Init();
-    luaContext = ImGui::GetCurrentContext();
-    ImGui::SetCurrentContext(nullptr);
-
     // Use our own print function
     const luaL_Reg printarr[] = {{"print", lua_print}, {NULL, NULL}};
     lua_getglobal(luaState, "_G");
@@ -273,7 +236,6 @@ int main()
     last = std::chrono::high_resolution_clock::now();
 
     LoadAssets();
-    RaylibImGui::Init();
 
     World::Init(&registry);
 

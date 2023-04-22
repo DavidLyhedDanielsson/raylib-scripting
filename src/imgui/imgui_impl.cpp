@@ -11,6 +11,7 @@
 
 #include "imgui_impl.hpp"
 #include <external/raylib.hpp>
+#include <imgui/imgui_internal.hpp>
 
 #include <algorithm>
 #include <array>
@@ -136,9 +137,11 @@ ImGuiKey TranslateKey(KeyboardKey key)
 void RaylibImGui::Init()
 {
     ImGui::CreateContext();
-    ImGui::GetIO().BackendPlatformName = "custom_raylib_impl";
     ImGui::GetStyle().ScaleAllSizes(GetWindowScaleDPI().x);
+    ImGui::GetIO().BackendPlatformName = "custom_raylib_impl";
     ImGui::GetIO().FontGlobalScale = GetWindowScaleDPI().x;
+    ImGui::GetIO().DisplaySize.x = (float)GetRenderWidth();
+    ImGui::GetIO().DisplaySize.y = (float)GetRenderHeight();
 
     ImGui_ImplOpenGL3_Init();
 }
@@ -328,11 +331,6 @@ void RaylibImGui::Begin()
         io.AddMouseWheelEvent(0.0f, GetMouseWheelMove());
     }
 
-    io.DisplaySize.x = (float)GetRenderWidth();
-    io.DisplaySize.y = (float)GetRenderHeight();
-
-    ImGui_ImplOpenGL3_NewFrame();
-
     /*if (!(io.ConfigFlags & ImGuiConfigFlags_NoMouseCursorChange))
     {
         ImGuiMouseCursor imguiCursor = ImGui::GetMouseCursor();
@@ -354,12 +352,14 @@ void RaylibImGui::Begin()
     io.DeltaTime = lastTime > 0.0 ? (float)(delta) : (float)(1.0f / 60.0f);
     lastTime = currentTime;
 
+    ImGui_ImplOpenGL3_NewFrame();
     ImGui::NewFrame();
     ImGuizmo::BeginFrame();
 }
 
 void RaylibImGui::End()
 {
+    ErrorCheckEndFrameRecover();
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
