@@ -1,2 +1,5 @@
 build
 raylib_test
+.cache
+.vs
+.vscode
