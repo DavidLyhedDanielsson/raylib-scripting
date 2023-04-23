@@ -96,6 +96,24 @@ namespace LuaEntt
 
         LuaRegister::RegisterMember(
             lua,
+            "Each",
+            registry,
+            +[](entt::registry* registry, lua_State* lua, LuaRegister::Placeholder callback) {
+                registry->each([&](entt::entity entity) {
+                    lua_pushnil(lua);
+                    lua_copy(lua, callback.stackIndex, lua_gettop(lua));
+
+                    lua_pushinteger(lua, (lua_Integer)entity);
+                    if(lua_pcall(lua, 1, 0, 0) != LUA_OK)
+                    {
+                        auto err = lua_tostring(lua, -1);
+                        assert(false);
+                    }
+                });
+            });
+
+        LuaRegister::RegisterMember(
+            lua,
             "EnttForEach",
             registry,
             +[](entt::registry* registry,

@@ -144,10 +144,10 @@ namespace World
                 }
 
                 bool anyMissing =
-                    EntityReflection::IsMissing<RenderReflection>(registry, entity)
-                    || EntityReflection::IsMissing<TransformReflection>(registry, entity)
-                    || EntityReflection::IsMissing<VelocityReflection>(registry, entity)
-                    || EntityReflection::IsMissing<TileReflection>(registry, entity);
+                    EntityReflection::HasComponent<RenderReflection>(registry, entity)
+                    || EntityReflection::HasComponent<TransformReflection>(registry, entity)
+                    || EntityReflection::HasComponent<VelocityReflection>(registry, entity)
+                    || EntityReflection::HasComponent<TileReflection>(registry, entity);
 
                 if(anyMissing)
                 {
@@ -203,7 +203,7 @@ namespace World
             }
             ImGui::PopID();
         };
-        world.registry->each(printEntity);
+        // world.registry->each(printEntity);
         ImGui::End();
     }
 }

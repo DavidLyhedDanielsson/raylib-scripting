@@ -498,5 +498,68 @@ namespace LuaImGui
         LuaImguiPushWindowFlag(NoDecoration);
         LuaImguiPushWindowFlag(NoInputs);
         lua_setglobal(lua, "WindowFlags");
+
+#define LuaImguiPushCol(flag)              \
+    lua_pushstring(lua, #flag);            \
+    lua_pushinteger(lua, ImGuiCol_##flag); \
+    lua_settable(lua, -3);
+
+        lua_createtable(lua, 0, 0);
+        LuaImguiPushCol(Text);
+        LuaImguiPushCol(TextDisabled);
+        LuaImguiPushCol(WindowBg);
+        LuaImguiPushCol(ChildBg);
+        LuaImguiPushCol(PopupBg);
+        LuaImguiPushCol(Border);
+        LuaImguiPushCol(BorderShadow);
+        LuaImguiPushCol(FrameBg);
+        LuaImguiPushCol(FrameBgHovered);
+        LuaImguiPushCol(FrameBgActive);
+        LuaImguiPushCol(TitleBg);
+        LuaImguiPushCol(TitleBgActive);
+        LuaImguiPushCol(TitleBgCollapsed);
+        LuaImguiPushCol(MenuBarBg);
+        LuaImguiPushCol(ScrollbarBg);
+        LuaImguiPushCol(ScrollbarGrab);
+        LuaImguiPushCol(ScrollbarGrabHovered);
+        LuaImguiPushCol(ScrollbarGrabActive);
+        LuaImguiPushCol(CheckMark);
+        LuaImguiPushCol(SliderGrab);
+        LuaImguiPushCol(SliderGrabActive);
+        LuaImguiPushCol(Button);
+        LuaImguiPushCol(ButtonHovered);
+        LuaImguiPushCol(ButtonActive);
+        LuaImguiPushCol(Header);
+        LuaImguiPushCol(HeaderHovered);
+        LuaImguiPushCol(HeaderActive);
+        LuaImguiPushCol(Separator);
+        LuaImguiPushCol(SeparatorHovered);
+        LuaImguiPushCol(SeparatorActive);
+        LuaImguiPushCol(ResizeGrip);
+        LuaImguiPushCol(ResizeGripHovered);
+        LuaImguiPushCol(ResizeGripActive);
+        LuaImguiPushCol(Tab);
+        LuaImguiPushCol(TabHovered);
+        LuaImguiPushCol(TabActive);
+        LuaImguiPushCol(TabUnfocused);
+        LuaImguiPushCol(TabUnfocusedActive);
+        LuaImguiPushCol(DockingPreview);
+        LuaImguiPushCol(DockingEmptyBg);
+        LuaImguiPushCol(PlotLines);
+        LuaImguiPushCol(PlotLinesHovered);
+        LuaImguiPushCol(PlotHistogram);
+        LuaImguiPushCol(PlotHistogramHovered);
+        LuaImguiPushCol(TableHeaderBg);
+        LuaImguiPushCol(TableBorderStrong);
+        LuaImguiPushCol(TableBorderLight);
+        LuaImguiPushCol(TableRowBg);
+        LuaImguiPushCol(TableRowBgAlt);
+        LuaImguiPushCol(TextSelectedBg);
+        LuaImguiPushCol(DragDropTarget);
+        LuaImguiPushCol(NavHighlight);
+        LuaImguiPushCol(NavWindowingHighlight);
+        LuaImguiPushCol(NavWindowingDimBg);
+        LuaImguiPushCol(ModalWindowDimBg);
+        lua_setglobal(lua, "Col");
     }
 }

@@ -19,6 +19,7 @@ extern "C" {
 #include "assets.hpp"
 #include "imgui/imgui_impl.hpp"
 #include "lua/lua_asset_impl.hpp"
+#include "lua/lua_entity_reflection_impl.hpp"
 #include "lua/lua_entt_impl.hpp"
 #include "lua/lua_imgui_impl.hpp"
 #include "lua/lua_imguizmo_impl.hpp"
@@ -274,6 +275,7 @@ int main()
     LuaImGui::Register(luaState);
     LuaImGuizmo::Register(luaState, &registry);
     LuaRaylib::Register(luaState, &registry);
+    LuaEntityReflection::Register(luaState, &registry);
 
     auto res = luaL_loadfile(luaState, AssetPath("lua/main.lua").data());
     if(res != LUA_OK)

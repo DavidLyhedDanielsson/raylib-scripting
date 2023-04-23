@@ -66,6 +66,7 @@ set(SRC
     imgui/imgui_impl.cpp imgui/imgui_impl.hpp
     imgui/imgui_internal.cpp imgui/imgui_internal.hpp
     lua/lua_asset_impl.cpp lua/lua_asset_impl.hpp
+    lua/lua_entity_reflection_impl.cpp lua/lua_entity_reflection_impl.hpp
     lua/lua_entt_impl.cpp lua/lua_entt_impl.hpp
     lua/lua_imgui_impl.cpp lua/lua_imgui_impl.hpp
     lua/lua_imguizmo_impl.cpp lua/lua_imguizmo_impl.hpp

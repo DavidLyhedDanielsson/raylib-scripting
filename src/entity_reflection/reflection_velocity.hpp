@@ -5,8 +5,9 @@
 #include <entt/entt.hpp>
 #include <external/raylib.hpp>
 
+static const char velocityReflection[] = "velocity";
 struct VelocityReflection
-    : public ReflectionComponent<VelocityReflection, Component::Velocity, __COUNTER__>
+    : public ReflectionComponent<VelocityReflection, Component::Velocity, velocityReflection>
 {
     static void Create(entt::registry& registry, entt::entity entity)
     {

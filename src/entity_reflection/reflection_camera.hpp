@@ -5,8 +5,9 @@
 #include <entt/entt.hpp>
 #include <external/raylib.hpp>
 
+static const char cameraReflection[] = "camera";
 struct CameraReflection
-    : public ReflectionComponent<CameraReflection, Component::Camera, __COUNTER__>
+    : public ReflectionComponent<CameraReflection, Component::Camera, cameraReflection>
 {
     static void Create(entt::registry& registry, entt::entity entity)
     {

@@ -15,9 +15,9 @@ struct EntityReflection
         void (*tryDuplicate)(entt::registry&, entt::entity, entt::entity);
     };
 
-    static std::map<uint32_t, ComponentFunctions>& ComponentMap()
+    static std::map<std::string, ComponentFunctions>& ComponentMap()
     {
-        static std::map<uint32_t, ComponentFunctions> instance{};
+        static std::map<std::string, ComponentFunctions> instance{};
         return instance;
     }
 
@@ -26,7 +26,7 @@ struct EntityReflection
     static void Register()
     {
         ComponentMap().insert(std::make_pair(
-            Component::ID,
+            Component::NAME,
             ComponentFunctions{
                 .getComponent = Component::GetComponent,
                 .tryViewOne = Component::TryViewOne,
@@ -54,7 +54,23 @@ struct EntityReflection
     {
         auto entityMap = ComponentMap();
 
-        auto iter = entityMap.find(Component::ID);
+        auto iter = entityMap.find(Component::NAME);
+        assert(iter != entityMap.end());
+
+        if(!iter->second.getComponent(registry, entity))
+            func();
+    }
+
+    template<typename Func>
+    static void IfMissing(
+        const char* componentName,
+        entt::registry& registry,
+        entt::entity entity,
+        const Func& func)
+    {
+        auto entityMap = ComponentMap();
+
+        auto iter = entityMap.find(componentName);
         assert(iter != entityMap.end());
 
         if(!iter->second.getComponent(registry, entity))
@@ -62,14 +78,27 @@ struct EntityReflection
     }
 
     template<typename Component>
-    static bool IsMissing(entt::registry& registry, entt::entity entity)
+    static bool HasComponent(entt::registry& registry, entt::entity entity)
     {
         auto entityMap = ComponentMap();
 
-        auto iter = entityMap.find(Component::ID);
+        auto iter = entityMap.find(Component::NAME);
         assert(iter != entityMap.end());
 
-        return !iter->second.getComponent(registry, entity);
+        return iter->second.getComponent(registry, entity).has_value();
+    }
+
+    static bool HasComponent(
+        const char* componentName,
+        entt::registry& registry,
+        entt::entity entity)
+    {
+        auto entityMap = ComponentMap();
+
+        auto iter = entityMap.find(componentName);
+        assert(iter != entityMap.end());
+
+        return iter->second.getComponent(registry, entity).has_value();
     }
 
     template<typename Component, typename Func>
@@ -77,7 +106,23 @@ struct EntityReflection
     {
         auto entityMap = ComponentMap();
 
-        auto iter = entityMap.find(Component::ID);
+        auto iter = entityMap.find(Component::NAME);
+        assert(iter != entityMap.end());
+
+        if(!iter->second.getComponent(registry, entity))
+            func();
+    }
+
+    template<typename Func>
+    static void ForEachMissing(
+        const char* componentName,
+        entt::registry& registry,
+        entt::entity entity,
+        const Func& func)
+    {
+        auto entityMap = ComponentMap();
+
+        auto iter = entityMap.find(componentName);
         assert(iter != entityMap.end());
 
         if(!iter->second.getComponent(registry, entity))

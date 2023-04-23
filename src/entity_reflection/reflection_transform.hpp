@@ -4,8 +4,9 @@
 #include <entity/transform.hpp>
 #include <external/raylib.hpp>
 
+static const char transformReflection[] = "transform";
 struct TransformReflection
-    : public ReflectionComponent<TransformReflection, Component::Transform, __COUNTER__>
+    : public ReflectionComponent<TransformReflection, Component::Transform, transformReflection>
 {
     static void Create(entt::registry& registry, entt::entity entity)
     {

@@ -4,7 +4,8 @@
 #include <entity/tile.hpp>
 #include <external/raylib.hpp>
 
-struct TileReflection: public ReflectionComponent<TileReflection, Component::Tile, __COUNTER__>
+static const char tileReflection[] = "tile";
+struct TileReflection: public ReflectionComponent<TileReflection, Component::Tile, tileReflection>
 {
     static void Create(entt::registry& registry, entt::entity entity)
     {

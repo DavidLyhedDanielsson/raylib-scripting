@@ -20,4 +20,70 @@ function imgui()
     end
 
     End()
+
+    Begin("Entity")
+    Each(function(entity)
+        if TreeNode("Entity " .. entity) then
+            PushStyleColor(Col.Button, { x = 0xcc / 255.0, y = 0x24 / 255.0, z = 0x1d / 255.0, w = 1.0 });
+            PushStyleColor(Col.ButtonHovered, { x = 0xd1 / 255.0, y = 0x39 / 255.0, z = 0x33 / 255.0, w = 1.0 });
+            PushStyleColor(Col.ButtonActive, { x = 0xb7 / 255.0, y = 0x20 / 255.0, z = 0x1a / 255.0, w = 1.0 });
+            local deleteEntity = Button("DELETE ENTITY")
+            PopStyleColor(3)
+
+            local hasComponents = true
+            ModifyEntityOrElse(entity, function()
+                Text("No components in this entity")
+                hasComponents = false
+            end)
+
+            if hasComponents then
+                if Button("DuplicateEntity") then
+                    DuplicateEntity(entity)
+                end
+            end
+
+            local components = {
+                render = HasComponent("render", entity),
+                transform = HasComponent("transform", entity),
+                velocity = HasComponent("velocity", entity),
+                tile = HasComponent("tile", entity)
+            }
+
+            -- TODO: camel or pascal or what?
+            local anyMissing = not components.render
+                or not components.transform
+                or not components.velocity
+                or not components.tile
+
+            if anyMissing then
+                if BeginCombo("##addcomponent", "Add component") then
+                    -- TODO: Render component
+                    if not components.transform then
+                        if Selectable("Transform") then
+
+                        end
+                    end
+                    if not components.velocity then
+                        if Selectable("Velocity") then
+
+                        end
+                    end
+                    if not components.tile then
+                        if Selectable("Tile") then
+
+                        end
+                    end
+
+                    EndCombo()
+                end
+            else
+                BeginDisabled();
+                BeginCombo("##addcomponent", "No more components available");
+                EndDisabled();
+            end
+
+            TreePop()
+        end
+    end)
+    End()
 end

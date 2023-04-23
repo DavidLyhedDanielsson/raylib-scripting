@@ -6,11 +6,12 @@
 #include <imgui.h>
 #include <optional>
 
-template<typename Derived, typename ComponentType, size_t IDValue>
+template<typename Derived, typename ComponentType, const char* name>
 class ReflectionComponent
 {
   public:
     using Derived = Derived;
+    static constexpr const char* NAME = name;
 
     ReflectionComponent()
     {
@@ -19,7 +20,7 @@ class ReflectionComponent
 
     static void RegisterSelf()
     {
-        EntityReflection::Register<ReflectionComponent<Derived, ComponentType, IDValue>>();
+        EntityReflection::Register<ReflectionComponent<Derived, ComponentType, name>>();
     }
 
     // Type needs to be erased or a pointer to the function can't be created
@@ -93,7 +94,7 @@ class ReflectionComponent
         }
     }
 
-    constexpr static uint32_t ID = IDValue;
+    // constexpr static uint32_t ID = IDValue;
 
   protected:
     static bool AddRemoveButton(const char* text, entt::registry& registry, entt::entity entity)

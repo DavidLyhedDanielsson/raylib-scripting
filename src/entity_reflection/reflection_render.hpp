@@ -5,8 +5,9 @@
 
 #include <assets.hpp>
 
+static const char renderReflection[] = "render";
 struct RenderReflection
-    : public ReflectionComponent<RenderReflection, Component::Render, __COUNTER__>
+    : public ReflectionComponent<RenderReflection, Component::Render, renderReflection>
 {
     static void Create(entt::registry& registry, entt::entity entity)
     {
