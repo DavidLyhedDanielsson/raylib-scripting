@@ -2,6 +2,7 @@
 
 #include "reflection_entity.hpp"
 #include <entity/render.hpp>
+#include <lua/lua_register_types.hpp>
 
 #include <assets.hpp>
 
@@ -15,6 +16,25 @@ struct RenderReflection
         //     entity,
         //     GetAssetName(Asset::Insurgent),
         //     GetLoadedAsset(Asset::Insurgent));
+    }
+
+    static void CreateFromLua(
+        lua_State* lua,
+        entt::registry& registry,
+        entt::entity entity,
+        int stackIndex)
+    {
+        std::string_view assetName = lua_tostring(lua, stackIndex);
+        for(const auto& [key, value] : loadedAssets)
+        {
+            if(key == assetName)
+            {
+                registry.emplace<Component::Render>(
+                    entity,
+                    Component::Render{.assetName = key.c_str(), .model = value});
+                break;
+            }
+        }
     }
 
     static void View(Component::Render& component)

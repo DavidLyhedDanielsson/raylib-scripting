@@ -1,6 +1,6 @@
 #include "lua_imgui_impl.hpp"
 
-#include "lua_register.hpp"
+#include "lua_register_types.hpp"
 #include <entity_reflection/entity_reflection.hpp>
 
 namespace LuaEntityReflection
@@ -73,6 +73,23 @@ namespace LuaEntityReflection
                 lua_Integer entity,
                 Placeholder callback) {
                 EntityReflection::DuplicateEntity(*registry, (entt::entity)entity);
+            });
+
+        RegisterMember(
+            lua,
+            "AddComponent",
+            registry,
+            +[](entt::registry* registry,
+                lua_State* lua,
+                lua_Integer entity,
+                const char* componentName,
+                Placeholder component) {
+                EntityReflection::AddComponentFromLua(
+                    lua,
+                    componentName,
+                    registry,
+                    (entt::entity)entity,
+                    component.stackIndex);
             });
     }
 }

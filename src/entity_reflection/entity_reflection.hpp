@@ -3,6 +3,13 @@
 #include "reflection_entity.hpp"
 #include <entt/entt.hpp>
 #include <map>
+#include <optional>
+
+#ifndef ENTITY_REFLECTION_SKIP_LUA
+extern "C" {
+    #include <lua.h>
+}
+#endif
 
 struct EntityReflection
 {
@@ -13,6 +20,10 @@ struct EntityReflection
         bool (*tryViewOne)(entt::registry&, entt::entity);
         bool (*tryModifyOne)(entt::registry&, entt::entity, bool);
         void (*tryDuplicate)(entt::registry&, entt::entity, entt::entity);
+#ifndef ENTITY_REFLECTION_SKIP_LUA
+        // TODO: Error handling
+        void (*createFromLua)(lua_State*, entt::registry&, entt::entity, int);
+#endif
     };
 
     static std::map<std::string, ComponentFunctions>& ComponentMap()
@@ -32,6 +43,9 @@ struct EntityReflection
                 .tryViewOne = Component::TryViewOne,
                 .tryModifyOne = Component::TryModifyOne,
                 .tryDuplicate = Component::TryDuplicate,
+#ifndef ENTITY_REFLECTION_SKIP_LUA
+                .createFromLua = Component::Derived::CreateFromLua,
+#endif
             }));
     }
 
@@ -135,5 +149,20 @@ struct EntityReflection
         for(const auto& [id, functions] : ComponentMap())
             functions.tryDuplicate(registry, entity, newEntity);
         return newEntity;
+    }
+
+    static void AddComponentFromLua(
+        lua_State* lua,
+        const char* componentName,
+        entt::registry* registry,
+        entt::entity entity,
+        int componentStackIndex)
+    {
+        auto entityMap = ComponentMap();
+
+        auto iter = entityMap.find(componentName);
+        assert(iter != entityMap.end());
+
+        iter->second.createFromLua(lua, *registry, entity, componentStackIndex);
     }
 };

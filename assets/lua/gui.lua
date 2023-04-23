@@ -58,19 +58,28 @@ function imgui()
             if anyMissing then
                 if BeginCombo("##addcomponent", "Add component") then
                     -- TODO: Render component
+                    if not components.render then
+                        if Selectable("Render") then
+                            AddComponent(entity, "render", "Barrel")
+                        end
+                    end
                     if not components.transform then
                         if Selectable("Transform") then
-
+                            AddComponent(entity, "transform", {
+                                position = { x = 0, y = 0, z = 0 }
+                            })
                         end
                     end
                     if not components.velocity then
                         if Selectable("Velocity") then
-
+                            AddComponent(entity, "velocity", {
+                                x = 0.0, y = 0.0, z = 0.0
+                            })
                         end
                     end
                     if not components.tile then
                         if Selectable("Tile") then
-
+                            AddComponent(entity, "tile")
                         end
                     end
 

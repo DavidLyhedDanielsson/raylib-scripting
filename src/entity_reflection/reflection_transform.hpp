@@ -3,6 +3,7 @@
 #include "reflection_entity.hpp"
 #include <entity/transform.hpp>
 #include <external/raylib.hpp>
+#include <lua/lua_register_types.hpp>
 
 static const char transformReflection[] = "transform";
 struct TransformReflection
@@ -11,6 +12,23 @@ struct TransformReflection
     static void Create(entt::registry& registry, entt::entity entity)
     {
         registry.emplace<Component::Transform>(entity, 0.0f, 0.0f, 0.0f);
+    }
+
+    static void CreateFromLua(
+        lua_State* lua,
+        entt::registry& registry,
+        entt::entity entity,
+        int stackIndex)
+    {
+        Component::Transform component{};
+
+        lua_getfield(lua, stackIndex, "position");
+
+        component.position = LuaRegister::LuaGetFunc<Vector3>(lua, stackIndex + 1);
+        // TODO
+        // component.rotation = LuaRegister::LuaGetFunc<Vector3>(lua, -1);
+
+        registry.emplace<Component::Transform>(entity, component);
     }
 
     static void View(Component::Transform& component)

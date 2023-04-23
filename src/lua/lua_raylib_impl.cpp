@@ -1,128 +1,12 @@
 #include "lua_raylib_impl.hpp"
 
-#include "lua_register.hpp"
 #include <entt/entt.hpp>
-#include <external/raylib.hpp>
+#include <lua/lua_register_types.hpp>
 #include <world.hpp>
 
 #include <entity/camera.hpp>
 #include <entity/render.hpp>
 #include <entity/transform.hpp>
-
-namespace LuaRegister
-{
-    template<>
-    inline constexpr auto GetDefault<Vector2> = Vector2{0.0f, 0.0f};
-    template<>
-    inline constexpr auto GetDefault<Vector3> = Vector3{0.0f, 0.0f, 0.0f};
-    template<>
-    inline constexpr auto GetDefault<Vector4> = Vector4{0.0f, 0.0f, 0.0f, 0.0f};
-    template<>
-    inline constexpr auto GetDefault<Ray> = Ray{{0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}};
-    template<>
-    inline constexpr auto GetDefault<Color> = Color{1, 1, 1, 1};
-
-    template<>
-    constexpr auto LuaSetFunc<Vector2> = [](lua_State* lua, Vector2 v) {
-        lua_createtable(lua, 0, 2);
-        lua_pushnumber(lua, v.x);
-        lua_setfield(lua, -2, "x");
-        lua_pushnumber(lua, v.y);
-        lua_setfield(lua, -2, "y");
-    };
-    template<>
-    constexpr auto LuaSetFunc<Vector3> = [](lua_State* lua, Vector3 v) {
-        lua_createtable(lua, 0, 2);
-        lua_pushnumber(lua, v.x);
-        lua_setfield(lua, -2, "x");
-        lua_pushnumber(lua, v.y);
-        lua_setfield(lua, -2, "y");
-        lua_pushnumber(lua, v.z);
-        lua_setfield(lua, -2, "z");
-    };
-    template<>
-    constexpr auto LuaSetFunc<Vector4> = [](lua_State* lua, Vector4 v) {
-        lua_createtable(lua, 0, 2);
-        lua_pushnumber(lua, v.x);
-        lua_setfield(lua, -2, "x");
-        lua_pushnumber(lua, v.y);
-        lua_setfield(lua, -2, "y");
-        lua_pushnumber(lua, v.z);
-        lua_setfield(lua, -2, "z");
-        lua_pushnumber(lua, v.w);
-        lua_setfield(lua, -2, "w");
-    };
-    template<>
-    constexpr auto LuaSetFunc<Ray> = [](lua_State* lua, Ray v) {
-        lua_createtable(lua, 0, 2);
-        lua_pushstring(lua, "position");
-        LuaSetFunc<Vector3>(lua, v.position);
-        lua_settable(lua, -3);
-        lua_pushstring(lua, "direction");
-        LuaSetFunc<Vector3>(lua, v.direction);
-        lua_settable(lua, -3);
-    };
-
-    template<>
-    constexpr auto LuaGetFunc<Vector2> = [](lua_State* lua, int i) {
-        lua_getfield(lua, i, "x");
-        float x = lua_tonumber(lua, -1);
-        lua_getfield(lua, i, "y");
-        float y = lua_tonumber(lua, -1);
-        lua_pop(lua, 2);
-        return Vector2{x, y};
-    };
-    template<>
-    constexpr auto LuaGetFunc<Vector3> = [](lua_State* lua, int i) {
-        lua_getfield(lua, i, "x");
-        float x = lua_tonumber(lua, -1);
-        lua_getfield(lua, i, "y");
-        float y = lua_tonumber(lua, -1);
-        lua_getfield(lua, i, "z");
-        float z = lua_tonumber(lua, -1);
-        lua_pop(lua, 3);
-        return Vector3{x, y, z};
-    };
-    template<>
-    constexpr auto LuaGetFunc<BoundingBox> = [](lua_State* lua, int i) {
-        lua_getfield(lua, i, "min");
-        int index = lua_gettop(lua);
-        auto min = LuaGetFunc<Vector3>(lua, index);
-
-        lua_getfield(lua, i, "max");
-        auto max = LuaGetFunc<Vector3>(lua, index);
-
-        lua_pop(lua, 2);
-
-        return BoundingBox{min, max};
-    };
-    template<>
-    constexpr auto LuaGetFunc<Ray> = [](lua_State* lua, int i) {
-        lua_getfield(lua, i, "position");
-        int index = lua_gettop(lua);
-        auto position = LuaGetFunc<Vector3>(lua, index);
-
-        lua_getfield(lua, i, "direction");
-        auto direction = LuaGetFunc<Vector3>(lua, index + 1);
-
-        lua_pop(lua, 2);
-
-        return Ray{position, direction};
-    };
-    template<>
-    constexpr auto LuaGetFunc<Color> = [](lua_State* lua, int i) {
-        lua_getfield(lua, i, "r");
-        unsigned char r = lua_tointeger(lua, -1);
-        lua_getfield(lua, i, "g");
-        unsigned char g = lua_tointeger(lua, -1);
-        lua_getfield(lua, i, "b");
-        unsigned char b = lua_tointeger(lua, -1);
-        lua_getfield(lua, i, "a");
-        unsigned char a = lua_tointeger(lua, -1);
-        lua_pop(lua, 4);
-        return Color{r, g, b, a};
-    };
-}
 
 namespace LuaRaylib
 {

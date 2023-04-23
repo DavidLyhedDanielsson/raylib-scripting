@@ -4,6 +4,7 @@
 #include <entity/velocity.hpp>
 #include <entt/entt.hpp>
 #include <external/raylib.hpp>
+#include <lua/lua_register_types.hpp>
 
 static const char velocityReflection[] = "velocity";
 struct VelocityReflection
@@ -12,6 +13,24 @@ struct VelocityReflection
     static void Create(entt::registry& registry, entt::entity entity)
     {
         registry.emplace<Component::Velocity>(entity, 0.0f, 0.0f, 0.0f);
+    }
+
+    static void CreateFromLua(
+        lua_State* lua,
+        entt::registry& registry,
+        entt::entity entity,
+        int stackIndex)
+    {
+        Component::Velocity component{};
+
+        lua_getfield(lua, stackIndex, "x");
+        component.x = lua_tonumber(lua, -1);
+        lua_getfield(lua, stackIndex, "y");
+        component.y = lua_tonumber(lua, -1);
+        lua_getfield(lua, stackIndex, "z");
+        component.z = lua_tonumber(lua, -1);
+
+        registry.emplace<Component::Velocity>(entity, component);
     }
 
     static void View(Component::Velocity& component)

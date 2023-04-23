@@ -5,6 +5,7 @@
 #include <imgui/imgui_internal.hpp>
 // Needs to be after imgui
 #include <ImGuizmo.h>
+#include <lua/lua_register_types.hpp>
 
 #define LuaImguiQuickRegister(X) LuaRegister::Register(lua, #X, ImGui::X)
 // Macro to register an overloaded function with the same name as the ImGui function
@@ -14,60 +15,6 @@
 // appending a suffix to it
 #define LuaImguiQuickRegisterUOverload(X, suff, type) \
     LuaRegister::Register(lua, #X #suff, static_cast<type>(ImGui::X))
-
-namespace LuaRegister
-{
-    template<>
-    inline auto GetDefault<ImVec2> = ImVec2(0.0f, 0.0f);
-    template<>
-    inline auto GetDefault<ImVec4> = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
-
-    template<>
-    constexpr auto LuaSetFunc<ImVec2> = [](lua_State* lua, ImVec2 v) {
-        lua_createtable(lua, 0, 2);
-        lua_pushnumber(lua, v.x);
-        lua_setfield(lua, -2, "x");
-        lua_pushnumber(lua, v.y);
-        lua_setfield(lua, -2, "y");
-    };
-
-    template<>
-    constexpr auto LuaSetFunc<ImVec4> = [](lua_State* lua, ImVec4 v) {
-        lua_createtable(lua, 0, 2);
-        lua_pushnumber(lua, v.x);
-        lua_setfield(lua, -2, "x");
-        lua_pushnumber(lua, v.y);
-        lua_setfield(lua, -2, "y");
-        lua_pushnumber(lua, v.z);
-        lua_setfield(lua, -2, "z");
-        lua_pushnumber(lua, v.w);
-        lua_setfield(lua, -2, "w");
-    };
-
-    template<>
-    constexpr auto LuaGetFunc<ImVec2> = [](lua_State* lua, int i) {
-        lua_getfield(lua, i, "x");
-        float x = lua_tonumber(lua, -1);
-        lua_getfield(lua, i, "y");
-        float y = lua_tonumber(lua, -1);
-        lua_pop(lua, 2);
-        return ImVec2{x, y};
-    };
-
-    template<>
-    constexpr auto LuaGetFunc<ImVec4> = [](lua_State* lua, int i) {
-        lua_getfield(lua, i, "x");
-        float x = lua_tonumber(lua, -1);
-        lua_getfield(lua, i, "y");
-        float y = lua_tonumber(lua, -1);
-        lua_getfield(lua, i, "z");
-        float z = lua_tonumber(lua, -1);
-        lua_getfield(lua, i, "w");
-        float w = lua_tonumber(lua, -1);
-        lua_pop(lua, 4);
-        return ImVec4{x, y, z, w};
-    };
-}
 
 namespace LuaImGui
 {

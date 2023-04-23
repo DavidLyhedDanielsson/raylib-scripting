@@ -4,6 +4,7 @@
 #include <entity/camera.hpp>
 #include <entt/entt.hpp>
 #include <external/raylib.hpp>
+#include <lua/lua_register_types.hpp>
 
 static const char cameraReflection[] = "camera";
 struct CameraReflection
@@ -13,6 +14,24 @@ struct CameraReflection
     {
         // registry.emplace<Component::Camera>(entity, 0.0f, 0.0f, 0.0f);
     }
+
+    static void CreateFromLua(
+        lua_State* lua,
+        entt::registry& registry,
+        entt::entity entity,
+        int stackIndex)
+    {
+        Component::Camera component{};
+
+        component.target = LuaRegister::LuaGetFunc<Vector3>(lua, -4);
+        component.up = LuaRegister::LuaGetFunc<Vector3>(lua, -3);
+        component.fovy = lua_tonumber(lua, -2);
+        component.projection = lua_tointeger(lua, -1);
+
+        registry.emplace<Component::Camera>(entity, component);
+    }
+
+    static void GetToLua(entt::registry& registry, entt::entity entity) {}
 
     static void View(Component::Camera& component)
     {
