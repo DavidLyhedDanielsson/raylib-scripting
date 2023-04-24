@@ -155,37 +155,50 @@ namespace World
                     {
                         if(!loadedAssets.empty())
                         {
-                            EntityReflection::IfMissing<RenderReflection>(registry, entity, [&]() {
-                                if(ImGui::Selectable("Render", selectedComponent == 0))
-                                {
-                                    auto firstAsset = loadedAssets.begin();
-                                    registry.emplace<Component::Render>(
-                                        entity,
-                                        firstAsset->first.c_str(),
-                                        firstAsset->second);
-                                }
-                            });
+                            EntityReflection::IfComponentMissing<RenderReflection>(
+                                registry,
+                                entity,
+                                [&]() {
+                                    if(ImGui::Selectable("Render", selectedComponent == 0))
+                                    {
+                                        auto firstAsset = loadedAssets.begin();
+                                        registry.emplace<Component::Render>(
+                                            entity,
+                                            firstAsset->first.c_str(),
+                                            firstAsset->second);
+                                    }
+                                });
                         }
                         else
                             ImGui::Text("No available models");
-                        EntityReflection::IfMissing<TransformReflection>(registry, entity, [&]() {
-                            if(ImGui::Selectable("Transform", selectedComponent == 1))
-                            {
-                                registry.emplace<Component::Transform>(entity, 0.0f, 0.0f, 0.0f);
-                            }
-                        });
-                        EntityReflection::IfMissing<VelocityReflection>(registry, entity, [&]() {
-                            if(ImGui::Selectable("Velocity", selectedComponent == 2))
-                            {
-                                registry.emplace<Component::Velocity>(entity, 0.0f, 0.0f, 0.0f);
-                            }
-                        });
-                        EntityReflection::IfMissing<TileReflection>(registry, entity, [&]() {
-                            if(ImGui::Selectable("Tile", selectedComponent == 3))
-                            {
-                                registry.emplace<Component::Tile>(entity);
-                            }
-                        });
+                        EntityReflection::IfComponentMissing<TransformReflection>(
+                            registry,
+                            entity,
+                            [&]() {
+                                if(ImGui::Selectable("Transform", selectedComponent == 1))
+                                {
+                                    registry
+                                        .emplace<Component::Transform>(entity, 0.0f, 0.0f, 0.0f);
+                                }
+                            });
+                        EntityReflection::IfComponentMissing<VelocityReflection>(
+                            registry,
+                            entity,
+                            [&]() {
+                                if(ImGui::Selectable("Velocity", selectedComponent == 2))
+                                {
+                                    registry.emplace<Component::Velocity>(entity, 0.0f, 0.0f, 0.0f);
+                                }
+                            });
+                        EntityReflection::IfComponentMissing<TileReflection>(
+                            registry,
+                            entity,
+                            [&]() {
+                                if(ImGui::Selectable("Tile", selectedComponent == 3))
+                                {
+                                    registry.emplace<Component::Tile>(entity);
+                                }
+                            });
                         ImGui::EndCombo();
                     }
                 }

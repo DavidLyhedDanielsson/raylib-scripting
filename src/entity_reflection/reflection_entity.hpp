@@ -6,6 +6,23 @@
 #include <imgui.h>
 #include <optional>
 
+// There macros can be used to avoid having to change multiple placed when creating new component
+// reflections
+#define EntityReflectionStruct2(name)                 \
+    static const char name##ReflectionName[] = #name; \
+    struct name##Reflection                           \
+        : public ReflectionComponent<name##Reflection, Component::name, name##ReflectionName>
+#define EntityReflectionStructTail2(name) static name##Reflection Imgui##name##Instance{};
+
+// This weirdness with the "2" functions is required if a macro should be able to take another macro
+// as a parameter, and expand the parameter to the macro's actual value. For example:
+//   #define SomeMacro HereIsAValue
+//   #EntityReflectionStruct(SomeMacro)
+// Will expand to
+//   #EntityReflectionStruct2(HereIsAValue)
+#define EntityReflectionStruct(name) EntityReflectionStruct2(name)
+#define EntityReflectionStructTail(name) EntityReflectionStructTail2(name)
+
 template<typename Derived, typename ComponentType, const char* name>
 class ReflectionComponent
 {

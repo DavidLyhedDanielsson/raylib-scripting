@@ -1,26 +1,28 @@
 #pragma once
 
 #include "reflection_entity.hpp"
-#include <entity/transform.hpp>
 #include <external/raylib.hpp>
 #include <lua/lua_register_types.hpp>
 
-static const char transformReflection[] = "transform";
-struct TransformReflection
-    : public ReflectionComponent<TransformReflection, Component::Transform, transformReflection>
+#include <entity/transform.hpp>
+#define RComponent Transform
+EntityReflectionStruct(RComponent)
 {
-    static void Create(entt::registry& registry, entt::entity entity)
+    ; // This semicolon needs to be here or else clang-format breaks. The benefits of the macro
+      // outweigh the weirdness
+
+    static void Create(entt::registry & registry, entt::entity entity)
     {
-        registry.emplace<Component::Transform>(entity, 0.0f, 0.0f, 0.0f);
+        registry.emplace<Component::RComponent>(entity, 0.0f, 0.0f, 0.0f);
     }
 
     static void CreateFromLua(
-        lua_State* lua,
-        entt::registry& registry,
+        lua_State * lua,
+        entt::registry & registry,
         entt::entity entity,
         int stackIndex)
     {
-        Component::Transform component{};
+        Component::RComponent component{};
 
         lua_getfield(lua, stackIndex, "position");
 
@@ -28,10 +30,10 @@ struct TransformReflection
         // TODO
         // component.rotation = LuaRegister::LuaGetFunc<Vector3>(lua, -1);
 
-        registry.emplace<Component::Transform>(entity, component);
+        registry.emplace<Component::RComponent>(entity, component);
     }
 
-    static void View(Component::Transform& component)
+    static void View(Component::RComponent & component)
     {
         ImGui::Text(
             "Position: %f, %f, %f",
@@ -44,9 +46,9 @@ struct TransformReflection
     }
 
     static void Modify(
-        entt::registry& registry,
+        entt::registry & registry,
         entt::entity entity,
-        Component::Transform& component,
+        Component::RComponent & component,
         bool allowDeletion)
     {
         ImGui::DragFloat3("Position", &component.position.x);
@@ -60,12 +62,12 @@ struct TransformReflection
     }
 
     static void Duplicate(
-        entt::registry& registry,
-        const Component::Transform& component,
+        entt::registry & registry,
+        const Component::RComponent& component,
         entt::entity target)
     {
-        registry.emplace<Component::Transform>(target, component.position, component.rotation);
+        registry.emplace<Component::RComponent>(target, component.position, component.rotation);
     }
 };
-// Quick hack to call constructor and register self
-static TransformReflection ImguiTransformInstance{};
+EntityReflectionStructTail(RComponent)
+#undef RComponent

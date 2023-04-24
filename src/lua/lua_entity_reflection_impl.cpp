@@ -24,14 +24,14 @@ namespace LuaEntityReflection
 
         RegisterMember(
             lua,
-            "IfMissing",
+            "IfComponentMissing",
             registry,
             +[](entt::registry* registry,
                 lua_State* lua,
                 const char* component,
                 lua_Integer entity,
                 Placeholder callback) {
-                return EntityReflection::IfMissing(
+                return EntityReflection::IfComponentMissing(
                     component,
                     *registry,
                     (entt::entity)entity,

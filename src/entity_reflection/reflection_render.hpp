@@ -1,16 +1,17 @@
 #pragma once
 
 #include "reflection_entity.hpp"
-#include <entity/render.hpp>
+#include <assets.hpp>
 #include <lua/lua_register_types.hpp>
 
-#include <assets.hpp>
-
-static const char renderReflection[] = "render";
-struct RenderReflection
-    : public ReflectionComponent<RenderReflection, Component::Render, renderReflection>
+#include <entity/render.hpp>
+#define RComponent Render
+EntityReflectionStruct(RComponent)
 {
-    static void Create(entt::registry& registry, entt::entity entity)
+    ; // This semicolon needs to be here or else clang-format breaks. The benefits of the macro
+      // outweigh the weirdness
+
+    static void Create(entt::registry & registry, entt::entity entity)
     {
         // registry.emplace<Component::Render>(
         //     entity,
@@ -19,8 +20,8 @@ struct RenderReflection
     }
 
     static void CreateFromLua(
-        lua_State* lua,
-        entt::registry& registry,
+        lua_State * lua,
+        entt::registry & registry,
         entt::entity entity,
         int stackIndex)
     {
@@ -29,23 +30,23 @@ struct RenderReflection
         {
             if(key == assetName)
             {
-                registry.emplace<Component::Render>(
+                registry.emplace<Component::RComponent>(
                     entity,
-                    Component::Render{.assetName = key.c_str(), .model = value});
+                    Component::RComponent{.assetName = key.c_str(), .model = value});
                 break;
             }
         }
     }
 
-    static void View(Component::Render& component)
+    static void View(Component::RComponent & component)
     {
         ImGui::Text("Asset: %s", component.assetName);
     }
 
     static void Modify(
-        entt::registry& registry,
+        entt::registry & registry,
         entt::entity entity,
-        Component::Render& component,
+        Component::RComponent & component,
         bool allowDeletion)
     {
         if(ImGui::BeginCombo("Asset", component.assetName))
@@ -66,12 +67,12 @@ struct RenderReflection
     }
 
     static void Duplicate(
-        entt::registry& registry,
-        const Component::Render& component,
+        entt::registry & registry,
+        const Component::RComponent& component,
         entt::entity target)
     {
-        registry.emplace<Component::Render>(target, component.assetName, component.model);
+        registry.emplace<Component::RComponent>(target, component.assetName, component.model);
     }
 };
-// Quick hack to call constructor and register self
-static RenderReflection ImguiRenderInstance{};
+EntityReflectionStructTail(RComponent)
+#undef RComponent

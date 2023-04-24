@@ -5,6 +5,7 @@
 #include <map>
 #include <optional>
 
+// Ifdef just to keep the lua parts separated and easy to remove
 #ifndef ENTITY_REFLECTION_SKIP_LUA
 extern "C" {
     #include <lua.h>
@@ -26,6 +27,7 @@ struct EntityReflection
 #endif
     };
 
+    // TODO: use some handle instead of a string
     static std::map<std::string, ComponentFunctions>& ComponentMap()
     {
         static std::map<std::string, ComponentFunctions> instance{};
@@ -50,33 +52,7 @@ struct EntityReflection
     }
 
     template<typename Func>
-    static void ModifyEntityOrElse(
-        entt::registry& registry,
-        entt::entity entity,
-        const Func& ifNoneFound)
-    {
-        bool found = false;
-        for(const auto& [key, value] : ComponentMap())
-            found = value.tryModifyOne(registry, entity, true) || found;
-
-        if(!found)
-            ifNoneFound();
-    }
-
-    template<typename Component, typename Func>
-    static void IfMissing(entt::registry& registry, entt::entity entity, const Func& func)
-    {
-        auto entityMap = ComponentMap();
-
-        auto iter = entityMap.find(Component::NAME);
-        assert(iter != entityMap.end());
-
-        if(!iter->second.getComponent(registry, entity))
-            func();
-    }
-
-    template<typename Func>
-    static void IfMissing(
+    static void IfComponentMissing(
         const char* componentName,
         entt::registry& registry,
         entt::entity entity,
@@ -91,15 +67,10 @@ struct EntityReflection
             func();
     }
 
-    template<typename Component>
-    static bool HasComponent(entt::registry& registry, entt::entity entity)
+    template<typename Component, typename Func>
+    static void IfComponentMissing(entt::registry& registry, entt::entity entity, const Func& func)
     {
-        auto entityMap = ComponentMap();
-
-        auto iter = entityMap.find(Component::NAME);
-        assert(iter != entityMap.end());
-
-        return iter->second.getComponent(registry, entity).has_value();
+        IfComponentMissing(Component::NAME, registry, entity, func);
     }
 
     static bool HasComponent(
@@ -115,16 +86,34 @@ struct EntityReflection
         return iter->second.getComponent(registry, entity).has_value();
     }
 
-    template<typename Component, typename Func>
-    static void ForEachMissing(entt::registry& registry, entt::entity entity, const Func& func)
+    template<typename Component>
+    static bool HasComponent(entt::registry& registry, entt::entity entity)
     {
-        auto entityMap = ComponentMap();
+        return HasComponent(Component::NAME, registry, entity);
+    }
 
-        auto iter = entityMap.find(Component::NAME);
-        assert(iter != entityMap.end());
+    static entt::entity DuplicateEntity(entt::registry& registry, entt::entity entity)
+    {
+        auto newEntity = registry.create();
+        for(const auto& [id, functions] : ComponentMap())
+            functions.tryDuplicate(registry, entity, newEntity);
+        return newEntity;
+    }
 
-        if(!iter->second.getComponent(registry, entity))
-            func();
+    // "Functional" functions
+
+    template<typename Func>
+    static void ModifyEntityOrElse(
+        entt::registry& registry,
+        entt::entity entity,
+        const Func& ifNoneFound)
+    {
+        bool found = false;
+        for(const auto& [key, value] : ComponentMap())
+            found = value.tryModifyOne(registry, entity, true) || found;
+
+        if(!found)
+            ifNoneFound();
     }
 
     template<typename Func>
@@ -143,14 +132,13 @@ struct EntityReflection
             func();
     }
 
-    static entt::entity DuplicateEntity(entt::registry& registry, entt::entity entity)
+    template<typename Component, typename Func>
+    static void ForEachMissing(entt::registry& registry, entt::entity entity, const Func& func)
     {
-        auto newEntity = registry.create();
-        for(const auto& [id, functions] : ComponentMap())
-            functions.tryDuplicate(registry, entity, newEntity);
-        return newEntity;
+        ForEachMissing(Component::NAME, registry, entity, func);
     }
 
+#ifndef ENTITY_REFLECTION_SKIP_LUA
     static void AddComponentFromLua(
         lua_State* lua,
         const char* componentName,
@@ -165,4 +153,5 @@ struct EntityReflection
 
         iter->second.createFromLua(lua, *registry, entity, componentStackIndex);
     }
+#endif
 };

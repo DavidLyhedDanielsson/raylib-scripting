@@ -1,27 +1,29 @@
 #pragma once
 
 #include "reflection_entity.hpp"
-#include <entity/velocity.hpp>
 #include <entt/entt.hpp>
 #include <external/raylib.hpp>
 #include <lua/lua_register_types.hpp>
 
-static const char velocityReflection[] = "velocity";
-struct VelocityReflection
-    : public ReflectionComponent<VelocityReflection, Component::Velocity, velocityReflection>
+#include <entity/velocity.hpp>
+#define RComponent Velocity
+EntityReflectionStruct(RComponent)
 {
-    static void Create(entt::registry& registry, entt::entity entity)
+    ; // This semicolon needs to be here or else clang-format breaks. The benefits of the macro
+      // outweigh the weirdness
+
+    static void Create(entt::registry & registry, entt::entity entity)
     {
-        registry.emplace<Component::Velocity>(entity, 0.0f, 0.0f, 0.0f);
+        registry.emplace<Component::RComponent>(entity, 0.0f, 0.0f, 0.0f);
     }
 
     static void CreateFromLua(
-        lua_State* lua,
-        entt::registry& registry,
+        lua_State * lua,
+        entt::registry & registry,
         entt::entity entity,
         int stackIndex)
     {
-        Component::Velocity component{};
+        Component::RComponent component{};
 
         lua_getfield(lua, stackIndex, "x");
         component.x = lua_tonumber(lua, -1);
@@ -30,18 +32,18 @@ struct VelocityReflection
         lua_getfield(lua, stackIndex, "z");
         component.z = lua_tonumber(lua, -1);
 
-        registry.emplace<Component::Velocity>(entity, component);
+        registry.emplace<Component::RComponent>(entity, component);
     }
 
-    static void View(Component::Velocity& component)
+    static void View(Component::RComponent & component)
     {
         ImGui::Text("Velocity: %f, %f, %f", component.x, component.y, component.z);
     }
 
     static void Modify(
-        entt::registry& registry,
+        entt::registry & registry,
         entt::entity entity,
-        Component::Velocity& component,
+        Component::RComponent & component,
         bool allowDeletion)
     {
         ImGui::DragFloat3("Velocity", &component.x, 0.001f);
@@ -51,12 +53,12 @@ struct VelocityReflection
     }
 
     static void Duplicate(
-        entt::registry& registry,
-        const Component::Velocity& component,
+        entt::registry & registry,
+        const Component::RComponent& component,
         entt::entity target)
     {
-        registry.emplace<Component::Velocity>(target, component.x, component.y, component.z);
+        registry.emplace<Component::RComponent>(target, component.x, component.y, component.z);
     }
 };
-// Quick hack to call constructor and register self
-static VelocityReflection ImguiVelocityInstance{};
+EntityReflectionStructTail(RComponent)
+#undef RComponent

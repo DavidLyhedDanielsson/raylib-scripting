@@ -1,39 +1,41 @@
 #pragma once
 
 #include "reflection_entity.hpp"
-#include <entity/tile.hpp>
 #include <external/raylib.hpp>
 #include <lua/lua_register_types.hpp>
 
-static const char tileReflection[] = "tile";
-struct TileReflection: public ReflectionComponent<TileReflection, Component::Tile, tileReflection>
+#include <entity/tile.hpp>
+#define RComponent Tile
+EntityReflectionStruct(RComponent)
 {
-    static void Create(entt::registry& registry, entt::entity entity)
+    ; // This semicolon needs to be here or else clang-format breaks. The benefits of the macro
+      // outweigh the weirdness
+    static void Create(entt::registry & registry, entt::entity entity)
     {
-        registry.emplace<Component::Tile>(entity);
+        registry.emplace<Component::RComponent>(entity);
     }
 
     static void CreateFromLua(
-        lua_State* lua,
-        entt::registry& registry,
+        lua_State * lua,
+        entt::registry & registry,
         entt::entity entity,
         int stackIndex)
     {
-        registry.emplace<Component::Tile>(entity);
+        registry.emplace<Component::RComponent>(entity);
     }
 
     static void View() {}
 
-    static void Modify(entt::registry& registry, entt::entity entity, bool allowDeletion)
+    static void Modify(entt::registry & registry, entt::entity entity, bool allowDeletion)
     {
         if(allowDeletion)
             AddRemoveButton("REMOVE TILE COMPONENT", registry, entity);
     }
 
-    static void Duplicate(entt::registry& registry, entt::entity target)
+    static void Duplicate(entt::registry & registry, entt::entity target)
     {
-        registry.emplace<Component::Tile>(target);
+        registry.emplace<Component::RComponent>(target);
     }
 };
-// Quick hack to call constructor and register self
-static TileReflection ImguiTileInstance{};
+EntityReflectionStructTail(RComponent)
+#undef RComponent

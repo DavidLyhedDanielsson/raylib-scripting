@@ -43,10 +43,10 @@ function imgui()
             end
 
             local components = {
-                render = HasComponent("render", entity),
-                transform = HasComponent("transform", entity),
-                velocity = HasComponent("velocity", entity),
-                tile = HasComponent("tile", entity)
+                render = HasComponent("Render", entity),
+                transform = HasComponent("Transform", entity),
+                velocity = HasComponent("Velocity", entity),
+                tile = HasComponent("Tile", entity)
             }
 
             -- TODO: camel or pascal or what?
@@ -60,26 +60,26 @@ function imgui()
                     -- TODO: Render component
                     if not components.render then
                         if Selectable("Render") then
-                            AddComponent(entity, "render", "Barrel")
+                            AddComponent(entity, "Render", "Barrel")
                         end
                     end
                     if not components.transform then
                         if Selectable("Transform") then
-                            AddComponent(entity, "transform", {
+                            AddComponent(entity, "Transform", {
                                 position = { x = 0, y = 0, z = 0 }
                             })
                         end
                     end
                     if not components.velocity then
                         if Selectable("Velocity") then
-                            AddComponent(entity, "velocity", {
+                            AddComponent(entity, "Velocity", {
                                 x = 0.0, y = 0.0, z = 0.0
                             })
                         end
                     end
                     if not components.tile then
                         if Selectable("Tile") then
-                            AddComponent(entity, "tile")
+                            AddComponent(entity, "Tile")
                         end
                     end
 
