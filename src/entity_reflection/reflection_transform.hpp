@@ -22,7 +22,9 @@ EntityReflectionStruct(RComponent)
 
     static LuaValidator::LuaValidator GetLuaValidator(lua_State * lua)
     {
-        return LuaValidator::LuaValidator(lua).FieldIs<Vector3>("position");
+        return LuaValidator::LuaValidator(lua)
+            .FieldIs<Vector3>("position")
+            .FieldIs<Vector3>("rotation");
     }
 
     static void CreateFromLuaInternal(
@@ -30,17 +32,16 @@ EntityReflectionStruct(RComponent)
         entt::registry & registry,
         entt::entity entity)
     {
-        Component::RComponent component{};
+        lua_getfield(lua, -1, "position");
+        lua_getfield(lua, -2, "rotation");
 
-        auto stackIndex = lua_gettop(lua);
-
-        lua_getfield(lua, stackIndex - 2, "position");
-
-        component.position = LuaRegister::LuaGetFunc<Vector3>(lua, stackIndex - 2);
-        // TODO
-        // component.rotation = LuaRegister::LuaGetFunc<Vector3>(lua, -1);
-
-        registry.emplace<Component::RComponent>(entity, component);
+        auto stackTop = lua_gettop(lua);
+        registry.emplace<Component::RComponent>(
+            entity,
+            Component::RComponent{
+                .position = LuaRegister::LuaGetFunc<Vector3>(lua, stackTop - 2),
+                .rotation = LuaRegister::LuaGetFunc<Vector3>(lua, stackTop - 1),
+            });
     }
 
     static void View(Component::RComponent & component)
@@ -51,8 +52,11 @@ EntityReflectionStruct(RComponent)
             component.position.y,
             component.position.z);
 
-        Vector3 eulerAngles = QuaternionToEuler(component.rotation);
-        ImGui::Text("Rotation: %f, %f, %f", eulerAngles.x, eulerAngles.y, eulerAngles.z);
+        ImGui::Text(
+            "Rotation: %f, %f, %f",
+            component.rotation.x,
+            component.rotation.y,
+            component.rotation.z);
     }
 
     static void Modify(
@@ -62,10 +66,7 @@ EntityReflectionStruct(RComponent)
         bool allowDeletion)
     {
         ImGui::DragFloat3("Position", &component.position.x);
-
-        Vector3 eulerAngles = QuaternionToEuler(component.rotation);
-        ImGui::DragFloat3("Rotation", &eulerAngles.x);
-        component.rotation = QuaternionFromEuler(eulerAngles.x, eulerAngles.y, eulerAngles.z);
+        ImGui::SliderFloat3("Rotation", &component.rotation.x, 0.0f, PI * 2.0f);
 
         if(allowDeletion)
             AddRemoveButton("REMOVE TRANSFORM COMPONENT", registry, entity);

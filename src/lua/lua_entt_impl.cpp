@@ -44,43 +44,6 @@ namespace LuaEntt
         return static_cast<lua_Integer>(registry->create());
     }
 
-    void AddRenderComponent(entt::registry* registry, lua_Integer entity, const char* assetId)
-    {
-        if(auto iter = loadedAssets.find(assetId); iter != loadedAssets.end())
-            registry->emplace<Component::Render>((entt::entity)entity, assetId, iter->second);
-    }
-
-    void AddTransformComponent(entt::registry* registry, lua_Integer entity)
-    {
-        registry->emplace<Component::Transform>(
-            (entt::entity)entity,
-            Vector3{0.0f, 0.0f, 0.0f},
-            QuaternionIdentity());
-    }
-
-    void AddTransformComponentAt(
-        entt::registry* registry,
-        lua_Integer entity,
-        float x,
-        float y,
-        float z)
-    {
-        registry->emplace<Component::Transform>(
-            (entt::entity)entity,
-            Vector3{x, y, z},
-            QuaternionIdentity());
-    }
-
-    void AddVelocityComponent(entt::registry* registry, lua_Integer entity)
-    {
-        registry->emplace<Component::Velocity>((entt::entity)entity, 0.0f, 0.0f, 0.0f);
-    }
-
-    void AddTileComponent(entt::registry* registry, lua_Integer entity)
-    {
-        registry->emplace<Component::Tile>((entt::entity)entity);
-    }
-
     void Register(lua_State* lua, entt::registry* registry)
     {
         RegisterTypes(lua);
@@ -95,11 +58,6 @@ namespace LuaEntt
             +[](entt::registry* registry, lua_State* lua, lua_Integer entity) {
                 registry->destroy((entt::entity)entity);
             });
-        QuickRegister(AddRenderComponent);
-        QuickRegister(AddTransformComponent);
-        QuickRegister(AddTransformComponentAt);
-        QuickRegister(AddVelocityComponent);
-        QuickRegister(AddTileComponent);
 
         LuaRegister::RegisterMember(
             lua,

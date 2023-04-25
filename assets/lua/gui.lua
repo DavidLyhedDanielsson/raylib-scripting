@@ -22,9 +22,10 @@ function imgui()
     for key, value in ipairs(Assets) do
         if SmallButton(value) then
             local entity = CreateEntity()
-            AddRenderComponent(entity, value)
-            AddTransformComponentAt(entity, 0, 0, 0)
-            AddTileComponent(entity)
+            AddComponentOrPrintError("Render", entity, { assetName = value })
+            AddComponentOrPrintError("Transform", entity,
+                { position = { x = 0, y = 0, z = 0 }, rotation = { x = 0, y = 0, z = 0 } })
+            AddComponentOrPrintError("Tile", entity)
         end
     end
 
@@ -56,7 +57,7 @@ function imgui()
                     },
                     Transform = {
                         hasComponent = HasComponent("Transform", entity),
-                        default = { position = { x = 0, y = 0, z = 0 } }
+                        default = { position = { x = 0, y = 0, z = 0 }, rotation = { x = 0, y = 0, z = 0 } }
                     },
                     Velocity = {
                         hasComponent = HasComponent("Velocity", entity),

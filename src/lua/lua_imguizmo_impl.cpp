@@ -23,6 +23,9 @@ namespace LuaImGuizmo
             "Gizmo",
             registry,
             +[](entt::registry* registry, lua_State* state, lua_Integer entity) {
+                if(!registry->valid((entt::entity)entity))
+                    return;
+
                 auto transformPtr = registry->try_get<Component::Transform>((entt::entity)entity);
                 Camera camera;
                 registry->view<Component::Camera, Component::Transform>().each(
@@ -34,9 +37,16 @@ namespace LuaImGuizmo
                 float one[3] = {1.0f, 1.0f, 1.0f};
                 float matrix[16] = {};
 
+                // ImGuizmo uses degrees a a different handedness than Raylib
+                float rotation[3] = {
+                    transformPtr->rotation.x * -RAD2DEG,
+                    transformPtr->rotation.y * -RAD2DEG,
+                    transformPtr->rotation.z * -RAD2DEG,
+                };
+
                 ImGuizmo::RecomposeMatrixFromComponents(
                     &transformPtr->position.x,
-                    zero,
+                    rotation,
                     one,
                     matrix);
 
@@ -53,11 +63,21 @@ namespace LuaImGuizmo
                 ImGuizmo::Manipulate(
                     &viewMatrix.m0,
                     &projMatrix.m0,
-                    ImGuizmo::OPERATION::TRANSLATE,
+                    ImGuizmo::OPERATION::TRANSLATE | ImGuizmo::OPERATION::ROTATE,
                     ImGuizmo::MODE::WORLD,
                     matrix);
 
-                ImGuizmo::DecomposeMatrixToComponents(matrix, &transformPtr->position.x, zero, one);
+                ImGuizmo::DecomposeMatrixToComponents(
+                    matrix,
+                    &transformPtr->position.x,
+                    rotation,
+                    one);
+
+                transformPtr->rotation = {
+                    rotation[0] * -DEG2RAD,
+                    rotation[1] * -DEG2RAD,
+                    rotation[2] * -DEG2RAD,
+                };
             });
     }
 }

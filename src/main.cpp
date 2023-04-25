@@ -256,9 +256,8 @@ int main()
     registry.emplace<Component::Transform>(
         cameraEntity,
         Component::Transform{
-            50.0f,
-            50.0f,
-            50.0f,
+            .position{10.0f, 10.0f, 10.0f},
+            .rotation{0.0f, 0.0f, 0.0f},
         });
 
     SetCameraMode(

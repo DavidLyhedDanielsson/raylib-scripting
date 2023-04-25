@@ -57,166 +57,20 @@ namespace World
         for(auto entity : group)
         {
             auto [render, transform] = group.get<Component::Render, Component::Transform>(entity);
-            DrawModel(render.model, transform.position, 1.0f, WHITE);
+            render.model.transform = MatrixMultiply(
+                MatrixRotateXYZ(transform.rotation),
+                MatrixTranslate(transform.position.x, transform.position.y, transform.position.z));
+
+            // DrawModel uses model.transform as well as the parameters here
+            DrawModel(render.model, {0.0f, 0.0f, 0.0f}, 1.0f, WHITE);
+
+            // The transform matrix is used here
+            render.model.transform = MatrixIdentity();
         }
     }
 
     void DrawImgui()
     {
-        static uint32_t selectedComponent = 0;
-
-        auto& registry = *world.registry;
-
-        // for(auto [entity, transform, render] :
-        //     world.registry->view<Component::Transform, Component::Render>().each())
-        // {
-        //     Camera3D camera;
-        //     for(auto [_, transformC, cameraC] :
-        //         world.registry->view<Component::Transform, Component::Camera>().each())
-        //     {
-        //         camera = cameraC.CreateRaylibCamera(transformC.position);
-        //     }
-
-        //     float zero[3] = {0.0f, 0.0f, 0.0f};
-        //     float one[3] = {1.0f, 1.0f, 1.0f};
-        //     float matrix[16] = {};
-
-        //     ImGuizmo::RecomposeMatrixFromComponents(&transform.position.x, zero, one, matrix);
-
-        //     const double RL_CULL_DISTANCE_NEAR =
-        //         0.01; // Default projection matrix near cull distance
-        //     const double RL_CULL_DISTANCE_FAR =
-        //         1000.0; // Default projection matrix far cull distance
-
-        //     auto viewMatrix = MatrixTranspose(GetCameraMatrix(camera));
-        //     auto projMatrix = MatrixTranspose(MatrixPerspective(
-        //         camera.fovy * DEG2RAD,
-        //         ((double)GetScreenWidth() / (double)GetScreenHeight()),
-        //         RL_CULL_DISTANCE_NEAR,
-        //         RL_CULL_DISTANCE_FAR));
-
-        //     auto identity = MatrixIdentity();
-
-        //     ImGuizmo::SetOrthographic(false);
-        //     ImGuizmo::SetRect(0.0f, 0.0f, GetRenderWidth(), GetRenderHeight());
-        //     ImGuizmo::Enable(true);
-        //     ImGuizmo::Manipulate(
-        //         &viewMatrix.m0,
-        //         &projMatrix.m0,
-        //         ImGuizmo::OPERATION::TRANSLATE,
-        //         ImGuizmo::MODE::WORLD,
-        //         matrix);
-
-        //     ImGuizmo::DecomposeMatrixToComponents(matrix, &transform.position.x, zero, one);
-        //     break;
-        // }
-
-        ImGui::Begin("Entities");
-        auto printEntity = [&](const entt::entity entity) {
-            assert((ENTT_ID_TYPE)entity <= std::numeric_limits<uint32_t>::max());
-            ImGui::PushID((int32_t)entity);
-            if(ImGui::TreeNode("Entity", "Entity %i", entity))
-            {
-                ImGui::PushStyleColor(
-                    ImGuiCol_Button,
-                    ImVec4(0xcc / 255.0f, 0x24 / 255.0f, 0x1d / 255.0f, 1.0f));
-                ImGui::PushStyleColor(
-                    ImGuiCol_ButtonHovered,
-                    ImVec4(0xd1 / 255.0f, 0x39 / 255.0f, 0x33 / 255.0f, 1.0f));
-                ImGui::PushStyleColor(
-                    ImGuiCol_ButtonActive,
-                    ImVec4(0xb7 / 255.0f, 0x20 / 255.0f, 0x1a / 255.0f, 1.0f));
-
-                // Button should be here, but the entity is used below, so wait before deleting
-                bool deleteEntity = ImGui::Button("DELETE ENTITY");
-                ImGui::PopStyleColor(3);
-
-                bool hasComponents = true;
-                EntityReflection::ModifyEntityOrElse(registry, entity, [&]() {
-                    ImGui::Text("No components in this entity");
-                    hasComponents = false;
-                });
-
-                if(hasComponents)
-                {
-                    if(ImGui::Button("Duplicate entity"))
-                        EntityReflection::DuplicateEntity(registry, entity);
-                }
-
-                bool anyMissing =
-                    EntityReflection::HasComponent<RenderReflection>(registry, entity)
-                    || EntityReflection::HasComponent<TransformReflection>(registry, entity)
-                    || EntityReflection::HasComponent<VelocityReflection>(registry, entity)
-                    || EntityReflection::HasComponent<TileReflection>(registry, entity);
-
-                if(anyMissing)
-                {
-                    if(ImGui::BeginCombo("##addcomponent", "Add component"))
-                    {
-                        if(!loadedAssets.empty())
-                        {
-                            EntityReflection::IfComponentMissing<RenderReflection>(
-                                registry,
-                                entity,
-                                [&]() {
-                                    if(ImGui::Selectable("Render", selectedComponent == 0))
-                                    {
-                                        auto firstAsset = loadedAssets.begin();
-                                        registry.emplace<Component::Render>(
-                                            entity,
-                                            firstAsset->first.c_str(),
-                                            firstAsset->second);
-                                    }
-                                });
-                        }
-                        else
-                            ImGui::Text("No available models");
-                        EntityReflection::IfComponentMissing<TransformReflection>(
-                            registry,
-                            entity,
-                            [&]() {
-                                if(ImGui::Selectable("Transform", selectedComponent == 1))
-                                {
-                                    registry
-                                        .emplace<Component::Transform>(entity, 0.0f, 0.0f, 0.0f);
-                                }
-                            });
-                        EntityReflection::IfComponentMissing<VelocityReflection>(
-                            registry,
-                            entity,
-                            [&]() {
-                                if(ImGui::Selectable("Velocity", selectedComponent == 2))
-                                {
-                                    registry.emplace<Component::Velocity>(entity, 0.0f, 0.0f, 0.0f);
-                                }
-                            });
-                        EntityReflection::IfComponentMissing<TileReflection>(
-                            registry,
-                            entity,
-                            [&]() {
-                                if(ImGui::Selectable("Tile", selectedComponent == 3))
-                                {
-                                    registry.emplace<Component::Tile>(entity);
-                                }
-                            });
-                        ImGui::EndCombo();
-                    }
-                }
-                else
-                {
-                    ImGui::BeginDisabled();
-                    ImGui::BeginCombo("##addcomponent", "No more components available");
-                    ImGui::EndDisabled();
-                }
-
-                ImGui::TreePop();
-
-                if(deleteEntity)
-                    registry.destroy(entity);
-            }
-            ImGui::PopID();
-        };
-        // world.registry->each(printEntity);
-        ImGui::End();
+        // Yay this is empty now!
     }
 }
