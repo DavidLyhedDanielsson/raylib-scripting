@@ -57,7 +57,7 @@ namespace LuaImGui
         LuaImguiQuickRegister(IsWindowHovered);
         LuaRegister::Register(
             lua,
-            "WantsCaptureMouse",
+            "WantCaptureMouse",
             +[](lua_State* lua) { return ImGui::GetIO().WantCaptureMouse; });
         // GetWindowDrawList
         LuaImguiQuickRegister(GetWindowDpiScale);
@@ -377,17 +377,19 @@ namespace LuaImGui
         LuaImguiQuickRegister(ColorConvertRGBtoHSV);
         LuaImguiQuickRegister(ColorConvertHSVtoRGB);
 
-        LuaImguiQuickRegister(IsKeyDown);
-        LuaImguiQuickRegister(IsKeyPressed);
-        LuaImguiQuickRegister(IsKeyReleased);
+        // Raylib functions should be used instead
+        // LuaImguiQuickRegister(IsKeyDown);
+        // LuaImguiQuickRegister(IsKeyPressed);
+        // LuaImguiQuickRegister(IsKeyReleased);
         LuaImguiQuickRegister(GetKeyPressedAmount);
         LuaImguiQuickRegister(GetKeyName);
         LuaImguiQuickRegister(CaptureKeyboardFromApp);
 
-        LuaImguiQuickRegister(IsMouseDown);
-        LuaImguiQuickRegister(IsMouseClicked);
-        LuaImguiQuickRegister(IsMouseReleased);
-        LuaImguiQuickRegister(IsMouseDoubleClicked);
+        // Raylib functions should be used instead
+        // LuaImguiQuickRegister(IsMouseDown);
+        // LuaImguiQuickRegister(IsMouseClicked);
+        // LuaImguiQuickRegister(IsMouseReleased);
+        // LuaImguiQuickRegister(IsMouseDoubleClicked);
         LuaImguiQuickRegister(GetMouseClickedCount);
         LuaImguiQuickRegister(IsMouseHoveringRect);
         // LuaImguiQuickRegister(IsMousePosValid); // Takes a pointer that shouldn't actually be

@@ -77,6 +77,13 @@ namespace LuaRaylib
         QuickRegister(DrawRay);
         QuickRegister(DrawGrid);
 
+        QuickRegister(IsMouseButtonUp);
+        QuickRegister(IsMouseButtonDown);
+        QuickRegister(IsMouseButtonPressed);
+        QuickRegister(IsMouseButtonReleased);
+
+        QuickRegister(GetMousePosition);
+
         LuaRegister::RegisterMember(
             lua,
             "GetMouseRay",
