@@ -1,6 +1,7 @@
 #include "assets.hpp"
 #include <filesystem>
 #include <iostream>
+#include <optional>
 
 #include <config.h>
 

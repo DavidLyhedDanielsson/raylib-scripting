@@ -1,3 +1,12 @@
+## Setup
+
+Setup the submodules and then follow the build instructions
+
+```bash
+git submodule init
+git submodule update
+```
+
 ## "Local" compilation (non-web):
 
 Steps are the same on Linux and Windows, but on Windows Visual Studio files will
@@ -13,6 +22,7 @@ make
 ```
 
 ## Web compilation on Linux:
+## Currently broken due to a shader
 
 Only tested on Arch. Run the code through the emscripten compiler by using their
 cmake toolchain file by running the `cmake` command below.

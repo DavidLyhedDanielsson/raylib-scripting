@@ -15,6 +15,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cstdint>
 #include <map>
 
 #include <imgui_impl_opengl3.h>

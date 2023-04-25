@@ -26,11 +26,11 @@
 #define EntityReflectionStruct(name) EntityReflectionStruct2(name)
 #define EntityReflectionStructTail(name) EntityReflectionStructTail2(name)
 
-template<typename Derived, typename ComponentType, const char* name>
+template<typename DerivedT, typename ComponentType, const char* name>
 class ReflectionComponent
 {
   public:
-    using Derived = Derived;
+    using Derived = DerivedT;
     static constexpr const char* NAME = name;
 
     ReflectionComponent()

@@ -1,9 +1,9 @@
 #pragma once
 
-#include "reflection_entity.hpp"
 #include <entt/entt.hpp>
 #include <map>
 #include <optional>
+#include <string>
 
 // Ifdef just to keep the lua parts separated and easy to remove
 #ifndef ENTITY_REFLECTION_SKIP_LUA
@@ -57,7 +57,8 @@ struct EntityReflection
     {
         auto entityMap = ComponentMap();
 
-        auto iter = entityMap.find(componentName);
+        // emscripten really wants an std::string here, not const char* :(
+        auto iter = entityMap.find(std::string(componentName));
         assert(iter != entityMap.end());
 
         iter->second.tryModifyOne(registry, entity, false);
