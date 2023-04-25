@@ -405,6 +405,8 @@ namespace LuaImGui
         LuaImguiQuickRegister(GetClipboardText);
         LuaImguiQuickRegister(SetClipboardText);
 
+        LuaImguiQuickRegister(ShowDemoWindow);
+
         // TODO: These should work!
         // LuaImguiQuickRegister(LoadIniSettingsFromDisk);
         // LuaImguiQuickRegister(LoadIniSettingsFromMemory);

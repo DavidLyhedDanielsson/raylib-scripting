@@ -19,13 +19,19 @@ EntityReflectionStruct(RComponent)
         //     GetLoadedAsset(Asset::Insurgent));
     }
 
-    static void CreateFromLua(
+    static LuaValidator::LuaValidator GetLuaValidator(lua_State * lua)
+    {
+        return LuaValidator::LuaValidator(lua).FieldIs<const char*>("assetName");
+    }
+
+    static void CreateFromLuaInternal(
         lua_State * lua,
         entt::registry & registry,
-        entt::entity entity,
-        int stackIndex)
+        entt::entity entity)
     {
-        std::string_view assetName = lua_tostring(lua, stackIndex);
+        lua_getfield(lua, -1, "assetName");
+        const char* assetName = lua_tostring(lua, lua_gettop(lua));
+
         for(const auto& [key, value] : loadedAssets)
         {
             if(key == assetName)

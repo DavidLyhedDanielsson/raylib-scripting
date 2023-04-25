@@ -14,11 +14,19 @@ EntityReflectionStruct(RComponent)
 
     static void Create(entt::registry & registry, entt::entity entity) {}
 
-    static void CreateFromLua(
+    static LuaValidator::LuaValidator GetLuaValidator(lua_State * lua)
+    {
+        return LuaValidator::LuaValidator(lua)
+            .FieldIs<Vector3>("target")
+            .FieldIs<Vector3>("up")
+            .FieldIs<float>("fovy")
+            .FieldIs<int>("projection");
+    }
+
+    static bool CreateFromLuaInternal(
         lua_State * lua,
         entt::registry & registry,
-        entt::entity entity,
-        int stackIndex)
+        entt::entity entity)
     {
         Component::RComponent component{};
 
@@ -28,9 +36,8 @@ EntityReflectionStruct(RComponent)
         component.projection = lua_tointeger(lua, -1);
 
         registry.emplace<Component::RComponent>(entity, component);
+        return true;
     }
-
-    static void GetToLua(entt::registry & registry, entt::entity entity) {}
 
     static void View(Component::RComponent & component)
     {

@@ -11,6 +11,17 @@ namespace LuaEntityReflection
 
         RegisterMember(
             lua,
+            "Modify",
+            registry,
+            +[](entt::registry* registry,
+                lua_State* lua,
+                const char* componentName,
+                lua_Integer entity) {
+                EntityReflection::Modify(componentName, *registry, (entt::entity)entity);
+            });
+
+        RegisterMember(
+            lua,
             "ModifyEntityOrElse",
             registry,
             +[](entt::registry* registry,
@@ -81,15 +92,29 @@ namespace LuaEntityReflection
             registry,
             +[](entt::registry* registry,
                 lua_State* lua,
-                lua_Integer entity,
                 const char* componentName,
+                lua_Integer entity,
                 Placeholder component) {
-                EntityReflection::AddComponentFromLua(
-                    lua,
-                    componentName,
-                    registry,
-                    (entt::entity)entity,
-                    component.stackIndex);
+                if(EntityReflection::AddComponentFromLua(
+                       lua,
+                       componentName,
+                       registry,
+                       (entt::entity)entity))
+                {
+                    lua_pushnil(lua);
+                }
+                return Placeholder{};
+            });
+
+        RegisterMember(
+            lua,
+            "RemoveComponent",
+            registry,
+            +[](entt::registry* registry,
+                lua_State* lua,
+                const char* componentName,
+                lua_Integer entity) {
+                EntityReflection::RemoveComponent(componentName, registry, (entt::entity)entity);
             });
     }
 }

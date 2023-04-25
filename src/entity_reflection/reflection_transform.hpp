@@ -1,8 +1,12 @@
 #pragma once
 
+#include <numeric>
+#include <vector>
+
 #include "reflection_entity.hpp"
 #include <external/raylib.hpp>
 #include <lua/lua_register_types.hpp>
+#include <lua/lua_validator.hpp>
 
 #include <entity/transform.hpp>
 #define RComponent Transform
@@ -16,17 +20,23 @@ EntityReflectionStruct(RComponent)
         registry.emplace<Component::RComponent>(entity, 0.0f, 0.0f, 0.0f);
     }
 
-    static void CreateFromLua(
+    static LuaValidator::LuaValidator GetLuaValidator(lua_State * lua)
+    {
+        return LuaValidator::LuaValidator(lua).FieldIs<Vector3>("position");
+    }
+
+    static void CreateFromLuaInternal(
         lua_State * lua,
         entt::registry & registry,
-        entt::entity entity,
-        int stackIndex)
+        entt::entity entity)
     {
         Component::RComponent component{};
 
-        lua_getfield(lua, stackIndex, "position");
+        auto stackIndex = lua_gettop(lua);
 
-        component.position = LuaRegister::LuaGetFunc<Vector3>(lua, stackIndex + 1);
+        lua_getfield(lua, stackIndex - 2, "position");
+
+        component.position = LuaRegister::LuaGetFunc<Vector3>(lua, stackIndex - 2);
         // TODO
         // component.rotation = LuaRegister::LuaGetFunc<Vector3>(lua, -1);
 

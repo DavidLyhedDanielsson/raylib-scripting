@@ -15,11 +15,15 @@ EntityReflectionStruct(RComponent)
         registry.emplace<Component::RComponent>(entity);
     }
 
-    static void CreateFromLua(
+    static LuaValidator::LuaValidator GetLuaValidator(lua_State * lua)
+    {
+        return LuaValidator::LuaValidator(lua);
+    }
+
+    static void CreateFromLuaInternal(
         lua_State * lua,
         entt::registry & registry,
-        entt::entity entity,
-        int stackIndex)
+        entt::entity entity)
     {
         registry.emplace<Component::RComponent>(entity);
     }

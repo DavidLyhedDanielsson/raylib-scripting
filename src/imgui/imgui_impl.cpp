@@ -140,8 +140,6 @@ void RaylibImGui::Init()
     ImGui::GetStyle().ScaleAllSizes(GetWindowScaleDPI().x);
     ImGui::GetIO().BackendPlatformName = "custom_raylib_impl";
     ImGui::GetIO().FontGlobalScale = GetWindowScaleDPI().x;
-    ImGui::GetIO().DisplaySize.x = (float)GetRenderWidth();
-    ImGui::GetIO().DisplaySize.y = (float)GetRenderHeight();
 
     ImGui_ImplOpenGL3_Init();
 }
@@ -351,6 +349,9 @@ void RaylibImGui::Begin()
         delta = 1.0f / 60.0f;
     io.DeltaTime = lastTime > 0.0 ? (float)(delta) : (float)(1.0f / 60.0f);
     lastTime = currentTime;
+
+    ImGui::GetIO().DisplaySize.x = (float)GetRenderWidth();
+    ImGui::GetIO().DisplaySize.y = (float)GetRenderHeight();
 
     ImGui_ImplOpenGL3_NewFrame();
     ImGui::NewFrame();

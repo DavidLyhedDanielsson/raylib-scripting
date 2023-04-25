@@ -17,13 +17,14 @@ struct EntityReflection
   private:
     struct ComponentFunctions
     {
+        void (*removeComponent)(entt::registry&, entt::entity);
         std::optional<void*> (*getComponent)(entt::registry&, entt::entity);
         bool (*tryViewOne)(entt::registry&, entt::entity);
         bool (*tryModifyOne)(entt::registry&, entt::entity, bool);
         void (*tryDuplicate)(entt::registry&, entt::entity, entt::entity);
 #ifndef ENTITY_REFLECTION_SKIP_LUA
         // TODO: Error handling
-        void (*createFromLua)(lua_State*, entt::registry&, entt::entity, int);
+        bool (*createFromLua)(lua_State*, entt::registry&, entt::entity);
 #endif
     };
 
@@ -41,14 +42,25 @@ struct EntityReflection
         ComponentMap().insert(std::make_pair(
             Component::NAME,
             ComponentFunctions{
+                .removeComponent = Component::RemoveComponent,
                 .getComponent = Component::GetComponent,
                 .tryViewOne = Component::TryViewOne,
                 .tryModifyOne = Component::TryModifyOne,
                 .tryDuplicate = Component::TryDuplicate,
 #ifndef ENTITY_REFLECTION_SKIP_LUA
-                .createFromLua = Component::Derived::CreateFromLua,
+                .createFromLua = Component::CreateFromLua,
 #endif
             }));
+    }
+
+    static void Modify(const char* componentName, entt::registry& registry, entt::entity entity)
+    {
+        auto entityMap = ComponentMap();
+
+        auto iter = entityMap.find(componentName);
+        assert(iter != entityMap.end());
+
+        iter->second.tryModifyOne(registry, entity, false);
     }
 
     template<typename Func>
@@ -101,7 +113,6 @@ struct EntityReflection
     }
 
     // "Functional" functions
-
     template<typename Func>
     static void ModifyEntityOrElse(
         entt::registry& registry,
@@ -138,20 +149,38 @@ struct EntityReflection
         ForEachMissing(Component::NAME, registry, entity, func);
     }
 
-#ifndef ENTITY_REFLECTION_SKIP_LUA
-    static void AddComponentFromLua(
-        lua_State* lua,
+    static void RemoveComponent(
         const char* componentName,
         entt::registry* registry,
-        entt::entity entity,
-        int componentStackIndex)
+        entt::entity entity)
     {
         auto entityMap = ComponentMap();
 
         auto iter = entityMap.find(componentName);
         assert(iter != entityMap.end());
 
-        iter->second.createFromLua(lua, *registry, entity, componentStackIndex);
+        iter->second.removeComponent(*registry, entity);
+    }
+
+    template<typename Component>
+    static void RemoveComponent(entt::registry* registry, entt::entity entity)
+    {
+        RemoveComponent(Component::NAME, registry, entity);
+    }
+
+#ifndef ENTITY_REFLECTION_SKIP_LUA
+    static bool AddComponentFromLua(
+        lua_State* lua,
+        const char* componentName,
+        entt::registry* registry,
+        entt::entity entity)
+    {
+        auto entityMap = ComponentMap();
+
+        auto iter = entityMap.find(componentName);
+        assert(iter != entityMap.end());
+
+        return iter->second.createFromLua(lua, *registry, entity);
     }
 #endif
 };

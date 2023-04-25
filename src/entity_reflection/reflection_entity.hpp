@@ -4,7 +4,10 @@
 #include <cstdint>
 #include <entt/entt.hpp>
 #include <imgui.h>
+#include <lua/lua_validator.hpp>
 #include <optional>
+#include <string>
+#include <vector>
 
 // There macros can be used to avoid having to change multiple placed when creating new component
 // reflections
@@ -38,6 +41,11 @@ class ReflectionComponent
     static void RegisterSelf()
     {
         EntityReflection::Register<ReflectionComponent<Derived, ComponentType, name>>();
+    }
+
+    static void RemoveComponent(entt::registry& registry, entt::entity entity)
+    {
+        registry.remove<ComponentType>(entity);
     }
 
     // Type needs to be erased or a pointer to the function can't be created
@@ -109,6 +117,23 @@ class ReflectionComponent
             if(std::optional<void*> component = GetComponent(registry, source); component)
                 Derived::Duplicate(registry, *(ComponentType*)component.value(), target);
         }
+    }
+
+    [[nodiscard]] static bool CreateFromLua(
+        lua_State* lua,
+        entt::registry& registry,
+        entt::entity entity)
+    {
+        std::optional<std::string> errorString = Derived::GetLuaValidator(lua).GetErrorString();
+
+        if(errorString.has_value())
+        {
+            lua_pushstring(lua, errorString.value().c_str());
+            return false;
+        }
+
+        Derived::CreateFromLuaInternal(lua, registry, entity);
+        return true;
     }
 
     // constexpr static uint32_t ID = IDValue;

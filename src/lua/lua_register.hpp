@@ -127,6 +127,7 @@ namespace LuaRegister
     template<> inline constexpr auto LuaSetFunc<double> = lua_pushnumber;
     template<> inline constexpr auto LuaSetFunc<bool> = lua_pushboolean;
     template<> inline constexpr auto LuaSetFunc<const char*> = lua_pushstring;
+    template<> inline constexpr auto LuaSetFunc<Placeholder> = [](auto, auto){};
     // clang-format on
 
     /**

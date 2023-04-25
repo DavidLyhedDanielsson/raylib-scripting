@@ -88,6 +88,13 @@ namespace LuaEntt
 #define QuickRegister(Func) LuaRegister::RegisterMember(lua, #Func, registry, Func);
 
         QuickRegister(CreateEntity);
+        LuaRegister::RegisterMember(
+            lua,
+            "DestroyEntity",
+            registry,
+            +[](entt::registry* registry, lua_State* lua, lua_Integer entity) {
+                registry->destroy((entt::entity)entity);
+            });
         QuickRegister(AddRenderComponent);
         QuickRegister(AddTransformComponent);
         QuickRegister(AddTransformComponentAt);
