@@ -1,5 +1,7 @@
 if setup == nil then
     setup = true
+
+    selected_entity = nil
 end
 
 function raylib()
@@ -31,6 +33,7 @@ function imgui()
 
     Begin("Entity")
     Each(function(entity)
+        PushID(entity)
         local open = TreeNode("Entity " .. entity)
         SameLine(GetWindowWidth() - 40)
         if SmallButton("X") then
@@ -85,6 +88,20 @@ function imgui()
                 TreePop()
             end
         end
+        PopID()
     end)
     End()
+
+    if not WantCaptureMouse() then
+        if IsMouseButtonPressed(0) then
+            local ray = GetMouseRay(GetMousePosition())
+            local hit_entity = GetRayCollision(ray)
+            selected_entity = hit_entity
+        end
+    end
+
+
+    if selected_entity ~= nil then
+        Gizmo(selected_entity)
+    end
 end
