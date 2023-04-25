@@ -34,7 +34,12 @@ function imgui()
     Begin("Entity")
     Each(function(entity)
         PushID(entity)
-        local open = TreeNode("Entity " .. entity)
+        local flags = TreeNodeFlag.None
+        if entity == selected_entity then
+            flags = TreeNodeFlag.Selected
+        end
+
+        local open = TreeNodeEx("Entity " .. entity, flags)
         SameLine(GetWindowWidth() - 40)
         if SmallButton("X") then
             DestroyEntity(entity)

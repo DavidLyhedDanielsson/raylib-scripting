@@ -512,5 +512,29 @@ namespace LuaImGui
         LuaImguiPushCol(NavWindowingDimBg);
         LuaImguiPushCol(ModalWindowDimBg);
         lua_setglobal(lua, "Col");
+
+#define LuaImguiPushTreeNodeFlag(flag)               \
+    lua_pushstring(lua, #flag);                      \
+    lua_pushinteger(lua, ImGuiTreeNodeFlags_##flag); \
+    lua_settable(lua, -3);
+
+        lua_createtable(lua, 0, 0);
+        LuaImguiPushTreeNodeFlag(None);
+        LuaImguiPushTreeNodeFlag(Selected);
+        LuaImguiPushTreeNodeFlag(Framed);
+        LuaImguiPushTreeNodeFlag(AllowItemOverlap);
+        LuaImguiPushTreeNodeFlag(NoTreePushOnOpen);
+        LuaImguiPushTreeNodeFlag(NoAutoOpenOnLog);
+        LuaImguiPushTreeNodeFlag(DefaultOpen);
+        LuaImguiPushTreeNodeFlag(OpenOnDoubleClick);
+        LuaImguiPushTreeNodeFlag(OpenOnArrow);
+        LuaImguiPushTreeNodeFlag(Leaf);
+        LuaImguiPushTreeNodeFlag(Bullet);
+        LuaImguiPushTreeNodeFlag(FramePadding);
+        LuaImguiPushTreeNodeFlag(SpanAvailWidth);
+        LuaImguiPushTreeNodeFlag(SpanFullWidth);
+        LuaImguiPushTreeNodeFlag(NavLeftJumpsBackHere);
+        LuaImguiPushTreeNodeFlag(CollapsingHeader);
+        lua_setglobal(lua, "TreeNodeFlag");
     }
 }
