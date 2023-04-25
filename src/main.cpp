@@ -6,6 +6,7 @@
 #include <iostream>
 #include <math.h>
 #include <numbers>
+#include <raylib.h>
 #include <stdio.h>
 #include <vector>
 
@@ -168,8 +169,8 @@ void main_loop()
 
     RaylibImGui::End();
 
-    if(!ImGui::GetIO().WantCaptureMouse)
-        UpdateCamera(&camera);
+    if(!ImGui::GetIO().WantCaptureMouse && IsMouseButtonDown(1))
+        UpdateCamera(&camera, CAMERA_THIRD_PERSON);
 
     for(auto [entity, transform, cameraComponent] :
         registry.view<Component::Transform, Component::Camera>().each())
@@ -260,15 +261,6 @@ int main()
             .rotation{0.0f, 0.0f, 0.0f},
         });
 
-    SetCameraMode(
-        Camera{
-            .position = cameraStartPosition,
-            .target = cameraComponent.target,
-            .up = cameraComponent.up,
-            .fovy = cameraComponent.fovy,
-            .projection = cameraComponent.projection,
-        },
-        CAMERA_FREE);
     LuaAsset::Register(luaState);
     LuaEntt::Register(luaState, &registry);
     LuaImGui::Register(luaState);

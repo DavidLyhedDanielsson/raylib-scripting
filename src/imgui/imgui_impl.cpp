@@ -11,10 +11,12 @@
 
 #include "imgui_impl.hpp"
 #include <external/raylib.hpp>
+#include <imgui.h>
 #include <imgui/imgui_internal.hpp>
 
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <cstdint>
 #include <map>
 
@@ -140,7 +142,7 @@ void RaylibImGui::Init()
     ImGui::CreateContext();
     ImGui::GetStyle().ScaleAllSizes(GetWindowScaleDPI().x);
     ImGui::GetIO().BackendPlatformName = "custom_raylib_impl";
-    ImGui::GetIO().FontGlobalScale = GetWindowScaleDPI().x;
+    ImGui::GetIO().FontGlobalScale = std::floor(GetWindowScaleDPI().x);
 
     ImGui_ImplOpenGL3_Init();
 }

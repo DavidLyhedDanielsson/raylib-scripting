@@ -18,7 +18,6 @@ function imgui()
     SetNextWindowSize({ x = 300, y = GetRenderHeight() })
     SetNextWindowPos({ x = 0, y = 0 })
     Begin("AssetSpawner", 0, WindowFlags.NoTitleBar)
-
     for key, value in ipairs(Assets) do
         if SmallButton(value) then
             local entity = CreateEntity()
@@ -28,10 +27,9 @@ function imgui()
             AddComponentOrPrintError("Tile", entity)
         end
     end
-
     End()
 
-
+    SetNextWindowPos({ x = 300, y = 0 })
     Begin("Entity")
     Each(function(entity)
         PushID(entity)
