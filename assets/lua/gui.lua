@@ -61,7 +61,8 @@ function imgui()
                         hasComponent = HasComponent("Velocity", entity),
                         default = { x = 0.0, y = 0.0, z = 0.0 }
                     },
-                    Tile = { hasComponent = HasComponent("Tile", entity) }
+                    Tile = { hasComponent = HasComponent("Tile", entity) },
+                    Camera = { hasComponent = HasComponent("Camera", entity) }
                 }
 
                 for componentName, info in pairs(components) do
@@ -80,7 +81,7 @@ function imgui()
 
                 if BeginCombo("##addcomponent", "Add component") then
                     for componentName, info in pairs(components) do
-                        if not info.hasComponent then
+                        if not info.hasComponent and componentName ~= "Camera" then
                             if Selectable(componentName) then
                                 AddComponentOrPrintError(componentName, entity, info.default)
                             end

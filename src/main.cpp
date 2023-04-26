@@ -167,6 +167,19 @@ void main_loop()
         ErrorCheckEndWindowRecover();
     }
 
+    // Camera might be modified by lua
+    for(auto [entity, transform, cameraComponent] :
+        registry.view<Component::Transform, Component::Camera>().each())
+    {
+        camera = Camera{
+            .position = transform.position,
+            .target = cameraComponent.target,
+            .up = cameraComponent.up,
+            .fovy = cameraComponent.fovy,
+            .projection = cameraComponent.projection,
+        };
+    }
+
     RaylibImGui::End();
 
     if(!ImGui::GetIO().WantCaptureMouse && IsMouseButtonDown(1))
