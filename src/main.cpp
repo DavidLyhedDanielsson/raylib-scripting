@@ -2,6 +2,7 @@
 #include <chrono>
 #include <cmath>
 #include <external/raylib.hpp>
+#include <imgui.h>
 #include <imgui/imgui_internal.hpp> // NOT the imgui_internal from imgui
 #include <iostream>
 #include <math.h>
@@ -124,6 +125,7 @@ void main_loop()
         };
     }
 
+    ImGui::SetNextWindowPos({400.0f, 400.0f}, ImGuiCond_Once);
     ImGui::Begin("Lua console");
     ImGui::SameLine();
     if(ImGui::InputText("Input", inputBuffer.data(), 256, ImGuiInputTextFlags_EnterReturnsTrue))
