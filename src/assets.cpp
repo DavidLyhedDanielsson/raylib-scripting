@@ -1,4 +1,5 @@
 #include "assets.hpp"
+#include <cmath>
 #include <filesystem>
 #include <iostream>
 #include <optional>
@@ -43,6 +44,15 @@ void LoadAssets()
 
             for(int j = 0; j < MAX_MATERIAL_MAPS; ++j)
             {
+#define TransformColor(component)                \
+    model.materials[i].maps[j].color.component = \
+        std::pow(model.materials[i].maps[j].color.component / 255.0f, 1.0f / 2.2f) * 255.0f;
+
+                TransformColor(r);
+                TransformColor(g);
+                TransformColor(b);
+                TransformColor(a);
+
                 if(model.materials[i].maps[j].texture.id != 0)
                 {
                     SetTextureFilter(
