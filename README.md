@@ -1,3 +1,34 @@
+A combination of:
+- [Raylib](https://www.raylib.com/)
+- [ImGui](https://www.raylib.com/)
+- [ImGuizmo](https://github.com/CedricGuillemet/ImGuizmo)
+- [lua](https://www.lua.org/)
+- [entt](https://github.com/skypjack/entt)
+
+Currently just simply showcased with a basic editor
+
+### Functionality
+- ImGui and Raylib exposed to lua. All gui is done through lua
+- Entity creation/deletion through ImGui/lua
+- Component creation/deletion through ImGui/lua
+- ImGuizmo to transform the selected entity
+- Entity visualiser which shows all components attached to an entity
+
+#### Components
+- Transform - translation and rotation
+- Velocity - x, y, z
+- Render - name of the mesh to render
+- Tile - aligns the entity to a grid
+- Camera - middleware/interface/abstraction for Raylib's camera
+
+### Demos
+
+Two quick demo videos can be found in the media directory.
+
+The online build can be found at this repo's
+[github page](https://davidlyheddanielsson.github.io/raylib-scripting/).  The
+camera can be controlled while holding down right mouse button.
+
 ## Setup
 
 Setup the submodules and then follow the build instructions
@@ -22,7 +53,6 @@ make
 ```
 
 ## Web compilation on Linux:
-## Currently broken due to a shader
 
 Only tested on Arch. Run the code through the emscripten compiler by using their
 cmake toolchain file by running the `cmake` command below.
