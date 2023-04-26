@@ -109,4 +109,82 @@ function imgui()
     if selected_entity ~= nil then
         Gizmo(selected_entity)
     end
+
+    function RecursivePrint(tab, indent)
+        if tab == nil then
+            print(string.rep("  ", indent), "NIL")
+            return
+        end
+        for key, value in pairs(tab) do
+            if type(value) == "table" then
+                print(string.rep("  ", indent), key, " = {")
+                RecursivePrint(value, indent + 1)
+                print(string.rep("  ", indent), "},")
+            elseif type(value) == "string" then
+                print(string.rep("  ", indent), key, " = \"", value, "\",")
+            else
+                print(string.rep("  ", indent), key, " = ", value, ",")
+            end
+        end
+    end
+
+    function RecursiveWrite(file, tab)
+        for key, value in pairs(tab) do
+            if type(value) == "table" then
+                file:write(key, "={")
+                RecursiveWrite(file, value)
+                file:write("},")
+            elseif type(value) == "string" then
+                file:write(key, "=\"", value, "\",")
+            else
+                file:write(key, "=", value, ",")
+            end
+        end
+    end
+
+    SetNextWindowPos({ x = 800, y = 0 })
+    Begin("Tools")
+    if Button("Save") then
+        local all = DumpEntities()
+
+        file = io.open("outfile.lua", "w+")
+
+        file:write("return{")
+        --print("{")
+        for entity, entityInfo in pairs(all) do
+            file:write("[", entity, "]={")
+            --print("  ", entity, " = {")
+            RecursiveWrite(file, entityInfo)
+            file:write("},")
+            --print("  },")
+        end
+        file:write("}")
+        --print("}")
+
+        file:close()
+    end
+    if Button("Load") then
+        level = nil
+        level = dofile("outfile.lua")
+
+        if level ~= nil then
+            RecursivePrint(level, 0)
+            ClearRegistry()
+
+            for _entity, components in pairs(level) do
+                local entity = CreateEntity()
+
+                for component, data in pairs(components) do
+                    -- if component == "Camera" then
+                    --     print("SKIPPING CAMERA")
+                    -- else
+                    AddComponentOrPrintError(component, entity, data)
+                    -- end
+                end
+            end
+        else
+            print("Nope")
+        end
+    end
+    End()
 end
