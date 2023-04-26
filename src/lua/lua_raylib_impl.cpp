@@ -10,6 +10,43 @@
 #include <entity/render.hpp>
 #include <entity/transform.hpp>
 
+// Taken from Raylib's source and modified
+BoundingBox GetModelBoundingBox(Model model, Matrix transform)
+{
+    auto fmin = std::numeric_limits<float>::lowest();
+    auto fmax = std::numeric_limits<float>::max();
+    Vector3 minVertex{fmax, fmax, fmax};
+    Vector3 maxVertex{fmin, fmin, fmin};
+
+    for(int i = 0; i < model.meshCount; ++i)
+    {
+        Mesh mesh = model.meshes[i];
+        if(mesh.vertices != NULL)
+        {
+            for(int i = 0; i < mesh.vertexCount; i++)
+            {
+                minVertex = Vector3Min(
+                    minVertex,
+                    Vector3Transform(
+                        {mesh.vertices[i * 3], mesh.vertices[i * 3 + 1], mesh.vertices[i * 3 + 2]},
+                        transform));
+                maxVertex = Vector3Max(
+                    maxVertex,
+                    Vector3Transform(
+                        {mesh.vertices[i * 3], mesh.vertices[i * 3 + 1], mesh.vertices[i * 3 + 2]},
+                        transform));
+            }
+        }
+    }
+
+    // Create the bounding box
+    BoundingBox box = {0};
+    box.min = minVertex;
+    box.max = maxVertex;
+
+    return box;
+}
+
 std::optional<entt::entity> GetRayCollision(entt::registry* registry, Ray ray)
 {
     std::optional<entt::entity> hitEntity;
@@ -29,28 +66,14 @@ std::optional<entt::entity> GetRayCollision(entt::registry* registry, Ray ray)
                 transformComponent.position.y,
                 transformComponent.position.z));
 
-        auto fmin = std::numeric_limits<float>::lowest();
-        auto fmax = std::numeric_limits<float>::max();
-
-        Vector3 min{fmax, fmax, fmax};
-        Vector3 max{fmin, fmin, fmin};
-
-        const Model& model = render.model;
-        for(uint32_t i = 0; i < model.meshCount; ++i)
-        {
-            auto boundingBox = GetMeshBoundingBox(model.meshes[i]);
-
-            min = Vector3Min(min, Vector3Transform(boundingBox.min, transform));
-            max = Vector3Max(max, Vector3Transform(boundingBox.max, transform));
-        }
-
-        if(GetRayCollisionBox(ray, BoundingBox{min, max}).hit)
+        if(GetRayCollisionBox(ray, GetModelBoundingBox(render.model, transform)).hit)
         {
             RayCollision collision = {};
 
-            for(int i = 0; i < model.meshCount; i++)
+            for(int i = 0; i < render.model.meshCount; i++)
             {
-                RayCollision meshCollision = GetRayCollisionMesh(ray, model.meshes[i], transform);
+                RayCollision meshCollision =
+                    GetRayCollisionMesh(ray, render.model.meshes[i], transform);
 
                 if(meshCollision.hit)
                 {
