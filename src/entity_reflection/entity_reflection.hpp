@@ -25,6 +25,7 @@ struct EntityReflection
 #ifndef ENTITY_REFLECTION_SKIP_LUA
         // TODO: Error handling
         bool (*createFromLua)(lua_State*, entt::registry&, entt::entity);
+        void (*pushToLua)(lua_State*, void*);
 #endif
     };
 
@@ -49,6 +50,7 @@ struct EntityReflection
                 .tryDuplicate = Component::TryDuplicate,
 #ifndef ENTITY_REFLECTION_SKIP_LUA
                 .createFromLua = Component::CreateFromLua,
+                .pushToLua = Component::PushToLua,
 #endif
             }));
     }
@@ -182,6 +184,20 @@ struct EntityReflection
         assert(iter != entityMap.end());
 
         return iter->second.createFromLua(lua, *registry, entity);
+    }
+
+    static void PushEntityToLua(lua_State* lua, entt::registry* registry, entt::entity entity)
+    {
+        lua_pushinteger(lua, (lua_Integer)entity);
+        lua_createtable(lua, 0, 0);
+
+        for(const auto& [id, functions] : ComponentMap())
+        {
+            if(auto componentOpt = functions.getComponent(*registry, entity); componentOpt)
+                functions.pushToLua(lua, componentOpt.value());
+        }
+
+        lua_settable(lua, -3);
     }
 #endif
 };

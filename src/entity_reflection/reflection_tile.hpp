@@ -28,6 +28,8 @@ EntityReflectionStruct(RComponent)
         registry.emplace<Component::RComponent>(entity);
     }
 
+    static void PushToLuaInternal(lua_State * lua, const Component::RComponent& component) {}
+
     static void View() {}
 
     static void Modify(entt::registry & registry, entt::entity entity, bool allowDeletion)

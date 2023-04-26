@@ -1,6 +1,7 @@
 #include "lua_entt_impl.hpp"
 
 // TODO: REMOVE
+#include <entt/entity/fwd.hpp>
 #include <iostream>
 
 extern "C" {
@@ -51,6 +52,12 @@ namespace LuaEntt
 #define QuickRegister(Func) LuaRegister::RegisterMember(lua, #Func, registry, Func);
 
         QuickRegister(CreateEntity);
+        LuaRegister::RegisterMember(
+            lua,
+            "ClearRegistry",
+            registry,
+            +[](entt::registry* registry, lua_State* lua) { registry->clear(); });
+
         LuaRegister::RegisterMember(
             lua,
             "DestroyEntity",

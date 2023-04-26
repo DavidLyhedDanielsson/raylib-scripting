@@ -41,8 +41,23 @@ EntityReflectionStruct(RComponent)
         lua_getfield(lua, stackIndex, "z");
         component.z = lua_tonumber(lua, -1);
 
+        lua_pop(lua, 3);
+
         registry.emplace<Component::RComponent>(entity, component);
         return true;
+    }
+
+    static void PushToLuaInternal(lua_State * lua, const Component::RComponent& component)
+    {
+        lua_pushstring(lua, "x");
+        lua_pushnumber(lua, component.x);
+        lua_settable(lua, -3);
+        lua_pushstring(lua, "y");
+        lua_pushnumber(lua, component.y);
+        lua_settable(lua, -3);
+        lua_pushstring(lua, "z");
+        lua_pushnumber(lua, component.z);
+        lua_settable(lua, -3);
     }
 
     static void View(Component::RComponent & component)

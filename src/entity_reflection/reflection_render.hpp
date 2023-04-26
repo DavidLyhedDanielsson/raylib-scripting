@@ -2,6 +2,7 @@
 
 #include "reflection_entity.hpp"
 #include <assets.hpp>
+#include <lua.h>
 #include <lua/lua_register_types.hpp>
 
 #include <entity/render.hpp>
@@ -42,6 +43,14 @@ EntityReflectionStruct(RComponent)
                 break;
             }
         }
+        lua_pop(lua, 1);
+    }
+
+    static void PushToLuaInternal(lua_State * lua, const Component::RComponent& component)
+    {
+        lua_pushstring(lua, "assetName");
+        lua_pushstring(lua, component.assetName);
+        lua_settable(lua, -3);
     }
 
     static void View(Component::RComponent & component)

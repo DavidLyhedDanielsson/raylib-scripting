@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <entt/entt.hpp>
 #include <imgui.h>
+#include <lua.h>
 #include <lua/lua_validator.hpp>
 #include <optional>
 #include <string>
@@ -134,6 +135,16 @@ class ReflectionComponent
 
         Derived::CreateFromLuaInternal(lua, registry, entity);
         return true;
+    }
+
+    static void PushToLua(lua_State* lua, void* componentPtr)
+    {
+        lua_pushstring(lua, NAME);
+        lua_createtable(lua, 0, 0);
+
+        Derived::PushToLuaInternal(lua, *(ComponentType*)componentPtr);
+
+        lua_settable(lua, -3);
     }
 
     // constexpr static uint32_t ID = IDValue;

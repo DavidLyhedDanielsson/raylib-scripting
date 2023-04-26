@@ -3,6 +3,7 @@
 #include <numeric>
 #include <vector>
 
+#include "lua/lua_register.hpp"
 #include "reflection_entity.hpp"
 #include <external/raylib.hpp>
 #include <lua/lua_register_types.hpp>
@@ -35,13 +36,25 @@ EntityReflectionStruct(RComponent)
         lua_getfield(lua, -1, "position");
         lua_getfield(lua, -2, "rotation");
 
-        auto stackTop = lua_gettop(lua);
+        auto stackTop = lua_gettop(lua) + 1;
         registry.emplace<Component::RComponent>(
             entity,
             Component::RComponent{
                 .position = LuaRegister::LuaGetFunc<Vector3>(lua, stackTop - 2),
                 .rotation = LuaRegister::LuaGetFunc<Vector3>(lua, stackTop - 1),
             });
+
+        lua_pop(lua, 2);
+    }
+
+    static void PushToLuaInternal(lua_State * lua, const Component::RComponent& component)
+    {
+        lua_pushstring(lua, "position");
+        LuaRegister::LuaSetFunc<Vector3>(lua, component.position);
+        lua_settable(lua, -3);
+        lua_pushstring(lua, "rotation");
+        LuaRegister::LuaSetFunc<Vector3>(lua, component.rotation);
+        lua_settable(lua, -3);
     }
 
     static void View(Component::RComponent & component)

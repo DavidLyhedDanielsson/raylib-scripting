@@ -1,3 +1,4 @@
+#include "lua/lua_register.hpp"
 #include "lua_imgui_impl.hpp"
 
 #include "lua_register_types.hpp"
@@ -115,6 +116,19 @@ namespace LuaEntityReflection
                 const char* componentName,
                 lua_Integer entity) {
                 EntityReflection::RemoveComponent(componentName, registry, (entt::entity)entity);
+            });
+
+        RegisterMember(
+            lua,
+            "DumpEntities",
+            registry,
+            +[](entt::registry* registry, lua_State* lua) -> Placeholder {
+                lua_createtable(lua, registry->alive(), 0);
+                int counter = 0;
+                registry->each([&](entt::entity entity) {
+                    EntityReflection::PushEntityToLua(lua, registry, entity);
+                });
+                return {};
             });
     }
 }

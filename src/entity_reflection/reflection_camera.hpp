@@ -1,5 +1,6 @@
 #pragma once
 
+#include "lua/lua_register.hpp"
 #include "reflection_entity.hpp"
 #include <entt/entt.hpp>
 #include <external/raylib.hpp>
@@ -30,13 +31,38 @@ EntityReflectionStruct(RComponent)
     {
         Component::RComponent component{};
 
-        component.target = LuaRegister::LuaGetFunc<Vector3>(lua, -4);
-        component.up = LuaRegister::LuaGetFunc<Vector3>(lua, -3);
-        component.fovy = lua_tonumber(lua, -2);
+        // TODO: Just allow negative indices in LuaGetFunc to skip this gettop + 1 nonsense
+        auto table = lua_gettop(lua);
+
+        lua_getfield(lua, table, "target");
+        component.target = LuaRegister::LuaGetFunc<Vector3>(lua, table + 1);
+        lua_getfield(lua, table, "up");
+        component.up = LuaRegister::LuaGetFunc<Vector3>(lua, table + 2);
+        lua_getfield(lua, table, "fovy");
+        component.fovy = lua_tonumber(lua, -1);
+        lua_getfield(lua, table, "projection");
         component.projection = lua_tointeger(lua, -1);
+
+        lua_pop(lua, 4);
 
         registry.emplace<Component::RComponent>(entity, component);
         return true;
+    }
+
+    static void PushToLuaInternal(lua_State * lua, const Component::RComponent& component)
+    {
+        lua_pushstring(lua, "target");
+        LuaRegister::LuaSetFunc<Vector3>(lua, component.target);
+        lua_settable(lua, -3);
+        lua_pushstring(lua, "up");
+        LuaRegister::LuaSetFunc<Vector3>(lua, component.up);
+        lua_settable(lua, -3);
+        lua_pushstring(lua, "fovy");
+        lua_pushnumber(lua, component.fovy);
+        lua_settable(lua, -3);
+        lua_pushstring(lua, "projection");
+        lua_pushinteger(lua, component.projection);
+        lua_settable(lua, -3);
     }
 
     static void View(Component::RComponent & component)
