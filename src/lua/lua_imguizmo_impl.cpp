@@ -9,6 +9,7 @@
 #include <entity/transform.hpp>
 #include <entt/entt.hpp>
 #include <external/raylib.hpp>
+#include <raymath.h>
 
 #define LuaImguizmoQuickRegister(X) LuaRegister::Register(lua, #X, ImGuizmo::X)
 
@@ -18,11 +19,16 @@ namespace LuaImGuizmo
     {
         using namespace LuaRegister;
 
+        LuaRegister::Register(
+            lua,
+            "IsUsingGizmo",
+            +[]() { return ImGuizmo::IsUsing(); });
+
         RegisterMember(
             lua,
             "Gizmo",
             registry,
-            +[](entt::registry* registry, lua_State* state, lua_Integer entity) {
+            +[](entt::registry* registry, lua_State* state, lua_Integer entity, bool startUsing) {
                 if(!registry->valid((entt::entity)entity))
                     return;
 
@@ -33,22 +39,25 @@ namespace LuaImGuizmo
                         camera = c.CreateRaylibCamera(t.position);
                     });
 
-                float zero[3] = {0.0f, 0.0f, 0.0f};
                 float one[3] = {1.0f, 1.0f, 1.0f};
-                float matrix[16] = {};
 
-                // ImGuizmo uses degrees a a different handedness than Raylib
-                float rotation[3] = {
-                    transformPtr->rotation.x * RAD2DEG,
-                    transformPtr->rotation.y * RAD2DEG,
-                    transformPtr->rotation.z * RAD2DEG,
-                };
+                static float matrix[16]{0.0f};
 
-                ImGuizmo::RecomposeMatrixFromComponents(
-                    &transformPtr->position.x,
-                    rotation,
-                    one,
-                    matrix);
+                if(startUsing)
+                {
+                    // ImGuizmo uses degrees a a different handedness than Raylib
+                    float rotation[3] = {
+                        transformPtr->rotation.x * RAD2DEG,
+                        transformPtr->rotation.y * RAD2DEG,
+                        transformPtr->rotation.z * RAD2DEG,
+                    };
+
+                    ImGuizmo::RecomposeMatrixFromComponents(
+                        &transformPtr->position.x,
+                        rotation,
+                        one,
+                        matrix);
+                }
 
                 auto viewMatrix = MatrixTranspose(GetCameraMatrix(camera));
                 auto projMatrix = MatrixTranspose(MatrixPerspective(
@@ -67,17 +76,21 @@ namespace LuaImGuizmo
                     ImGuizmo::MODE::WORLD,
                     matrix);
 
-                ImGuizmo::DecomposeMatrixToComponents(
-                    matrix,
-                    &transformPtr->position.x,
-                    rotation,
-                    one);
+                if(ImGuizmo::IsUsing())
+                {
+                    float rotation[3]{0.0f};
+                    ImGuizmo::DecomposeMatrixToComponents(
+                        matrix,
+                        &transformPtr->position.x,
+                        rotation,
+                        one);
 
-                transformPtr->rotation = {
-                    rotation[0] * DEG2RAD,
-                    rotation[1] * DEG2RAD,
-                    rotation[2] * DEG2RAD,
-                };
+                    transformPtr->rotation = {
+                        rotation[0] * DEG2RAD,
+                        rotation[1] * DEG2RAD,
+                        rotation[2] * DEG2RAD,
+                    };
+                }
             });
     }
 }

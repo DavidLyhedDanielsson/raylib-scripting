@@ -2,6 +2,8 @@ if setup == nil then
     setup = true
 
     selected_entity = nil
+
+    usingGizmo = false
 end
 
 function raylib()
@@ -105,9 +107,11 @@ function imgui()
         end
     end
 
-
     if selected_entity ~= nil then
-        Gizmo(selected_entity)
+        Gizmo(selected_entity, not usingGizmo)
+        usingGizmo = IsUsingGizmo()
+    else
+        usingGizmo = false
     end
 
     function RecursivePrint(tab, indent)
