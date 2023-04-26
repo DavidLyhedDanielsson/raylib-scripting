@@ -39,9 +39,9 @@ namespace LuaImGuizmo
 
                 // ImGuizmo uses degrees a a different handedness than Raylib
                 float rotation[3] = {
-                    transformPtr->rotation.x * -RAD2DEG,
-                    transformPtr->rotation.y * -RAD2DEG,
-                    transformPtr->rotation.z * -RAD2DEG,
+                    transformPtr->rotation.x * RAD2DEG,
+                    transformPtr->rotation.y * RAD2DEG,
+                    transformPtr->rotation.z * RAD2DEG,
                 };
 
                 ImGuizmo::RecomposeMatrixFromComponents(
@@ -74,9 +74,9 @@ namespace LuaImGuizmo
                     one);
 
                 transformPtr->rotation = {
-                    rotation[0] * -DEG2RAD,
-                    rotation[1] * -DEG2RAD,
-                    rotation[2] * -DEG2RAD,
+                    rotation[0] * DEG2RAD,
+                    rotation[1] * DEG2RAD,
+                    rotation[2] * DEG2RAD,
                 };
             });
     }
