@@ -3,6 +3,8 @@ if setup == nil then
 
     selected_entity = nil
 
+    searchText = ""
+
     usingGizmo = false
 end
 
@@ -20,13 +22,29 @@ function imgui()
     SetNextWindowSize({ x = 300, y = GetRenderHeight() })
     SetNextWindowPos({ x = 0, y = 0 })
     Begin("AssetSpawner", 0, WindowFlags.NoTitleBar)
-    for key, value in ipairs(Assets) do
-        if SmallButton(value) then
-            local entity = CreateEntity()
-            AddComponentOrPrintError("Render", entity, { assetName = value })
-            AddComponentOrPrintError("Transform", entity,
-                { position = { x = 0, y = 0, z = 0 }, rotation = { x = 0, y = 0, z = 0 } })
-            AddComponentOrPrintError("Tile", entity)
+    searchText = InputText("Filter", searchText)
+
+    if #searchText > 0 then
+        for key, value in ipairs(Assets) do
+            if string.match(string.lower(value), searchText) then
+                if SmallButton(value) then
+                    local entity = CreateEntity()
+                    AddComponentOrPrintError("Render", entity, { assetName = value })
+                    AddComponentOrPrintError("Transform", entity,
+                        { position = { x = 0, y = 0, z = 0 }, rotation = { x = 0, y = 0, z = 0 } })
+                    AddComponentOrPrintError("Tile", entity)
+                end
+            end
+        end
+    else
+        for key, value in ipairs(Assets) do
+            if SmallButton(value) then
+                local entity = CreateEntity()
+                AddComponentOrPrintError("Render", entity, { assetName = value })
+                AddComponentOrPrintError("Transform", entity,
+                    { position = { x = 0, y = 0, z = 0 }, rotation = { x = 0, y = 0, z = 0 } })
+                AddComponentOrPrintError("Tile", entity)
+            end
         end
     end
     End()

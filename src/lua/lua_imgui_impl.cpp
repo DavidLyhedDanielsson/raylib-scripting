@@ -1,10 +1,12 @@
 #include "lua_imgui_impl.hpp"
 
 #include "lua_register.hpp"
+#include <cstring>
 #include <imgui.h> // TODO: Really fix these library include paths
 #include <imgui/imgui_internal.hpp>
 // Needs to be after imgui
 #include <ImGuizmo.h>
+#include <lua.h>
 #include <lua/lua_register_types.hpp>
 
 #define LuaImguiQuickRegister(X) LuaRegister::Register(lua, #X, ImGui::X)
@@ -232,6 +234,16 @@ namespace LuaImGui
         LuaImguiQuickRegister(VSliderInt);
 
         // InputText
+        LuaRegister::Register(
+            lua,
+            "InputText",
+            +[](lua_State* lua, const char* label, const char* text) -> Placeholder {
+                char buffer[100];
+                std::strncpy(buffer, text, 100);
+                ImGui::InputText(label, buffer, sizeof(buffer));
+                lua_pushstring(lua, buffer);
+                return {};
+            });
         LuaImguiQuickRegister(InputFloat);
         LuaImguiQuickRegister(InputFloat2);
         LuaImguiQuickRegister(InputFloat3);
