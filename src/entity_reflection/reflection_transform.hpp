@@ -79,7 +79,7 @@ EntityReflectionStruct(RComponent)
         bool allowDeletion)
     {
         ImGui::DragFloat3("Position", &component.position.x);
-        ImGui::SliderFloat3("Rotation", &component.rotation.x, 0.0f, PI * 2.0f);
+        ImGui::InputFloat3("Rotation", &component.rotation.x);
 
         if(allowDeletion)
             AddRemoveButton("REMOVE TRANSFORM COMPONENT", registry, entity);
