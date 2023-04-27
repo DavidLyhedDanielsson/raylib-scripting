@@ -57,14 +57,12 @@ namespace World
         for(auto entity : group)
         {
             auto [render, transform] = group.get<Component::Render, Component::Transform>(entity);
-            render.model.transform = MatrixMultiply(
-                MatrixRotateXYZ(transform.rotation),
-                MatrixTranslate(transform.position.x, transform.position.y, transform.position.z));
 
-            // DrawModel uses model.transform as well as the parameters here
+            render.model.transform = MatrixMultiply(
+                MatrixRotateZYX(transform.rotation),
+                MatrixTranslate(transform.position.x, transform.position.y, transform.position.z));
             DrawModel(render.model, {0.0f, 0.0f, 0.0f}, 1.0f, WHITE);
 
-            // The transform matrix is used here
             render.model.transform = MatrixIdentity();
         }
     }

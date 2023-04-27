@@ -60,7 +60,7 @@ std::optional<entt::entity> GetRayCollision(entt::registry* registry, Ray ray)
                 Component::Transform{Vector3{0.0f, 0.0f, 0.0f}, Vector3{0.0f, 0.0f, 0.0f}};
 
         auto transform = MatrixMultiply(
-            MatrixRotateXYZ(transformComponent.rotation),
+            MatrixRotateZYX(transformComponent.rotation),
             MatrixTranslate(
                 transformComponent.position.x,
                 transformComponent.position.y,
