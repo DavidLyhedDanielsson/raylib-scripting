@@ -112,23 +112,13 @@ function imgui()
                     local spawnPosition = GetEntity(spawnEntity).Transform.position
                     local goalPosition = GetEntity(closestGoal).Transform.position
 
-                    local xVel = goalPosition.x - spawnPosition.x
-                    local yVel = goalPosition.y - spawnPosition.y
-                    local zVel = goalPosition.z - spawnPosition.z
-
-                    local length = math.sqrt(xVel * xVel + yVel * yVel + zVel * zVel)
-                    xVel = xVel / length
-                    yVel = yVel / length
-                    zVel = zVel / length
-
-                    local speed = 0.01
-
                     local entity = CreateEntity()
-                    AddComponentOrPrintError("Render", entity, { assetName = "Barrel" })
+                    AddComponentOrPrintError("Render", entity,
+                        { assetName = "Barrel" })
                     AddComponentOrPrintError("Transform", entity,
                         { position = spawnPosition, rotation = { x = 0, y = 0, z = 0 } })
-                    AddComponentOrPrintError("Velocity", entity,
-                        { x = xVel * speed, y = yVel * speed, z = zVel * speed })
+                    AddComponentOrPrintError("MoveTowards", entity,
+                        { target = goalPosition, speed = 0.01 })
                 end
             else
                 print("Can't spawn any dudes if there are no goals")

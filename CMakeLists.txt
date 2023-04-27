@@ -56,6 +56,7 @@ set(SRC
     entity/camera.hpp
     entity/enemy_goal.hpp
     entity/enemy_spawn.hpp
+    entity/move_towards.hpp
     entity/render.hpp
     entity/transform.hpp
     entity/velocity.hpp
@@ -65,6 +66,7 @@ set(SRC
     entity_reflection/reflection_enemy_goal.hpp
     entity_reflection/reflection_enemy_spawn.hpp
     entity_reflection/reflection_entity.hpp
+    entity_reflection/reflection_move_towards.hpp
     entity_reflection/reflection_render.hpp
     entity_reflection/reflection_transform.hpp
     entity_reflection/reflection_tile.hpp
