@@ -59,7 +59,7 @@ void main_loop()
 
     BeginDrawing();
 
-    ClearBackground(RAYWHITE);
+    ClearBackground(DARKGRAY);
 
     char buf[128];
     sprintf(buf, "Frame time: %f", deltaMs);
