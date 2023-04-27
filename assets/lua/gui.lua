@@ -1,3 +1,10 @@
+function AddComponentOrPrintError(...)
+    local errorMessage = AddComponent(...)
+    if errorMessage then
+        print("Error when trying to add component:", errorMessage)
+    end
+end
+
 if setup == nil then
     setup = true
 
@@ -6,16 +13,23 @@ if setup == nil then
     searchText = ""
 
     usingGizmo = false
+
+    level = dofile("outfile.lua")
+
+    if level ~= nil then
+        ClearRegistry()
+
+        for _entity, components in pairs(level) do
+            local entity = CreateEntity()
+
+            for component, data in pairs(components) do
+                AddComponentOrPrintError(component, entity, data)
+            end
+        end
+    end
 end
 
 function raylib()
-end
-
-function AddComponentOrPrintError(...)
-    local errorMessage = AddComponent(...)
-    if errorMessage then
-        print("Error when trying to add component:", errorMessage)
-    end
 end
 
 function imgui()
@@ -190,7 +204,6 @@ function imgui()
         level = dofile("outfile.lua")
 
         if level ~= nil then
-            RecursivePrint(level, 0)
             ClearRegistry()
 
             for _entity, components in pairs(level) do
