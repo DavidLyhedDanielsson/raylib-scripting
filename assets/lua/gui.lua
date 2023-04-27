@@ -128,30 +128,29 @@ function imgui()
         EndMainMenuBar()
     end
 
-    Begin("Entity")
-    Text("Selected entity information")
-    if selectedEntity ~= nil then
+    function ImGuiEntity(entity)
         if Button("DuplicateEntity") then
-            DuplicateEntity(selectedEntity)
+            DuplicateEntity(entity)
         end
 
         local components = {
             Render = {
-                hasComponent = HasComponent("Render", selectedEntity),
+                hasComponent = HasComponent("Render", entity),
                 default = { assetName = "Barrel" }
             },
             Transform = {
-                hasComponent = HasComponent("Transform", selectedEntity),
+                hasComponent = HasComponent("Transform", entity),
                 default = { position = { x = 0, y = 0, z = 0 }, rotation = { x = 0, y = 0, z = 0 } }
             },
             Velocity = {
-                hasComponent = HasComponent("Velocity", selectedEntity),
+                hasComponent = HasComponent("Velocity", entity),
                 default = { x = 0.0, y = 0.0, z = 0.0 }
             },
-            Tile = { hasComponent = HasComponent("Tile", selectedEntity) },
-            EnemyGoal = { hasComponent = HasComponent("EnemyGoal", selectedEntity) },
-            EnemySpawn = { hasComponent = HasComponent("EnemySpawn", selectedEntity) },
-            Camera = { hasComponent = HasComponent("Camera", selectedEntity) }
+            Tile = { hasComponent = HasComponent("Tile", entity) },
+            EnemyGoal = { hasComponent = HasComponent("EnemyGoal", entity) },
+            EnemySpawn = { hasComponent = HasComponent("EnemySpawn", entity) },
+            Camera = { hasComponent = HasComponent("Camera", entity) },
+            MoveTowards = { hasComponent = HasComponent("MoveTowards", entity) },
         }
 
         for componentName, info in pairs(components) do
@@ -159,11 +158,11 @@ function imgui()
                 checked = true
                 local open, clicked = CollapsingHeaderToggle(componentName, checked)
                 if open then
-                    Modify(componentName, selectedEntity)
+                    Modify(componentName, entity)
                 end
 
                 if not clicked then
-                    RemoveComponent(componentName, selectedEntity)
+                    RemoveComponent(componentName, entity)
                 end
             end
         end
@@ -172,12 +171,18 @@ function imgui()
             for componentName, info in pairs(components) do
                 if not info.hasComponent and componentName ~= "Camera" then
                     if Selectable(componentName) then
-                        AddComponentOrPrintError(componentName, selectedEntity, info.default)
+                        AddComponentOrPrintError(componentName, entity, info.default)
                     end
                 end
             end
             EndCombo()
         end
+    end
+
+    Begin("Entity")
+    Text("Selected entity information")
+    if selectedEntity ~= nil then
+        ImGuiEntity(selectedEntity)
     end
 
     for k, _ in ipairs(enemySpawns) do enemySpawns[k] = nil end
@@ -214,52 +219,7 @@ function imgui()
             if Button("Select") then
                 newSelectedEntity = entity
             end
-            if Button("Duplicate") then
-                DuplicateEntity(entity)
-            end
-
-            local components = {
-                Render = {
-                    hasComponent = HasComponent("Render", entity),
-                    default = { assetName = "Barrel" }
-                },
-                Transform = {
-                    hasComponent = HasComponent("Transform", entity),
-                    default = { position = { x = 0, y = 0, z = 0 }, rotation = { x = 0, y = 0, z = 0 } }
-                },
-                Velocity = {
-                    hasComponent = HasComponent("Velocity", entity),
-                    default = { x = 0.0, y = 0.0, z = 0.0 }
-                },
-                Tile = { hasComponent = HasComponent("Tile", entity) },
-                Camera = { hasComponent = HasComponent("Camera", entity) }
-            }
-
-            for componentName, info in pairs(components) do
-                if info.hasComponent then
-                    checked = true
-                    local open, clicked = CollapsingHeaderToggle(componentName, checked)
-                    if open then
-                        Modify(componentName, entity)
-                    end
-
-                    if not clicked then
-                        RemoveComponent(componentName, entity)
-                    end
-                end
-            end
-
-            if BeginCombo("##addcomponent", "Add component") then
-                for componentName, info in pairs(components) do
-                    if not info.hasComponent and componentName ~= "Camera" then
-                        if Selectable(componentName) then
-                            AddComponentOrPrintError(componentName, entity, info.default)
-                        end
-                    end
-                end
-                EndCombo()
-            end
-
+            ImGuiEntity(entity)
             TreePop()
         end
 
