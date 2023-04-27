@@ -24,6 +24,11 @@ struct WorldData
     entt::registry* registry;
 } world;
 
+float RoundToMultiple(float number, float multiple)
+{
+    return std::round(number / multiple) * multiple;
+}
+
 namespace World
 {
     void Init(entt::registry* registry)
@@ -47,6 +52,10 @@ namespace World
             transform.position.x = std::roundf(transform.position.x);
             transform.position.y = std::roundf(transform.position.y);
             transform.position.z = std::roundf(transform.position.z);
+
+            transform.rotation.x = RoundToMultiple(transform.rotation.x * RAD2DEG, 90.0f) * DEG2RAD;
+            transform.rotation.y = RoundToMultiple(transform.rotation.y * RAD2DEG, 90.0f) * DEG2RAD;
+            transform.rotation.z = RoundToMultiple(transform.rotation.z * RAD2DEG, 90.0f) * DEG2RAD;
         }
     }
 
