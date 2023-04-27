@@ -20,7 +20,7 @@ struct EntityReflection
         void (*removeComponent)(entt::registry&, entt::entity);
         std::optional<void*> (*getComponent)(entt::registry&, entt::entity);
         bool (*tryViewOne)(entt::registry&, entt::entity);
-        bool (*tryModifyOne)(entt::registry&, entt::entity, bool);
+        bool (*tryModifyOne)(entt::registry&, entt::entity);
         void (*tryDuplicate)(entt::registry&, entt::entity, entt::entity);
 #ifndef ENTITY_REFLECTION_SKIP_LUA
         // TODO: Error handling
@@ -63,7 +63,7 @@ struct EntityReflection
         auto iter = entityMap.find(std::string(componentName));
         assert(iter != entityMap.end());
 
-        iter->second.tryModifyOne(registry, entity, false);
+        iter->second.tryModifyOne(registry, entity);
     }
 
     template<typename Func>
@@ -124,7 +124,7 @@ struct EntityReflection
     {
         bool found = false;
         for(const auto& [key, value] : ComponentMap())
-            found = value.tryModifyOne(registry, entity, true) || found;
+            found = value.tryModifyOne(registry, entity) || found;
 
         if(!found)
             ifNoneFound();

@@ -53,11 +53,17 @@ set(SRC
     main.cpp
     world.cpp world.hpp
     external/raylib.hpp
+    entity/camera.hpp
+    entity/enemy_goal.hpp
+    entity/enemy_spawn.hpp
     entity/render.hpp
     entity/transform.hpp
     entity/velocity.hpp
     entity_reflection/entity_reflection.hpp
+    entity_reflection/include_reflection.cpp
     entity_reflection/reflection_camera.hpp
+    entity_reflection/reflection_enemy_goal.hpp
+    entity_reflection/reflection_enemy_spawn.hpp
     entity_reflection/reflection_entity.hpp
     entity_reflection/reflection_render.hpp
     entity_reflection/reflection_transform.hpp

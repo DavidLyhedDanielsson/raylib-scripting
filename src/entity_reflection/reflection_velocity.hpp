@@ -68,13 +68,9 @@ EntityReflectionStruct(RComponent)
     static void Modify(
         entt::registry & registry,
         entt::entity entity,
-        Component::RComponent & component,
-        bool allowDeletion)
+        Component::RComponent & component)
     {
         ImGui::DragFloat3("Velocity", &component.x, 0.001f);
-
-        if(allowDeletion)
-            AddRemoveButton("REMOVE VELOCITY COMPONENT", registry, entity);
     }
 
     static void Duplicate(

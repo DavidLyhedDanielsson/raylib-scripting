@@ -117,6 +117,8 @@ function imgui()
                 default = { x = 0.0, y = 0.0, z = 0.0 }
             },
             Tile = { hasComponent = HasComponent("Tile", selectedEntity) },
+            EnemyGoal = { hasComponent = HasComponent("EnemyGoal", selectedEntity) },
+            EnemySpawn = { hasComponent = HasComponent("EnemySpawn", selectedEntity) },
             Camera = { hasComponent = HasComponent("Camera", selectedEntity) }
         }
 

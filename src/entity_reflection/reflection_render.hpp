@@ -61,8 +61,7 @@ EntityReflectionStruct(RComponent)
     static void Modify(
         entt::registry & registry,
         entt::entity entity,
-        Component::RComponent & component,
-        bool allowDeletion)
+        Component::RComponent & component)
     {
         if(ImGui::BeginCombo("Asset", component.assetName))
         {
@@ -76,9 +75,6 @@ EntityReflectionStruct(RComponent)
             }
             ImGui::EndCombo();
         }
-
-        if(allowDeletion)
-            AddRemoveButton("REMOVE RENDER COMPONENT", registry, entity);
     }
 
     static void Duplicate(

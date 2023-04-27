@@ -9,11 +9,6 @@
 #include <entity/transform.hpp>
 #include <entity/velocity.hpp>
 #include <entity_reflection/entity_reflection.hpp>
-#include <entity_reflection/reflection_camera.hpp>
-#include <entity_reflection/reflection_render.hpp>
-#include <entity_reflection/reflection_tile.hpp>
-#include <entity_reflection/reflection_transform.hpp>
-#include <entity_reflection/reflection_velocity.hpp>
 #include <external/raylib.hpp>
 #include <imgui.h>
 

@@ -83,8 +83,7 @@ EntityReflectionStruct(RComponent)
     static void Modify(
         entt::registry & registry,
         entt::entity entity,
-        Component::RComponent & component,
-        bool allowDeletion)
+        Component::RComponent & component)
     {
         ImGui::InputFloat3("Target", &component.target.x);
         ImGui::InputFloat3("Up", &component.up.x);
@@ -94,9 +93,6 @@ EntityReflectionStruct(RComponent)
         ImGui::SameLine();
         if(ImGui::RadioButton("Orthographic", component.projection == CAMERA_ORTHOGRAPHIC))
             component.projection = CAMERA_ORTHOGRAPHIC;
-
-        if(allowDeletion)
-            AddRemoveButton("REMOVE CAMERA COMPONENT", registry, entity);
     }
 
     static void Duplicate(

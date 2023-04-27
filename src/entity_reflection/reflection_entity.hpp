@@ -88,20 +88,20 @@ class ReflectionComponent
         }
     }
 
-    static bool TryModifyOne(entt::registry& registry, entt::entity entity, bool allowDeletion)
+    static bool TryModifyOne(entt::registry& registry, entt::entity entity)
     {
         if constexpr(std::is_empty_v<ComponentType>)
         {
             auto hasComponent = registry.any_of<ComponentType>(entity);
             if(hasComponent)
-                Derived::Modify(registry, entity, allowDeletion);
+                Derived::Modify(registry, entity);
             return hasComponent;
         }
         else
         {
             auto component = registry.try_get<ComponentType>(entity);
             if(component != nullptr)
-                Derived::Modify(registry, entity, *component, allowDeletion);
+                Derived::Modify(registry, entity, *component);
             return component != nullptr;
         }
     }

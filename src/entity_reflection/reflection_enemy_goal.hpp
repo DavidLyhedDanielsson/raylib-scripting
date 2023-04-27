@@ -4,8 +4,8 @@
 #include <external/raylib.hpp>
 #include <lua/lua_register_types.hpp>
 
-#include <entity/tile.hpp>
-#define RComponent Tile
+#include <entity/enemy_goal.hpp>
+#define RComponent EnemyGoal
 EntityReflectionStruct(RComponent)
 {
     ; // This semicolon needs to be here or else clang-format breaks. The benefits of the macro
