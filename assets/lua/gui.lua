@@ -5,17 +5,25 @@ function AddComponentOrPrintError(...)
     end
 end
 
-if setup == nil then
-    setup = true
+function SaveLevel()
+    local file = io.open("outfile.lua", "w+")
+    file:write("return{")
+    --print("{")
+    for entity, entityInfo in pairs(DumpEntities()) do
+        file:write("[", entity, "]={")
+        --print("  ", entity, " = {")
+        RecursiveWrite(file, entityInfo)
+        file:write("},")
+        --print("  },")
+    end
+    file:write("}")
+    --print("}")
 
-    selected_entity = nil
+    file:close()
+end
 
-    searchText = ""
-
-    usingGizmo = false
-
-    level = dofile("outfile.lua")
-
+function LoadLevel()
+    local level = dofile("outfile.lua")
     if level ~= nil then
         ClearRegistry()
 
@@ -26,121 +34,220 @@ if setup == nil then
                 AddComponentOrPrintError(component, entity, data)
             end
         end
+    else
+        print("Couldn't load outfile.lua or it didn't contain a table")
     end
+end
+
+if setup == nil then
+    setup = true
+
+    selectedEntity = nil
+    newSelectedEntity = nil
+    searchText = ""
+    usingGizmo = false
+
+    LoadLevel()
 end
 
 function raylib()
 end
 
 function imgui()
-    SetNextWindowSize({ x = 300, y = GetRenderHeight() })
-    SetNextWindowPos({ x = 0, y = 0 })
-    Begin("AssetSpawner", 0, WindowFlags.NoTitleBar)
-    searchText = InputText("Filter", searchText)
+    if BeginMainMenuBar() then
+        if MenuItem("Save", "", false, true) then
+            SaveLevel()
+        end
+        if MenuItem("Load", "", false, true) then
+            LoadLevel()
+        end
 
-    if #searchText > 0 then
-        for key, value in ipairs(Assets) do
-            if string.match(string.lower(value), searchText) then
-                if SmallButton(value) then
-                    local entity = CreateEntity()
-                    AddComponentOrPrintError("Render", entity, { assetName = value })
-                    AddComponentOrPrintError("Transform", entity,
-                        { position = { x = 0, y = 0, z = 0 }, rotation = { x = 0, y = 0, z = 0 } })
-                    AddComponentOrPrintError("Tile", entity)
+        if BeginMenu("Spawn entity...", "", false, true) then
+            searchText = InputText("Filter", searchText)
+
+            BeginChild("EntityList", { x = 0, y = 200 })
+            if #searchText > 0 then
+                for key, value in ipairs(Assets) do
+                    if string.match(string.lower(value), searchText) then
+                        if SmallButton(value) then
+                            local entity = CreateEntity()
+                            AddComponentOrPrintError("Render", entity, { assetName = value })
+                            AddComponentOrPrintError("Transform", entity,
+                                { position = { x = 0, y = 0, z = 0 }, rotation = { x = 0, y = 0, z = 0 } })
+                            AddComponentOrPrintError("Tile", entity)
+                        end
+                    end
+                end
+            else
+                for key, value in ipairs(Assets) do
+                    if SmallButton(value) then
+                        local entity = CreateEntity()
+                        AddComponentOrPrintError("Render", entity, { assetName = value })
+                        AddComponentOrPrintError("Transform", entity,
+                            { position = { x = 0, y = 0, z = 0 }, rotation = { x = 0, y = 0, z = 0 } })
+                        AddComponentOrPrintError("Tile", entity)
+                    end
+                end
+            end
+            EndChild()
+            EndMenu()
+        end
+
+        EndMainMenuBar()
+    end
+
+    Begin("Entity")
+    Text("Selected entity information")
+    if selectedEntity ~= nil then
+        if Button("DuplicateEntity") then
+            DuplicateEntity(selectedEntity)
+        end
+
+        local components = {
+            Render = {
+                hasComponent = HasComponent("Render", selectedEntity),
+                default = { assetName = "Barrel" }
+            },
+            Transform = {
+                hasComponent = HasComponent("Transform", selectedEntity),
+                default = { position = { x = 0, y = 0, z = 0 }, rotation = { x = 0, y = 0, z = 0 } }
+            },
+            Velocity = {
+                hasComponent = HasComponent("Velocity", selectedEntity),
+                default = { x = 0.0, y = 0.0, z = 0.0 }
+            },
+            Tile = { hasComponent = HasComponent("Tile", selectedEntity) },
+            Camera = { hasComponent = HasComponent("Camera", selectedEntity) }
+        }
+
+        for componentName, info in pairs(components) do
+            if info.hasComponent then
+                checked = true
+                local open, clicked = CollapsingHeaderToggle(componentName, checked)
+                if open then
+                    Modify(componentName, selectedEntity)
+                end
+
+                if not clicked then
+                    RemoveComponent(componentName, selectedEntity)
                 end
             end
         end
-    else
-        for key, value in ipairs(Assets) do
-            if SmallButton(value) then
-                local entity = CreateEntity()
-                AddComponentOrPrintError("Render", entity, { assetName = value })
-                AddComponentOrPrintError("Transform", entity,
-                    { position = { x = 0, y = 0, z = 0 }, rotation = { x = 0, y = 0, z = 0 } })
-                AddComponentOrPrintError("Tile", entity)
+
+        if BeginCombo("##addcomponent", "Add component") then
+            for componentName, info in pairs(components) do
+                if not info.hasComponent and componentName ~= "Camera" then
+                    if Selectable(componentName) then
+                        AddComponentOrPrintError(componentName, selectedEntity, info.default)
+                    end
+                end
             end
+            EndCombo()
         end
     end
-    End()
 
-    SetNextWindowPos({ x = 300, y = 0 })
-    Begin("Entity")
+    Separator()
+    BeginChild("AllEntities")
     Each(function(entity)
         PushID(entity)
+
+        local destroy = false
+        if SmallButton("X") then
+            destroy = true
+        end
+        SameLine()
+
         local flags = TreeNodeFlag.None
-        if entity == selected_entity then
+        if entity == selectedEntity then
             flags = TreeNodeFlag.Selected
         end
-
+        if newSelectedEntity ~= nil and newSelectedEntity == entity then
+            SetScrollHereY()
+        end
         local open = TreeNodeEx("Entity " .. entity, flags)
-        SameLine(GetWindowWidth() - 40)
-        if SmallButton("X") then
-            DestroyEntity(entity)
-        else
-            if open then
-                if Button("DuplicateEntity") then
-                    DuplicateEntity(entity)
+        if open then
+            if Button("Select") then
+                newSelectedEntity = entity
+            end
+            if Button("Duplicate") then
+                DuplicateEntity(entity)
+            end
+
+            local components = {
+                Render = {
+                    hasComponent = HasComponent("Render", entity),
+                    default = { assetName = "Barrel" }
+                },
+                Transform = {
+                    hasComponent = HasComponent("Transform", entity),
+                    default = { position = { x = 0, y = 0, z = 0 }, rotation = { x = 0, y = 0, z = 0 } }
+                },
+                Velocity = {
+                    hasComponent = HasComponent("Velocity", entity),
+                    default = { x = 0.0, y = 0.0, z = 0.0 }
+                },
+                Tile = { hasComponent = HasComponent("Tile", entity) },
+                Camera = { hasComponent = HasComponent("Camera", entity) }
+            }
+
+            for componentName, info in pairs(components) do
+                if info.hasComponent then
+                    checked = true
+                    local open, clicked = CollapsingHeaderToggle(componentName, checked)
+                    if open then
+                        Modify(componentName, entity)
+                    end
+
+                    if not clicked then
+                        RemoveComponent(componentName, entity)
+                    end
                 end
+            end
 
-                local components = {
-                    Render = {
-                        hasComponent = HasComponent("Render", entity),
-                        default = { assetName = "Barrel" }
-                    },
-                    Transform = {
-                        hasComponent = HasComponent("Transform", entity),
-                        default = { position = { x = 0, y = 0, z = 0 }, rotation = { x = 0, y = 0, z = 0 } }
-                    },
-                    Velocity = {
-                        hasComponent = HasComponent("Velocity", entity),
-                        default = { x = 0.0, y = 0.0, z = 0.0 }
-                    },
-                    Tile = { hasComponent = HasComponent("Tile", entity) },
-                    Camera = { hasComponent = HasComponent("Camera", entity) }
-                }
-
+            if BeginCombo("##addcomponent", "Add component") then
                 for componentName, info in pairs(components) do
-                    if info.hasComponent then
-                        checked = true
-                        local open, clicked = CollapsingHeaderToggle(componentName, checked)
-                        if open then
-                            Modify(componentName, entity)
-                        end
-
-                        if not clicked then
-                            RemoveComponent(componentName, entity)
+                    if not info.hasComponent and componentName ~= "Camera" then
+                        if Selectable(componentName) then
+                            AddComponentOrPrintError(componentName, entity, info.default)
                         end
                     end
                 end
+                EndCombo()
+            end
 
-                if BeginCombo("##addcomponent", "Add component") then
-                    for componentName, info in pairs(components) do
-                        if not info.hasComponent and componentName ~= "Camera" then
-                            if Selectable(componentName) then
-                                AddComponentOrPrintError(componentName, entity, info.default)
-                            end
-                        end
-                    end
-                    EndCombo()
-                end
+            TreePop()
+        end
 
-                TreePop()
+        if destroy then
+            DestroyEntity(entity)
+            if selectedEntity == entity then
+                selectedEntity = nil
             end
         end
         PopID()
     end)
+    EndChild()
     End()
+
+    if newSelectedEntity ~= nil then
+        selectedEntity = newSelectedEntity
+        newSelectedEntity = nil
+    end
 
     if not WantCaptureMouse() then
         if IsMouseButtonPressed(0) then
             local ray = GetMouseRay(GetMousePosition())
-            local hit_entity = GetRayCollision(ray)
-            selected_entity = hit_entity
+            local hitEntity = GetRayCollision(ray)
+            newSelectedEntity = hitEntity
+
+            if newSelectedEntity == nil then
+                selectedEntity = nil
+            end
         end
     end
 
-    if selected_entity ~= nil then
-        Gizmo(selected_entity, not usingGizmo)
+    if selectedEntity ~= nil then
+        Gizmo(selectedEntity, not usingGizmo)
         usingGizmo = IsUsingGizmo()
     else
         usingGizmo = false
@@ -177,49 +284,4 @@ function imgui()
             end
         end
     end
-
-    SetNextWindowPos({ x = 800, y = 0 })
-    Begin("Tools")
-    if Button("Save") then
-        local all = DumpEntities()
-
-        file = io.open("outfile.lua", "w+")
-
-        file:write("return{")
-        --print("{")
-        for entity, entityInfo in pairs(all) do
-            file:write("[", entity, "]={")
-            --print("  ", entity, " = {")
-            RecursiveWrite(file, entityInfo)
-            file:write("},")
-            --print("  },")
-        end
-        file:write("}")
-        --print("}")
-
-        file:close()
-    end
-    if Button("Load") then
-        level = nil
-        level = dofile("outfile.lua")
-
-        if level ~= nil then
-            ClearRegistry()
-
-            for _entity, components in pairs(level) do
-                local entity = CreateEntity()
-
-                for component, data in pairs(components) do
-                    -- if component == "Camera" then
-                    --     print("SKIPPING CAMERA")
-                    -- else
-                    AddComponentOrPrintError(component, entity, data)
-                    -- end
-                end
-            end
-        else
-            print("Nope")
-        end
-    end
-    End()
 end
