@@ -119,6 +119,8 @@ function imgui()
                         { position = spawnPosition, rotation = { x = 0, y = 0, z = 0 } })
                     AddComponentOrPrintError("MoveTowards", entity,
                         { target = goalPosition, speed = 0.01 })
+                    AddComponentOrPrintError("Velocity", entity,
+                        { x = 0, y = 0, z = 0 })
                 end
             else
                 print("Can't spawn any dudes if there are no goals")

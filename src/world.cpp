@@ -1,5 +1,6 @@
 #include "world.hpp"
 #include "assets.hpp"
+#include "entity/move_towards.hpp"
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -13,6 +14,7 @@
 #include <imgui.h>
 
 #include <ImGuizmo.h>
+#include <raymath.h>
 
 struct WorldData
 {
@@ -33,6 +35,24 @@ namespace World
 
     void Update()
     {
+        for(auto [entity, transform, velocity, moveTowards] :
+            world.registry
+                ->view<Component::Transform, Component::Velocity, Component::MoveTowards>()
+                .each())
+        {
+            auto movementDirection =
+                Vector3Normalize(Vector3Subtract(moveTowards.target, transform.position));
+
+            float speed = moveTowards.speed;
+            if(Vector3Distance(moveTowards.target, transform.position) <= speed)
+                speed = Vector3Distance(moveTowards.target, transform.position);
+
+            Vector3 finalVelocity = Vector3Scale(movementDirection, speed);
+            velocity.x = finalVelocity.x;
+            velocity.y = finalVelocity.y;
+            velocity.z = finalVelocity.z;
+        }
+
         for(auto [entity, transform, velocity] :
             world.registry->view<Component::Transform, Component::Velocity>().each())
         {
