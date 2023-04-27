@@ -120,11 +120,26 @@ namespace LuaEntityReflection
 
         RegisterMember(
             lua,
+            "GetEntity",
+            registry,
+            +[](entt::registry* registry, lua_State* lua, lua_Integer entity) -> Placeholder {
+                lua_createtable(lua, 1, 0);
+                registry->each([&](entt::entity entity) {
+                    EntityReflection::PushEntityToLua(lua, registry, entity);
+                });
+                lua_geti(lua, -1, entity);
+                // Pop table
+                lua_rotate(lua, lua_gettop(lua) - 1, 1);
+                lua_pop(lua, 1);
+                return {};
+            });
+
+        RegisterMember(
+            lua,
             "DumpEntities",
             registry,
             +[](entt::registry* registry, lua_State* lua) -> Placeholder {
                 lua_createtable(lua, registry->alive(), 0);
-                int counter = 0;
                 registry->each([&](entt::entity entity) {
                     EntityReflection::PushEntityToLua(lua, registry, entity);
                 });

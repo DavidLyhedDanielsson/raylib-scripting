@@ -47,6 +47,9 @@ if setup == nil then
     searchText = ""
     usingGizmo = false
 
+    enemySpawns = {}
+    enemyGoals = {}
+
     LoadLevel()
 end
 
@@ -91,6 +94,45 @@ function imgui()
             end
             EndChild()
             EndMenu()
+        end
+
+        if MenuItem("Spawn dude", "", false, true) then
+            print("Goals: ", #enemyGoals)
+            if #enemyGoals > 0 then
+                for _, spawnEntity in ipairs(enemySpawns) do
+                    local closestGoal
+                    for _, goalEntity in ipairs(enemyGoals) do
+                        if closestGoal == nil then
+                            closestGoal = goalEntity
+                        else
+                            print("Too many goals yo")
+                        end
+                    end
+
+                    local spawnPosition = GetEntity(spawnEntity).Transform.position
+                    local goalPosition = GetEntity(closestGoal).Transform.position
+
+                    local xVel = goalPosition.x - spawnPosition.x
+                    local yVel = goalPosition.y - spawnPosition.y
+                    local zVel = goalPosition.z - spawnPosition.z
+
+                    local length = math.sqrt(xVel * xVel + yVel * yVel + zVel * zVel)
+                    xVel = xVel / length
+                    yVel = yVel / length
+                    zVel = zVel / length
+
+                    local speed = 0.01
+
+                    local entity = CreateEntity()
+                    AddComponentOrPrintError("Render", entity, { assetName = "Barrel" })
+                    AddComponentOrPrintError("Transform", entity,
+                        { position = spawnPosition, rotation = { x = 0, y = 0, z = 0 } })
+                    AddComponentOrPrintError("Velocity", entity,
+                        { x = xVel * speed, y = yVel * speed, z = zVel * speed })
+                end
+            else
+                print("Can't spawn any dudes if there are no goals")
+            end
         end
 
         EndMainMenuBar()
@@ -148,10 +190,21 @@ function imgui()
         end
     end
 
+    for k, _ in ipairs(enemySpawns) do enemySpawns[k] = nil end
+    for k, _ in ipairs(enemyGoals) do enemyGoals[k] = nil end
+
     Separator()
     BeginChild("AllEntities")
     Each(function(entity)
         PushID(entity)
+
+        -- Store these here so another call to `Each` can be avoided, though it
+        -- does tie the logic to the GUI which is iffy
+        if HasComponent("EnemySpawn", entity) then
+            table.insert(enemySpawns, entity)
+        elseif HasComponent("EnemyGoal", entity) then
+            table.insert(enemyGoals, entity)
+        end
 
         local destroy = false
         if SmallButton("X") then
@@ -260,15 +313,19 @@ function imgui()
             print(string.rep("  ", indent), "NIL")
             return
         end
-        for key, value in pairs(tab) do
-            if type(value) == "table" then
-                print(string.rep("  ", indent), key, " = {")
-                RecursivePrint(value, indent + 1)
-                print(string.rep("  ", indent), "},")
-            elseif type(value) == "string" then
-                print(string.rep("  ", indent), key, " = \"", value, "\",")
-            else
-                print(string.rep("  ", indent), key, " = ", value, ",")
+        if type(tab) ~= "table" then
+            print(string.rep("  ", indent), tab)
+        else
+            for key, value in pairs(tab) do
+                if type(value) == "table" then
+                    print(string.rep("  ", indent), key, " = {")
+                    RecursivePrint(value, indent + 1)
+                    print(string.rep("  ", indent), "},")
+                elseif type(value) == "string" then
+                    print(string.rep("  ", indent), key, " = \"", value, "\",")
+                else
+                    print(string.rep("  ", indent), key, " = ", value, ",")
+                end
             end
         end
     end
