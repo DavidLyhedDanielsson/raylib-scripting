@@ -129,16 +129,26 @@ function imgui()
         end
 
         if MenuItem("Spawn projectile", "", false, true) then
-            local startPosition = { x = 0, y = 0, z = 0 }
-            local startVelocity = { x = 0, y = 0, z = 0.1 }
+            local offsets = {
+                { x = 0, y = 1.286, z = 0.492 },
+                { x = 0, y = 1.286, z = -0.492 },
+                { x = 0, y = 0.787, z = 0 },
+                { x = 0, y = 0.286, z = 0.492 },
+                { x = 0, y = 0.286, z = -0.492 },
+            }
 
-            local entity = CreateEntity()
-            AddComponentOrPrintError("Render", entity, { assetName = "Barrel" })
-            AddComponentOrPrintError("Transform", entity,
-                { position = startPosition, rotation = { x = 0, y = 0, z = 0 } })
-            AddComponentOrPrintError("Velocity", entity, startVelocity)
-            AddComponentOrPrintError("MaxRange", entity, { maxDistance = 3, distanceFrom = startPosition })
-            AddComponentOrPrintError("Projectile", entity, { damage = 1 })
+            for i = 1, 5 do
+                local startPosition = { x = 2 + offsets[i].x, y = 0 + offsets[i].y, z = 4 + offsets[i].z }
+                local startVelocity = { x = -0.25, y = 0, z = 0 }
+
+                local entity = CreateEntity()
+                AddComponentOrPrintError("Render", entity, { assetName = "Dart" })
+                AddComponentOrPrintError("Transform", entity,
+                    { position = startPosition, rotation = { x = 0, y = 3.14 / 2, z = 3.14 / 2 } })
+                AddComponentOrPrintError("Velocity", entity, startVelocity)
+                AddComponentOrPrintError("MaxRange", entity, { maxDistance = 5, distanceFrom = startPosition })
+                AddComponentOrPrintError("Projectile", entity, { damage = 1 })
+            end
         end
 
         EndMainMenuBar()
