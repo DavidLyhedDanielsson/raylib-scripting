@@ -1,10 +1,13 @@
 #include "world.hpp"
 #include "assets.hpp"
-#include "entity/move_towards.hpp"
 #include <algorithm>
 #include <array>
 #include <cmath>
 #include <entity/camera.hpp>
+#include <entity/health.hpp>
+#include <entity/max_range.hpp>
+#include <entity/move_towards.hpp>
+#include <entity/projectile.hpp>
 #include <entity/render.hpp>
 #include <entity/tile.hpp>
 #include <entity/transform.hpp>
@@ -71,6 +74,50 @@ namespace World
             transform.rotation.x = RoundToMultiple(transform.rotation.x * RAD2DEG, 90.0f) * DEG2RAD;
             transform.rotation.y = RoundToMultiple(transform.rotation.y * RAD2DEG, 90.0f) * DEG2RAD;
             transform.rotation.z = RoundToMultiple(transform.rotation.z * RAD2DEG, 90.0f) * DEG2RAD;
+        }
+
+        for(auto [projectileEntity, projectileRender, projectileTransform, projectile] :
+            world.registry->view<Component::Render, Component::Transform, Component::Projectile>()
+                .each())
+        {
+            bool destroy = false;
+
+            auto projectileHitBox =
+                GetModelBoundingBox(projectileRender.model, projectileTransform.position);
+
+            // Entity = entity (potentially) affected by projectile
+            for(auto [entity, entityRender, entityTransform, entityHealth] :
+                world.registry->view<Component::Render, Component::Transform, Component::Health>()
+                    .each())
+            {
+                auto entityHitBox =
+                    GetModelBoundingBox(entityRender.model, entityTransform.position);
+
+                if(CheckCollisionBoxes(projectileHitBox, entityHitBox))
+                {
+                    // Entity will be destroyed in a different system
+                    entityHealth.currentHealth -= projectile.damage;
+                    destroy = true;
+                }
+            }
+
+            if(destroy)
+                world.registry->destroy(projectileEntity);
+        }
+
+        // From the docs:
+        // "Deleting the current entity or removing its components is allowed during iterations"
+        for(auto [entity, transform, maxRange] :
+            world.registry->view<Component::Transform, Component::MaxRange>().each())
+        {
+            if(Vector3Distance(transform.position, maxRange.distanceFrom) >= maxRange.maxDistance)
+                world.registry->destroy(entity);
+        }
+
+        for(auto [entity, health] : world.registry->view<Component::Health>().each())
+        {
+            if(health.currentHealth <= 0.0001f)
+                world.registry->destroy(entity);
         }
     }
 

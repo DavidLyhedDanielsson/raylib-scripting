@@ -56,9 +56,13 @@ set(SRC
     entity/camera.hpp
     entity/enemy_goal.hpp
     entity/enemy_spawn.hpp
+    entity/health.hpp
+    entity/max_range.hpp
     entity/move_towards.hpp
+    entity/projectile.hpp
     entity/render.hpp
     entity/transform.hpp
+    entity/tile.hpp
     entity/velocity.hpp
     entity_reflection/entity_reflection.hpp
     entity_reflection/include_reflection.cpp
@@ -66,7 +70,10 @@ set(SRC
     entity_reflection/reflection_enemy_goal.hpp
     entity_reflection/reflection_enemy_spawn.hpp
     entity_reflection/reflection_entity.hpp
+    entity_reflection/reflection_health.hpp
+    entity_reflection/reflection_max_range.hpp
     entity_reflection/reflection_move_towards.hpp
+    entity_reflection/reflection_projectile.hpp
     entity_reflection/reflection_render.hpp
     entity_reflection/reflection_transform.hpp
     entity_reflection/reflection_tile.hpp
