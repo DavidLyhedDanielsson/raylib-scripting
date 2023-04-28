@@ -121,10 +121,24 @@ function imgui()
                         { target = goalPosition, speed = 0.01 })
                     AddComponentOrPrintError("Velocity", entity,
                         { x = 0, y = 0, z = 0 })
+                    AddComponentOrPrintError("Health", entity, { currentHealth = 3 })
                 end
             else
                 print("Can't spawn any dudes if there are no goals")
             end
+        end
+
+        if MenuItem("Spawn projectile", "", false, true) then
+            local startPosition = { x = 0, y = 0, z = 0 }
+            local startVelocity = { x = 0, y = 0, z = 0.1 }
+
+            local entity = CreateEntity()
+            AddComponentOrPrintError("Render", entity, { assetName = "Barrel" })
+            AddComponentOrPrintError("Transform", entity,
+                { position = startPosition, rotation = { x = 0, y = 0, z = 0 } })
+            AddComponentOrPrintError("Velocity", entity, startVelocity)
+            AddComponentOrPrintError("MaxRange", entity, { maxDistance = 3, distanceFrom = startPosition })
+            AddComponentOrPrintError("Projectile", entity, { damage = 1 })
         end
 
         EndMainMenuBar()
@@ -153,6 +167,13 @@ function imgui()
             EnemySpawn = { hasComponent = HasComponent("EnemySpawn", entity) },
             Camera = { hasComponent = HasComponent("Camera", entity) },
             MoveTowards = { hasComponent = HasComponent("MoveTowards", entity) },
+            Projectile = { hasComponent = HasComponent("Projectile", entity), default = { damage = 1 } },
+            Health = { hasComponent = HasComponent("Health", entity), default = { currentHealth = 2 } },
+            MaxRange = {
+                hasComponent = HasComponent("MaxRange", entity),
+                -- This has to be configured manually
+                default = { maxDistance = 99999999, distanceFrom = { x = 0, y = 0, z = 0 } }
+            },
         }
 
         for componentName, info in pairs(components) do
