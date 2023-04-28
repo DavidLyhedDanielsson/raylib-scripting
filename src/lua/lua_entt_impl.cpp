@@ -68,6 +68,14 @@ namespace LuaEntt
 
         LuaRegister::RegisterMember(
             lua,
+            "ValidEntity",
+            registry,
+            +[](entt::registry* registry, lua_State* lua, lua_Integer entity) {
+                return registry->valid((entt::entity)entity);
+            });
+
+        LuaRegister::RegisterMember(
+            lua,
             "Each",
             registry,
             +[](entt::registry* registry, lua_State* lua, LuaRegister::Placeholder callback) {

@@ -205,7 +205,11 @@ function imgui()
     Begin("Entity")
     Text("Selected entity information")
     if selectedEntity ~= nil then
-        ImGuiEntity(selectedEntity)
+        if ValidEntity(selectedEntity) then
+            ImGuiEntity(selectedEntity)
+        else
+            selectedEntity = nil
+        end
     end
 
     for k, _ in ipairs(enemySpawns) do enemySpawns[k] = nil end
