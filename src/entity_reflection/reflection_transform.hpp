@@ -1,6 +1,8 @@
 #pragma once
 
+#include <numbers>
 #include <numeric>
+#include <raymath.h>
 #include <vector>
 
 #include "lua/lua_register.hpp"
@@ -67,9 +69,9 @@ EntityReflectionStruct(RComponent)
 
         ImGui::Text(
             "Rotation: %f, %f, %f",
-            component.rotation.x,
-            component.rotation.y,
-            component.rotation.z);
+            component.rotation.x * RAD2DEG,
+            component.rotation.y * RAD2DEG,
+            component.rotation.z * RAD2DEG);
     }
 
     static void Modify(
@@ -78,7 +80,18 @@ EntityReflectionStruct(RComponent)
         Component::RComponent & component)
     {
         ImGui::DragFloat3("Position", &component.position.x);
-        ImGui::InputFloat3("Rotation", &component.rotation.x);
+
+        // Use doubles to avoid values changing around too much due to RAD->DEG->RAD
+        // Probably overkill, but I've never done it before
+        double rot[3]{
+            component.rotation.x * (180.0 / std::numbers::pi),
+            component.rotation.y * (180.0 / std::numbers::pi),
+            component.rotation.z * (180.0 / std::numbers::pi),
+        };
+        ImGui::DragScalarN("Rotation", ImGuiDataType_Double, rot, 3, 1.0f, NULL, NULL, "%.3f");
+        component.rotation.x = rot[0] * (std::numbers::pi / 180);
+        component.rotation.y = rot[1] * (std::numbers::pi / 180);
+        component.rotation.z = rot[2] * (std::numbers::pi / 180);
     }
 
     static void Duplicate(
