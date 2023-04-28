@@ -136,6 +136,11 @@ namespace World
 
             render.model.transform = MatrixIdentity();
         }
+
+        world.registry->view<Component::Transform, Component::Watcher>().each(
+            [](entt::entity entity, Component::Transform transform, Component::Watcher watcher) {
+                DrawBoundingBox(watcher.GetBoundingBox(transform.position), Color{255, 0, 0, 80});
+            });
     }
 
     void DrawImgui()
