@@ -56,6 +56,29 @@ end
 function raylib()
 end
 
+function SpawnDarts()
+    local offsets = {
+        { x = 0.05,  y = 1.286, z = 0.492 },
+        { x = -0.05, y = 1.286, z = -0.492 },
+        { x = 0,     y = 0.787, z = 0 },
+        { x = 0.03,  y = 0.286, z = 0.492 },
+        { x = 0.07,  y = 0.286, z = -0.492 },
+    }
+
+    for i = 1, 5 do
+        local startPosition = { x = 2 + offsets[i].x, y = 0 + offsets[i].y, z = 4 + offsets[i].z }
+        local startVelocity = { x = -0.25, y = 0, z = 0 }
+
+        local entity = CreateEntity()
+        AddComponentOrPrintError("Render", entity, { assetName = "Dart" })
+        AddComponentOrPrintError("Transform", entity,
+            { position = startPosition, rotation = { x = 0, y = 3.14 / 2, z = 3.14 / 2 } })
+        AddComponentOrPrintError("Velocity", entity, startVelocity)
+        AddComponentOrPrintError("MaxRange", entity, { maxDistance = 5, distanceFrom = startPosition })
+        AddComponentOrPrintError("Projectile", entity, { damage = 1 })
+    end
+end
+
 function imgui()
     if BeginMainMenuBar() then
         if MenuItem("Save", "", false, true) then
@@ -118,7 +141,7 @@ function imgui()
                     AddComponentOrPrintError("Transform", entity,
                         { position = spawnPosition, rotation = { x = 0, y = 0, z = 0 } })
                     AddComponentOrPrintError("MoveTowards", entity,
-                        { target = goalPosition, speed = 0.01 })
+                        { target = goalPosition, speed = 0.03 })
                     AddComponentOrPrintError("Velocity", entity,
                         { x = 0, y = 0, z = 0 })
                     AddComponentOrPrintError("Health", entity, { currentHealth = 3 })
@@ -129,26 +152,7 @@ function imgui()
         end
 
         if MenuItem("Spawn projectile", "", false, true) then
-            local offsets = {
-                { x = 0, y = 1.286, z = 0.492 },
-                { x = 0, y = 1.286, z = -0.492 },
-                { x = 0, y = 0.787, z = 0 },
-                { x = 0, y = 0.286, z = 0.492 },
-                { x = 0, y = 0.286, z = -0.492 },
-            }
-
-            for i = 1, 5 do
-                local startPosition = { x = 2 + offsets[i].x, y = 0 + offsets[i].y, z = 4 + offsets[i].z }
-                local startVelocity = { x = -0.25, y = 0, z = 0 }
-
-                local entity = CreateEntity()
-                AddComponentOrPrintError("Render", entity, { assetName = "Dart" })
-                AddComponentOrPrintError("Transform", entity,
-                    { position = startPosition, rotation = { x = 0, y = 3.14 / 2, z = 3.14 / 2 } })
-                AddComponentOrPrintError("Velocity", entity, startVelocity)
-                AddComponentOrPrintError("MaxRange", entity, { maxDistance = 5, distanceFrom = startPosition })
-                AddComponentOrPrintError("Projectile", entity, { damage = 1 })
-            end
+            SpawnDarts()
         end
 
         EndMainMenuBar()
@@ -334,4 +338,8 @@ function imgui()
             end
         end
     end
+end
+
+function WatcherCallback()
+    SpawnDarts()
 end

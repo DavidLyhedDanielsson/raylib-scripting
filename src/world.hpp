@@ -1,9 +1,11 @@
 #include <entt/entt.hpp>
 
+struct lua_State;
+
 namespace World
 {
     void Init(entt::registry*);
-    void Update();
+    void Update(lua_State* lua);
     void Draw();
     void DrawImgui();
 }

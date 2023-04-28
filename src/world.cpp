@@ -1,5 +1,6 @@
 #include "world.hpp"
 #include "assets.hpp"
+#include "entity/watcher.hpp"
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -36,7 +37,8 @@ namespace World
         world.registry = registry;
     }
 
-    void Update()
+    // TODO: `lua` should probably be in WorldData
+    void Update(lua_State* lua)
     {
         for(auto [entity, transform, velocity, moveTowards] :
             world.registry
@@ -119,12 +121,39 @@ namespace World
             if(health.currentHealth <= 0.0001f)
                 world.registry->destroy(entity);
         }
+
+        for(auto [watcherEntity, watcherTransform, watcher] :
+            world.registry->view<Component::Transform, Component::Watcher>().each())
+        {
+            bool callFunction = false;
+
+            auto watcherHitBox = watcher.GetBoundingBox(watcherTransform.position);
+
+            for(auto [entity, entityRender, entityTransform, entityHealth] :
+                world.registry->view<Component::Render, Component::Transform, Component::Health>()
+                    .each())
+            {
+                auto entityHitBox =
+                    GetModelBoundingBox(entityRender.model, entityTransform.position);
+
+                if(CheckCollisionBoxes(watcherHitBox, entityHitBox))
+                {
+                    callFunction = true;
+                    break;
+                }
+            }
+
+            if(callFunction)
+            {
+                lua_getglobal(lua, "WatcherCallback");
+                lua_pcall(lua, 0, 0, 0);
+            }
+        }
     }
 
     void Draw()
     {
         auto group = world.registry->group<Component::Render, Component::Transform>();
-
         for(auto entity : group)
         {
             auto [render, transform] = group.get<Component::Render, Component::Transform>(entity);

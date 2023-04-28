@@ -50,7 +50,7 @@ std::vector<std::string> history;
 
 void main_loop()
 {
-    World::Update();
+    World::Update(luaState);
 
     // Calculate time delta
     auto now = std::chrono::high_resolution_clock::now();
