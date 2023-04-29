@@ -7,7 +7,6 @@
 #include <iostream>
 #include <math.h>
 #include <numbers>
-#include <raylib.h>
 #include <stdio.h>
 #include <vector>
 

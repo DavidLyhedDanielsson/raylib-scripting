@@ -9,7 +9,6 @@
 #include <entity/transform.hpp>
 #include <entt/entt.hpp>
 #include <external/raylib.hpp>
-#include <raymath.h>
 
 #define LuaImguizmoQuickRegister(X) LuaRegister::Register(lua, #X, ImGuizmo::X)
 

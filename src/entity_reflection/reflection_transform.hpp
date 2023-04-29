@@ -2,7 +2,6 @@
 
 #include <numbers>
 #include <numeric>
-#include <raymath.h>
 #include <vector>
 
 #include "lua/lua_register.hpp"

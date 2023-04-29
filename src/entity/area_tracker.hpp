@@ -1,11 +1,10 @@
 #pragma once
 
 #include <external/raylib.hpp>
-#include <raymath.h>
 
 namespace Component
 {
-    struct Watcher
+    struct AreaTracker
     {
         Vector3 offset;
         Vector3 size;

@@ -2,7 +2,6 @@
 
 #include <numbers>
 #include <numeric>
-#include <raymath.h>
 #include <vector>
 
 #include "lua/lua_register.hpp"
@@ -11,8 +10,8 @@
 #include <lua/lua_register_types.hpp>
 #include <lua/lua_validator.hpp>
 
-#include <entity/watcher.hpp>
-#define RComponent Watcher
+#include <entity/area_tracker.hpp>
+#define RComponent AreaTracker
 EntityReflectionStruct(RComponent)
 {
     ; // This semicolon needs to be here or else clang-format breaks. The benefits of the macro

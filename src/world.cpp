@@ -1,6 +1,6 @@
 #include "world.hpp"
 #include "assets.hpp"
-#include "entity/watcher.hpp"
+#include "entity/area_tracker.hpp"
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -18,7 +18,6 @@
 #include <imgui.h>
 
 #include <ImGuizmo.h>
-#include <raymath.h>
 
 struct WorldData
 {
@@ -122,12 +121,12 @@ namespace World
                 world.registry->destroy(entity);
         }
 
-        for(auto [watcherEntity, watcherTransform, watcher] :
-            world.registry->view<Component::Transform, Component::Watcher>().each())
+        for(auto [trackerEntity, trackerTransform, tracker] :
+            world.registry->view<Component::Transform, Component::AreaTracker>().each())
         {
             bool callFunction = false;
 
-            auto watcherHitBox = watcher.GetBoundingBox(watcherTransform.position);
+            auto trackerHitBox = tracker.GetBoundingBox(trackerTransform.position);
 
             for(auto [entity, entityRender, entityTransform, entityHealth] :
                 world.registry->view<Component::Render, Component::Transform, Component::Health>()
@@ -136,7 +135,7 @@ namespace World
                 auto entityHitBox =
                     GetModelBoundingBox(entityRender.model, entityTransform.position);
 
-                if(CheckCollisionBoxes(watcherHitBox, entityHitBox))
+                if(CheckCollisionBoxes(trackerHitBox, entityHitBox))
                 {
                     callFunction = true;
                     break;
@@ -145,7 +144,7 @@ namespace World
 
             if(callFunction)
             {
-                lua_getglobal(lua, "WatcherCallback");
+                lua_getglobal(lua, "TrackerCallback");
                 lua_pcall(lua, 0, 0, 0);
             }
         }
@@ -166,9 +165,11 @@ namespace World
             render.model.transform = MatrixIdentity();
         }
 
-        world.registry->view<Component::Transform, Component::Watcher>().each(
-            [](entt::entity entity, Component::Transform transform, Component::Watcher watcher) {
-                DrawBoundingBox(watcher.GetBoundingBox(transform.position), Color{255, 0, 0, 80});
+        world.registry->view<Component::Transform, Component::AreaTracker>().each(
+            [](entt::entity entity,
+               Component::Transform transform,
+               Component::AreaTracker tracker) {
+                DrawBoundingBox(tracker.GetBoundingBox(transform.position), Color{255, 0, 0, 80});
             });
     }
 

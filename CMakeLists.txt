@@ -64,7 +64,7 @@ set(SRC
     entity/transform.hpp
     entity/tile.hpp
     entity/velocity.hpp
-    entity/watcher.hpp
+    entity/area_tracker.hpp
     entity_reflection/entity_reflection.hpp
     entity_reflection/include_reflection.cpp
     entity_reflection/reflection_camera.hpp
@@ -79,7 +79,7 @@ set(SRC
     entity_reflection/reflection_transform.hpp
     entity_reflection/reflection_tile.hpp
     entity_reflection/reflection_velocity.hpp
-    entity_reflection/reflection_watcher.hpp
+    entity_reflection/reflection_area_tracker.hpp
     imgui/imgui_impl.cpp imgui/imgui_impl.hpp
     imgui/imgui_internal.cpp imgui/imgui_internal.hpp
     lua/lua_asset_impl.cpp lua/lua_asset_impl.hpp

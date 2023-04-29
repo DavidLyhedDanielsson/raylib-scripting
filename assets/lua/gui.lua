@@ -188,8 +188,8 @@ function imgui()
                 -- This has to be configured manually
                 default = { maxDistance = 99999999, distanceFrom = { x = 0, y = 0, z = 0 } }
             },
-            Watcher = {
-                hasComponent = HasComponent("Watcher", entity),
+            AreaTracker = {
+                hasComponent = HasComponent("AreaTracker", entity),
                 default = { offset = { x = 0, y = 0, z = 0 }, size = { x = 2, y = 2, z = 2 } }
             },
         }
@@ -340,6 +340,6 @@ function imgui()
     end
 end
 
-function WatcherCallback()
+function TrackerCallback()
     SpawnDarts()
 end
