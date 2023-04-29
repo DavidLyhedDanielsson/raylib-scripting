@@ -9,10 +9,7 @@
  * code is available.
  */
 
-#include "imgui_impl.hpp"
-#include <external/raylib.hpp>
-#include <imgui.h>
-#include <imgui/imgui_internal.hpp>
+#include "raylib_imgui.hpp"
 
 #include <algorithm>
 #include <array>
@@ -20,9 +17,11 @@
 #include <cstdint>
 #include <map>
 
+#include <external/imgui.hpp>
+#include <external/imguizmo.hpp>
+#include <external/raylib.hpp>
+#include <imgui_error_check.hpp>
 #include <imgui_impl_opengl3.h>
-
-#include <ImGuizmo.h>
 
 ImGuiKey TranslateKey(KeyboardKey key)
 {

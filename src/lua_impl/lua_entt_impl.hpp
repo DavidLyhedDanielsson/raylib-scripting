@@ -1,7 +1,7 @@
 #pragma once
 
 extern "C" {
-#include <lua.h>
+#include <external/lua.hpp>
 }
 #include <entt/entt.hpp>
 

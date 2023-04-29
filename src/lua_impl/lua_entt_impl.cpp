@@ -1,17 +1,9 @@
 #include "lua_entt_impl.hpp"
 
-// TODO: REMOVE
-#include <entt/entity/fwd.hpp>
-#include <iostream>
-
-extern "C" {
-#include <lua.h>
-}
-#include "lua_register.hpp"
-
 #include <array>
 #include <cstring>
 #include <functional>
+#include <iostream> // TODO: REMOVE
 #include <type_traits>
 
 #include <assets.hpp>
@@ -19,8 +11,9 @@ extern "C" {
 #include <entity/tile.hpp>
 #include <entity/transform.hpp>
 #include <entity/velocity.hpp>
-
 #include <entt/entt.hpp>
+#include <external/lua.hpp>
+#include <lua_impl/lua_register.hpp>
 
 #define DeclareRegistry auto registry = (entt::registry*)lua_touserdata(lua, lua_upvalueindex(1))
 #define LuaFunc(Name) extern "C" int Name(lua_State* lua)
@@ -87,6 +80,7 @@ namespace LuaEntt
                     if(lua_pcall(lua, 1, 0, 0) != LUA_OK)
                     {
                         auto err = lua_tostring(lua, -1);
+                        (void)err;
                         assert(false);
                     }
                 });

@@ -1,11 +1,11 @@
 #pragma once
 
-#include "lua/lua_register.hpp"
-#include "reflection_entity.hpp"
+#include <entity_reflection/reflection_entity.hpp>
+#include <external/imgui.hpp>
+#include <external/lua.hpp>
 #include <external/raylib.hpp>
-#include <imgui.h>
-#include <lua.h>
-#include <lua/lua_register_types.hpp>
+#include <lua_impl/lua_register.hpp>
+#include <lua_impl/lua_register_types.hpp>
 
 #include <entity/max_range.hpp>
 #define RComponent MaxRange
@@ -36,7 +36,7 @@ EntityReflectionStruct(RComponent)
         registry.emplace<Component::RComponent>(
             entity,
             Component::RComponent{
-                .maxDistance = lua_tonumber(lua, -2),
+                .maxDistance = (float)lua_tonumber(lua, -2),
                 .distanceFrom = LuaRegister::LuaGetFunc<Vector3>(lua, lua_gettop(lua)),
             });
 
@@ -57,7 +57,11 @@ EntityReflectionStruct(RComponent)
     static void View(Component::RComponent & component)
     {
         ImGui::Text("Max Distance: %f", component.maxDistance);
-        ImGui::Text("Distance from: %f, %f, %f", &component.distanceFrom.x);
+        ImGui::Text(
+            "Distance from: %f, %f, %f",
+            component.distanceFrom.x,
+            component.distanceFrom.y,
+            component.distanceFrom.z);
     }
 
     static void Modify(

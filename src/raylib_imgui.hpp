@@ -13,7 +13,7 @@
 
 #pragma once
 
-#include <imgui.h>
+#include <external/imgui.hpp>
 
 namespace RaylibImGui
 {

@@ -1,8 +1,8 @@
 #pragma once
 
+#include <external/imgui.hpp>
 #include <external/raylib.hpp>
-#include <imgui.h>
-#include <lua/lua_register.hpp>
+#include <lua_impl/lua_register.hpp>
 
 namespace LuaRegister
 {

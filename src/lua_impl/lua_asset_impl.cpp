@@ -1,7 +1,7 @@
 #include "lua_asset_impl.hpp"
 
-#include "lua_register.hpp"
 #include <assets.hpp>
+#include <lua_impl/lua_register.hpp>
 
 namespace LuaAsset
 {

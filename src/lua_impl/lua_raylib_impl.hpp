@@ -1,7 +1,7 @@
 #pragma once
 
-#include "lua_register.hpp"
 #include <entt/fwd.hpp>
+#include <lua_impl/lua_register.hpp>
 
 struct lua_State;
 

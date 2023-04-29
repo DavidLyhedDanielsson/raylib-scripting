@@ -1,33 +1,28 @@
 #include <array>
 #include <chrono>
 #include <cmath>
-#include <external/raylib.hpp>
-#include <imgui.h>
-#include <imgui/imgui_internal.hpp> // NOT the imgui_internal from imgui
 #include <iostream>
 #include <math.h>
 #include <numbers>
 #include <stdio.h>
 #include <vector>
 
-extern "C" {
-#include <lauxlib.h>
-#include <lua.h>
-#include <lualib.h>
-}
-#include <entt/entt.hpp>
-
-#include "assets.hpp"
-#include "imgui/imgui_impl.hpp"
-#include "lua/lua_asset_impl.hpp"
-#include "lua/lua_entity_reflection_impl.hpp"
-#include "lua/lua_entt_impl.hpp"
-#include "lua/lua_imgui_impl.hpp"
-#include "lua/lua_imguizmo_impl.hpp"
-#include "lua/lua_raylib_impl.hpp"
-#include "world.hpp"
+#include <assets.hpp>
 #include <entity/camera.hpp>
 #include <entity/transform.hpp>
+#include <entt/entt.hpp>
+#include <external/imgui.hpp>
+#include <external/lua.hpp>
+#include <external/raylib.hpp>
+#include <imgui_error_check.hpp>
+#include <lua_impl/lua_asset_impl.hpp>
+#include <lua_impl/lua_entity_reflection_impl.hpp>
+#include <lua_impl/lua_entt_impl.hpp>
+#include <lua_impl/lua_imgui_impl.hpp>
+#include <lua_impl/lua_imguizmo_impl.hpp>
+#include <lua_impl/lua_raylib_impl.hpp>
+#include <raylib_imgui.hpp>
+#include <world.hpp>
 
 // #include <Windows.h>
 #ifdef PLATFORM_WEB
@@ -161,7 +156,7 @@ void main_loop()
     ImGui::End();
 
     lua_getglobal(luaState, "imgui");
-    if(!lua_pcall(luaState, 0, 0, 0) == LUA_OK)
+    if(lua_pcall(luaState, 0, 0, 0) != LUA_OK)
     {
         std::cerr << lua_tostring(luaState, -1) << std::endl;
         lua_pop(luaState, 1);
@@ -255,11 +250,6 @@ int main()
 
     World::Init(&registry);
 
-    Vector3 cameraStartPosition = {
-        50.0f,
-        50.0f,
-        50.0f,
-    };
     auto cameraComponent = Component::Camera{
         .target = {0.0f, 0.0f, 0.0f},
         .up = {0.0f, 1.0f, 0.0f},

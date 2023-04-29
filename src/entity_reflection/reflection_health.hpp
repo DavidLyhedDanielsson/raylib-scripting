@@ -1,10 +1,10 @@
 #pragma once
 
-#include "reflection_entity.hpp"
+#include <entity_reflection/reflection_entity.hpp>
+#include <external/imgui.hpp>
+#include <external/lua.hpp>
 #include <external/raylib.hpp>
-#include <imgui.h>
-#include <lua.h>
-#include <lua/lua_register_types.hpp>
+#include <lua_impl/lua_register_types.hpp>
 
 #include <entity/health.hpp>
 #define RComponent Health
@@ -31,7 +31,7 @@ EntityReflectionStruct(RComponent)
 
         registry.emplace<Component::RComponent>(
             entity,
-            Component::RComponent{.currentHealth = lua_tonumber(lua, -1)});
+            Component::RComponent{.currentHealth = (float)lua_tonumber(lua, -1)});
 
         lua_pop(lua, 1);
     }

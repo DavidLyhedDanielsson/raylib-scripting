@@ -1,8 +1,8 @@
 #pragma once
 
-#include "reflection_entity.hpp"
+#include <entity_reflection/reflection_entity.hpp>
 #include <external/raylib.hpp>
-#include <lua/lua_register_types.hpp>
+#include <lua_impl/lua_register_types.hpp>
 
 #include <entity/enemy_spawn.hpp>
 #define RComponent EnemySpawn

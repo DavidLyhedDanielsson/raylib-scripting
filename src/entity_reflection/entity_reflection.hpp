@@ -7,9 +7,7 @@
 
 // Ifdef just to keep the lua parts separated and easy to remove
 #ifndef ENTITY_REFLECTION_SKIP_LUA
-extern "C" {
-    #include <lua.h>
-}
+    #include <external/lua.hpp>
 #endif
 
 struct EntityReflection

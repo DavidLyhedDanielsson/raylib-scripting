@@ -1,10 +1,10 @@
 #pragma once
 
-#include "lua/lua_register.hpp"
-#include "reflection_entity.hpp"
+#include <entity_reflection/reflection_entity.hpp>
 #include <entt/entt.hpp>
 #include <external/raylib.hpp>
-#include <lua/lua_register_types.hpp>
+#include <lua_impl/lua_register.hpp>
+#include <lua_impl/lua_register_types.hpp>
 
 #include <entity/camera.hpp>
 #define RComponent Camera

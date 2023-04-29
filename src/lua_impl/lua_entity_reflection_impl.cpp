@@ -1,8 +1,7 @@
-#include "lua/lua_register.hpp"
-#include "lua_imgui_impl.hpp"
-
-#include "lua_register_types.hpp"
 #include <entity_reflection/entity_reflection.hpp>
+#include <lua_impl/lua_imgui_impl.hpp>
+#include <lua_impl/lua_register.hpp>
+#include <lua_impl/lua_register_types.hpp>
 
 namespace LuaEntityReflection
 {

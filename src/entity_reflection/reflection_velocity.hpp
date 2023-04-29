@@ -1,9 +1,9 @@
 #pragma once
 
-#include "reflection_entity.hpp"
+#include <entity_reflection/reflection_entity.hpp>
 #include <entt/entt.hpp>
 #include <external/raylib.hpp>
-#include <lua/lua_register_types.hpp>
+#include <lua_impl/lua_register_types.hpp>
 
 #include <entity/velocity.hpp>
 #define RComponent Velocity

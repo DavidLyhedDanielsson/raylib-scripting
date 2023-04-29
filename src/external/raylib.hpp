@@ -6,8 +6,9 @@
     #pragma warning(push, 0)
 #endif
 
-#include <raylib.h>
-#include <raymath.h>
+#include "../../libs/raylib/src/config.h"
+#include "../../libs/raylib/src/raylib.h"
+#include "../../libs/raylib/src/raymath.h"
 
 #if defined(__GNUC__)
 #elif defined(_MSC_VER)
@@ -44,7 +45,7 @@ inline BoundingBox GetModelBoundingBox(Model model, Vector3 translation)
     }
 
     // Create the bounding box
-    BoundingBox box = {0};
+    BoundingBox box = {};
     box.min = minVertex;
     box.max = maxVertex;
 
@@ -81,7 +82,7 @@ inline BoundingBox GetModelBoundingBox(Model model, Matrix transform)
     }
 
     // Create the bounding box
-    BoundingBox box = {0};
+    BoundingBox box = {};
     box.min = minVertex;
     box.max = maxVertex;
 

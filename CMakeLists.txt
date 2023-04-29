@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(OpenGL_GL_PREFERENCE GLVND)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON) # clangd wants this, it is not mandatory
 
-add_definitions(-DIMGUI_DISABLE_OBSOLETE_FUNCTIONS)
+add_compile_definitions(-DIMGUI_DISABLE_OBSOLETE_FUNCTIONS)
 
 if (EMSCRIPTEN)
   add_compile_definitions(DASSET_ROOT=\"assets\")
@@ -20,37 +20,22 @@ else()
 endif ()
 
 ## Libraries
-# Disable warnings for all library source files
-# TODO: This doesn't exactly work since the settings aren't restored??
-get_directory_property(PROJECT_COMPILE_OPTIONS COMPILE_OPTIONS)
-if (MSVC)
-    add_compile_options("/w")
-else()
-    add_compile_options("-Wno-everything")
-endif()
-
 set(LIB_DIR ${CMAKE_CURRENT_SOURCE_DIR}/libs)
 
-file(GLOB IMGUI_SRC ${LIB_DIR}/imgui/*.cpp ${LIB_DIR}/imgui/backends/imgui_impl_opengl3.cpp)
-file(GLOB LUA_SRC ${LIB_DIR}/lua/*.c)
-list(REMOVE_ITEM LUA_SRC ${LIB_DIR}/lua/lua.c ${LIB_DIR}/lua/onelua.c)
-add_subdirectory(${LIB_DIR}/raylib)
-set(IMGUIZMO_SRC
-    ${LIB_DIR}/imguizmo/ImGuizmo.h
-    ${LIB_DIR}/imguizmo/ImGuizmo.cpp
-)
+add_subdirectory(${LIB_DIR})
 
-# Restore warnings and include source files belonging to this project
 if (MSVC)
     add_compile_options("/W4")
 else()
-    add_compile_options("-Wall -Wextra -Wpedantic")
+    add_compile_options("-Wall")
 endif()
 
 ## Executable
 set(SRC
     assets.cpp assets.hpp
+    imgui_error_check.cpp imgui_error_check.hpp
     main.cpp
+    raylib_imgui.cpp raylib_imgui.hpp
     world.cpp world.hpp
     external/raylib.hpp
     entity/camera.hpp
@@ -80,35 +65,27 @@ set(SRC
     entity_reflection/reflection_tile.hpp
     entity_reflection/reflection_velocity.hpp
     entity_reflection/reflection_area_tracker.hpp
-    imgui/imgui_impl.cpp imgui/imgui_impl.hpp
-    imgui/imgui_internal.cpp imgui/imgui_internal.hpp
-    lua/lua_asset_impl.cpp lua/lua_asset_impl.hpp
-    lua/lua_entity_reflection_impl.cpp lua/lua_entity_reflection_impl.hpp
-    lua/lua_entt_impl.cpp lua/lua_entt_impl.hpp
-    lua/lua_imgui_impl.cpp lua/lua_imgui_impl.hpp
-    lua/lua_imguizmo_impl.cpp lua/lua_imguizmo_impl.hpp
-    lua/lua_raylib_impl.cpp lua/lua_raylib_impl.hpp
-    lua/lua_register.hpp
+    lua_impl/lua_asset_impl.cpp lua_impl/lua_asset_impl.hpp
+    lua_impl/lua_entity_reflection_impl.cpp lua_impl/lua_entity_reflection_impl.hpp
+    lua_impl/lua_entt_impl.cpp lua_impl/lua_entt_impl.hpp
+    lua_impl/lua_imgui_impl.cpp lua_impl/lua_imgui_impl.hpp
+    lua_impl/lua_imguizmo_impl.cpp lua_impl/lua_imguizmo_impl.hpp
+    lua_impl/lua_raylib_impl.cpp lua_impl/lua_raylib_impl.hpp
+    lua_impl/lua_register.hpp
 )
 list(TRANSFORM SRC PREPEND ${CMAKE_CURRENT_SOURCE_DIR}/src/)
 
 add_executable(raylib_test
     ${SRC}
-    ${CUSTOM_IMGUI_SRC}
-    ${LUA_SRC}
-    ${IMGUI_SRC}
-    ${IMGUIZMO_SRC}
 )
 target_link_libraries(raylib_test PRIVATE
     raylib
+    imgui
+    imguizmo
+    lua
 )
 target_include_directories(raylib_test SYSTEM PRIVATE
-    ${LIB_DIR}/raylib/src
-    ${LIB_DIR}/lua
-    ${LIB_DIR}/imgui
-    ${LIB_DIR}/imgui/backends
     ${LIB_DIR}/entt/src
-    ${LIB_DIR}/imguizmo
 )
 target_include_directories(raylib_test PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src

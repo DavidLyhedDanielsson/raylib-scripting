@@ -1,5 +1,6 @@
-#include "imgui_internal.hpp" // The corresponding header for this cpp file
-#include <imgui_internal.h> //  The actual imgui_internal header
+#include "imgui_error_check.hpp"
+
+#include <external/imgui_internal.hpp>
 #include <iostream>
 
 void ImGuiLog(void*, const char* fmt, ...)

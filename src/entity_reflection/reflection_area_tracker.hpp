@@ -4,11 +4,11 @@
 #include <numeric>
 #include <vector>
 
-#include "lua/lua_register.hpp"
-#include "reflection_entity.hpp"
+#include <entity_reflection/reflection_entity.hpp>
 #include <external/raylib.hpp>
-#include <lua/lua_register_types.hpp>
-#include <lua/lua_validator.hpp>
+#include <lua_impl/lua_register.hpp>
+#include <lua_impl/lua_register_types.hpp>
+#include <lua_impl/lua_validator.hpp>
 
 #include <entity/area_tracker.hpp>
 #define RComponent AreaTracker

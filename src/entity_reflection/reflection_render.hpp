@@ -1,9 +1,9 @@
 #pragma once
 
-#include "reflection_entity.hpp"
 #include <assets.hpp>
-#include <lua.h>
-#include <lua/lua_register_types.hpp>
+#include <entity_reflection/reflection_entity.hpp>
+#include <external/lua.hpp>
+#include <lua_impl/lua_register_types.hpp>
 
 #include <entity/render.hpp>
 #define RComponent Render

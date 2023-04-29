@@ -1,9 +1,9 @@
 #include "world.hpp"
-#include "assets.hpp"
-#include "entity/area_tracker.hpp"
 #include <algorithm>
 #include <array>
+#include <assets.hpp>
 #include <cmath>
+#include <entity/area_tracker.hpp>
 #include <entity/camera.hpp>
 #include <entity/health.hpp>
 #include <entity/max_range.hpp>
@@ -14,10 +14,9 @@
 #include <entity/transform.hpp>
 #include <entity/velocity.hpp>
 #include <entity_reflection/entity_reflection.hpp>
+#include <external/imgui.hpp>
+#include <external/imguizmo.hpp>
 #include <external/raylib.hpp>
-#include <imgui.h>
-
-#include <ImGuizmo.h>
 
 struct WorldData
 {

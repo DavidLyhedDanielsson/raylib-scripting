@@ -1,7 +1,7 @@
 #pragma once
 
 extern "C" {
-#include <lua.h>
+#include <external/lua.hpp>
 }
 #include <numeric> // Why isn't this in algorithm??
 #include <optional>

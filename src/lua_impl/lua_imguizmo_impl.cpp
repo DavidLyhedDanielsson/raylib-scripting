@@ -1,13 +1,11 @@
 #include "lua_imguizmo_impl.hpp"
 
-#include "lua_register.hpp"
-#include <imgui.h>
-// Needs to be after imgui
-#include <ImGuizmo.h>
-#include <config.h> // TODO: Path is terrible :(
+#include <lua_impl/lua_register.hpp>
 #include <entity/camera.hpp>
 #include <entity/transform.hpp>
 #include <entt/entt.hpp>
+#include <external/imgui.hpp>
+#include <external/imguizmo.hpp>
 #include <external/raylib.hpp>
 
 #define LuaImguizmoQuickRegister(X) LuaRegister::Register(lua, #X, ImGuizmo::X)

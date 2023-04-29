@@ -3,9 +3,9 @@
 #include "entity_reflection.hpp"
 #include <cstdint>
 #include <entt/entt.hpp>
-#include <imgui.h>
-#include <lua.h>
-#include <lua/lua_validator.hpp>
+#include <external/imgui.hpp>
+#include <external/lua.hpp>
+#include <lua_impl/lua_validator.hpp>
 #include <optional>
 #include <string>
 #include <vector>

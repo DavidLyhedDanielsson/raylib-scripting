@@ -1,13 +1,12 @@
 #include "lua_imgui_impl.hpp"
 
-#include "lua_register.hpp"
 #include <cstring>
-#include <imgui.h> // TODO: Really fix these library include paths
-#include <imgui/imgui_internal.hpp>
-// Needs to be after imgui
-#include <ImGuizmo.h>
-#include <lua.h>
-#include <lua/lua_register_types.hpp>
+#include <external/imgui.hpp>
+#include <external/imguizmo.hpp>
+#include <external/lua.hpp>
+#include <imgui_error_check.hpp>
+#include <lua_impl/lua_register.hpp>
+#include <lua_impl/lua_register_types.hpp>
 
 #define LuaImguiQuickRegister(X) LuaRegister::Register(lua, #X, ImGui::X)
 // Macro to register an overloaded function with the same name as the ImGui function

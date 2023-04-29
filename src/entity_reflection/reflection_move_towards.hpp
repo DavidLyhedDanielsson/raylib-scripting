@@ -1,14 +1,14 @@
 #pragma once
 
-#include <lua.h>
+#include <external/lua.hpp>
 #include <numeric>
 #include <vector>
 
-#include "lua/lua_register.hpp"
-#include "reflection_entity.hpp"
+#include <entity_reflection/reflection_entity.hpp>
 #include <external/raylib.hpp>
-#include <lua/lua_register_types.hpp>
-#include <lua/lua_validator.hpp>
+#include <lua_impl/lua_register.hpp>
+#include <lua_impl/lua_register_types.hpp>
+#include <lua_impl/lua_validator.hpp>
 
 #include <entity/move_towards.hpp>
 #define RComponent MoveTowards
@@ -25,9 +25,7 @@ EntityReflectionStruct(RComponent)
 
     static LuaValidator::LuaValidator GetLuaValidator(lua_State * lua)
     {
-        return LuaValidator::LuaValidator(lua)
-            .FieldIs<Vector3>("target")
-            .FieldIs<float>("speed");
+        return LuaValidator::LuaValidator(lua).FieldIs<Vector3>("target").FieldIs<float>("speed");
     }
 
     static void CreateFromLuaInternal(
@@ -43,7 +41,7 @@ EntityReflectionStruct(RComponent)
             entity,
             Component::RComponent{
                 .target = LuaRegister::LuaGetFunc<Vector3>(lua, stackTop - 2),
-                .speed = lua_tonumber(lua, stackTop - 1),
+                .speed = (float)lua_tonumber(lua, stackTop - 1),
             });
 
         lua_pop(lua, 2);
