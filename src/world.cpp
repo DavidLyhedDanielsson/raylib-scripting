@@ -125,7 +125,7 @@ namespace World
         {
             bool callFunction = false;
 
-            auto trackerHitBox = tracker.GetBoundingBox(trackerTransform.position);
+            auto trackerHitBox = tracker.GetBoundingBox(trackerTransform);
 
             for(auto [entity, entityRender, entityTransform, entityHealth] :
                 world.registry->view<Component::Render, Component::Transform, Component::Health>()
@@ -168,7 +168,7 @@ namespace World
             [](entt::entity entity,
                Component::Transform transform,
                Component::AreaTracker tracker) {
-                DrawBoundingBox(tracker.GetBoundingBox(transform.position), Color{255, 0, 0, 80});
+                DrawBoundingBox(tracker.GetBoundingBox(transform), Color{255, 0, 0, 80});
             });
     }
 
