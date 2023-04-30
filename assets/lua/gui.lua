@@ -94,6 +94,16 @@ function imgui()
         cooldown = cooldown - 1
     end
 
+    if IsKeyPressed(Key.D) and IsKeyDown(Key.LEFT_CONTROL) and selectedEntity ~= nil then
+        DuplicateEntity(selectedEntity)
+    end
+    if IsKeyPressed(Key.DELETE) and selectedEntity ~= nil then
+        DestroyEntity(selectedEntity)
+        if selectedEntity == entity then
+            selectedEntity = nil
+        end
+    end
+
     if BeginMainMenuBar() then
         if MenuItem("Save", "", false, true) then
             SaveLevel()
