@@ -168,7 +168,12 @@ namespace World
             [](entt::entity entity,
                Component::Transform transform,
                Component::AreaTracker tracker) {
-                DrawBoundingBox(tracker.GetBoundingBox(transform), Color{255, 0, 0, 80});
+                auto boundingBox = tracker.GetBoundingBox(transform);
+                Vector3 center = Vector3Scale(Vector3Add(boundingBox.min, boundingBox.max), 0.5f);
+                DrawCubeV(
+                    center,
+                    Vector3Subtract(boundingBox.max, boundingBox.min),
+                    {255, 0, 0, 80});
             });
     }
 
