@@ -67,11 +67,14 @@ EntityReflectionStruct(RComponent)
         {
             for(const auto& [key, value] : loadedAssets)
             {
-                if(ImGui::Selectable(key.c_str(), key == component.assetName))
+                bool selected = key == component.assetName;
+                if(ImGui::Selectable(key.c_str(), selected))
                 {
                     component.assetName = key.c_str(); // Not very safe but fine
                     component.model = value;
                 }
+                if(selected)
+                    ImGui::SetItemDefaultFocus();
             }
             ImGui::EndCombo();
         }
