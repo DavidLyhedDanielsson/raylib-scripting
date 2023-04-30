@@ -1,5 +1,6 @@
 #pragma once
 
+#include <entt/entity/fwd.hpp>
 #include <numbers>
 #include <numeric>
 #include <vector>
@@ -35,12 +36,18 @@ EntityReflectionStruct(RComponent)
         lua_getfield(lua, -1, "offset");
         lua_getfield(lua, -2, "size");
 
+        // Use a vector just in case, but I don't think there'll be this
+        // many entities
+        std::vector<entt::entity> vec;
+        vec.reserve(16);
+
         auto stackTop = lua_gettop(lua);
         registry.emplace<Component::RComponent>(
             entity,
             Component::RComponent{
                 .offset = LuaRegister::LuaGetFunc<Vector3>(lua, stackTop - 1),
                 .size = LuaRegister::LuaGetFunc<Vector3>(lua, stackTop),
+                .entitiesInside = vec,
             });
 
         lua_pop(lua, 2);

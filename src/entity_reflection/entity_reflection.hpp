@@ -24,6 +24,7 @@ struct EntityReflection
         // TODO: Error handling
         bool (*createFromLua)(lua_State*, entt::registry&, entt::entity);
         void (*pushToLua)(lua_State*, void*);
+        void (*pushAllOfToLua)(lua_State*, entt::registry&);
 #endif
     };
 
@@ -49,6 +50,7 @@ struct EntityReflection
 #ifndef ENTITY_REFLECTION_SKIP_LUA
                 .createFromLua = Component::CreateFromLua,
                 .pushToLua = Component::PushToLua,
+                .pushAllOfToLua = Component::PushAllOfToLua,
 #endif
             }));
     }
@@ -196,6 +198,19 @@ struct EntityReflection
         }
 
         lua_settable(lua, -3);
+    }
+
+    static void PushAllEntitiesToLua(
+        lua_State* lua,
+        const char* componentName,
+        entt::registry* registry)
+    {
+        auto entityMap = ComponentMap();
+
+        auto iter = entityMap.find(componentName);
+        assert(iter != entityMap.end());
+
+        iter->second.pushAllOfToLua(lua, *registry);
     }
 #endif
 };

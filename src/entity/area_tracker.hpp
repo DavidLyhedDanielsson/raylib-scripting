@@ -1,7 +1,10 @@
 #pragma once
 
 #include <entity/transform.hpp>
+#include <entt/entity/fwd.hpp>
+#include <entt/fwd.hpp>
 #include <external/raylib.hpp>
+#include <vector>
 
 namespace Component
 {
@@ -9,6 +12,7 @@ namespace Component
     {
         Vector3 offset;
         Vector3 size;
+        std::vector<entt::entity> entitiesInside;
 
         inline BoundingBox GetBoundingBox(Component::Transform entityTransform) const
         {

@@ -135,6 +135,20 @@ namespace LuaEntityReflection
 
         RegisterMember(
             lua,
+            "GetAllEntitiesWithComponent",
+            registry,
+            +[](entt::registry* registry,
+                lua_State* lua,
+                const char* componentName) -> Placeholder {
+                lua_createtable(lua, 0, 0);
+
+                EntityReflection::PushAllEntitiesToLua(lua, componentName, registry);
+
+                return {};
+            });
+
+        RegisterMember(
+            lua,
             "DumpEntities",
             registry,
             +[](entt::registry* registry, lua_State* lua) -> Placeholder {

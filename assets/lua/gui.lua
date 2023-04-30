@@ -50,6 +50,8 @@ if setup == nil then
     enemySpawns = {}
     enemyGoals = {}
 
+    cooldown = 0
+
     LoadLevel()
 end
 
@@ -80,6 +82,18 @@ function SpawnDarts()
 end
 
 function imgui()
+    local all = GetAllEntitiesWithComponent("AreaTracker")
+    if cooldown == 0 then
+        for _, v in pairs(all) do
+            if TrackerHasEntities(v) then
+                SpawnDarts()
+                cooldown = 30
+            end
+        end
+    else
+        cooldown = cooldown - 1
+    end
+
     if BeginMainMenuBar() then
         if MenuItem("Save", "", false, true) then
             SaveLevel()

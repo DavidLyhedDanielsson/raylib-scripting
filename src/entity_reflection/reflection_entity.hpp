@@ -147,6 +147,27 @@ class ReflectionComponent
         lua_settable(lua, -3);
     }
 
+    static void PushAllOfToLua(lua_State* lua, entt::registry& registry)
+    {
+        lua_len(lua, -1);
+        auto index = lua_tonumber(lua, -1);
+        lua_pop(lua, 1);
+        if constexpr(std::is_empty_v<ComponentType>)
+        {
+            registry.view<ComponentType>().each([&](auto entity) {
+                lua_pushinteger(lua, (lua_Integer)entity);
+                lua_seti(lua, -2, ++index);
+            });
+        }
+        else
+        {
+            registry.view<ComponentType>().each([&](entt::entity entity, auto) {
+                lua_pushinteger(lua, (lua_Integer)entity);
+                lua_seti(lua, -2, ++index);
+            });
+        }
+    }
+
     // constexpr static uint32_t ID = IDValue;
 
   protected:

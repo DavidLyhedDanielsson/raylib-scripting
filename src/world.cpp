@@ -123,10 +123,11 @@ namespace World
         for(auto [trackerEntity, trackerTransform, tracker] :
             world.registry->view<Component::Transform, Component::AreaTracker>().each())
         {
-            bool callFunction = false;
+            tracker.entitiesInside.clear();
 
             auto trackerHitBox = tracker.GetBoundingBox(trackerTransform);
 
+            // TODO: Add BoundingBox component
             for(auto [entity, entityRender, entityTransform, entityHealth] :
                 world.registry->view<Component::Render, Component::Transform, Component::Health>()
                     .each())
@@ -135,16 +136,7 @@ namespace World
                     GetModelBoundingBox(entityRender.model, entityTransform.position);
 
                 if(CheckCollisionBoxes(trackerHitBox, entityHitBox))
-                {
-                    callFunction = true;
-                    break;
-                }
-            }
-
-            if(callFunction)
-            {
-                lua_getglobal(lua, "TrackerCallback");
-                lua_pcall(lua, 0, 0, 0);
+                    tracker.entitiesInside.push_back(entity);
             }
         }
     }

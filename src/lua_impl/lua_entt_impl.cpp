@@ -1,4 +1,5 @@
 #include "lua_entt_impl.hpp"
+#include "entity/area_tracker.hpp"
 
 #include <array>
 #include <cstring>
@@ -118,6 +119,15 @@ namespace LuaEntt
                         std::cerr << lua_tostring(lua, -1);
                     }
                 });
+            });
+
+        LuaRegister::RegisterMember(
+            lua,
+            "TrackerHasEntities",
+            registry,
+            +[](entt::registry* registry, lua_State* lua, lua_Integer entity) {
+                return !registry->get<Component::AreaTracker>((entt::entity)entity)
+                            .entitiesInside.empty();
             });
     }
 }
