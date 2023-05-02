@@ -9,7 +9,7 @@ namespace LuaEntityReflection
     {
         using namespace LuaRegister;
 
-        GlobalMemberRegister(
+        GlobalRegisterMember(
             lua,
             "Modify",
             registry,
@@ -20,7 +20,7 @@ namespace LuaEntityReflection
                 EntityReflection::Modify(componentName, *registry, (entt::entity)entity);
             });
 
-        GlobalMemberRegister(
+        GlobalRegisterMember(
             lua,
             "ModifyEntityOrElse",
             registry,
@@ -33,7 +33,7 @@ namespace LuaEntityReflection
                 });
             });
 
-        GlobalMemberRegister(
+        GlobalRegisterMember(
             lua,
             "IfComponentMissing",
             registry,
@@ -49,7 +49,7 @@ namespace LuaEntityReflection
                     [&]() { lua_pcall(lua, 0, 0, callback.stackIndex); });
             });
 
-        GlobalMemberRegister(
+        GlobalRegisterMember(
             lua,
             "HasComponent",
             registry,
@@ -61,7 +61,7 @@ namespace LuaEntityReflection
                 return EntityReflection::HasComponent(component, *registry, (entt::entity)entity);
             });
 
-        GlobalMemberRegister(
+        GlobalRegisterMember(
             lua,
             "ForEachMissing",
             registry,
@@ -75,7 +75,7 @@ namespace LuaEntityReflection
                 });
             });
 
-        GlobalMemberRegister(
+        GlobalRegisterMember(
             lua,
             "DuplicateEntity",
             registry,
@@ -86,7 +86,7 @@ namespace LuaEntityReflection
                 EntityReflection::DuplicateEntity(*registry, (entt::entity)entity);
             });
 
-        GlobalMemberRegister(
+        GlobalRegisterMember(
             lua,
             "AddComponent",
             registry,
@@ -106,7 +106,7 @@ namespace LuaEntityReflection
                 return Placeholder{};
             });
 
-        GlobalMemberRegister(
+        GlobalRegisterMember(
             lua,
             "RemoveComponent",
             registry,
@@ -117,7 +117,7 @@ namespace LuaEntityReflection
                 EntityReflection::RemoveComponent(componentName, registry, (entt::entity)entity);
             });
 
-        GlobalMemberRegister(
+        GlobalRegisterMember(
             lua,
             "GetEntity",
             registry,
@@ -133,7 +133,7 @@ namespace LuaEntityReflection
                 return {};
             });
 
-        GlobalMemberRegister(
+        GlobalRegisterMember(
             lua,
             "GetAllEntitiesWithComponent",
             registry,
@@ -147,7 +147,7 @@ namespace LuaEntityReflection
                 return {};
             });
 
-        GlobalMemberRegister(
+        GlobalRegisterMember(
             lua,
             "DumpEntities",
             registry,

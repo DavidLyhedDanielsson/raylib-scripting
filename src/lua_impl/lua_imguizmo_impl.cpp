@@ -21,7 +21,7 @@ namespace LuaImGuizmo
             "IsUsingGizmo",
             +[]() { return ImGuizmo::IsUsing(); });
 
-        GlobalMemberRegister(
+        GlobalRegisterMember(
             lua,
             "Gizmo",
             registry,

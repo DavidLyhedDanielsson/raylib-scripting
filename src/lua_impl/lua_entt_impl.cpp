@@ -43,16 +43,16 @@ namespace LuaEntt
     {
         RegisterTypes(lua);
 
-#define QuickRegister(Func) LuaRegister::GlobalMemberRegister(lua, #Func, registry, Func);
+#define QuickRegister(Func) LuaRegister::GlobalRegisterMember(lua, #Func, registry, Func);
 
         QuickRegister(CreateEntity);
-        LuaRegister::GlobalMemberRegister(
+        LuaRegister::GlobalRegisterMember(
             lua,
             "ClearRegistry",
             registry,
             +[](entt::registry* registry, lua_State* lua) { registry->clear(); });
 
-        LuaRegister::GlobalMemberRegister(
+        LuaRegister::GlobalRegisterMember(
             lua,
             "DestroyEntity",
             registry,
@@ -60,7 +60,7 @@ namespace LuaEntt
                 registry->destroy((entt::entity)entity);
             });
 
-        LuaRegister::GlobalMemberRegister(
+        LuaRegister::GlobalRegisterMember(
             lua,
             "ValidEntity",
             registry,
@@ -68,7 +68,7 @@ namespace LuaEntt
                 return registry->valid((entt::entity)entity);
             });
 
-        LuaRegister::GlobalMemberRegister(
+        LuaRegister::GlobalRegisterMember(
             lua,
             "Each",
             registry,
@@ -87,7 +87,7 @@ namespace LuaEntt
                 });
             });
 
-        LuaRegister::GlobalMemberRegister(
+        LuaRegister::GlobalRegisterMember(
             lua,
             "EnttForEach",
             registry,
@@ -121,7 +121,7 @@ namespace LuaEntt
                 });
             });
 
-        LuaRegister::GlobalMemberRegister(
+        LuaRegister::GlobalRegisterMember(
             lua,
             "TrackerHasEntities",
             registry,
@@ -130,7 +130,7 @@ namespace LuaEntt
                             .entitiesInside.empty();
             });
 
-        LuaRegister::GlobalMemberRegister(
+        LuaRegister::GlobalRegisterMember(
             lua,
             "TransformTo",
             registry,

@@ -139,7 +139,7 @@ namespace LuaRaylib
         QuickRegister(IsKeyReleased);
         QuickRegister(IsKeyUp);
 
-        LuaRegister::GlobalMemberRegister(
+        LuaRegister::GlobalRegisterMember(
             lua,
             "GetMouseRay",
             registry,
@@ -151,7 +151,7 @@ namespace LuaRaylib
                     });
                 return GetMouseRay(mousePosition, camera);
             });
-        LuaRegister::GlobalMemberRegister(
+        LuaRegister::GlobalRegisterMember(
             lua,
             "GetWorldToScreen",
             registry,
@@ -164,7 +164,7 @@ namespace LuaRaylib
                 return GetWorldToScreen(world, camera);
             });
 
-        LuaRegister::GlobalMemberRegister(
+        LuaRegister::GlobalRegisterMember(
             lua,
             "GetRayCollision",
             registry,
