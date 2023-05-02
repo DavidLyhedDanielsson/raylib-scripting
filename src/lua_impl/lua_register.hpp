@@ -426,7 +426,7 @@ namespace LuaRegister
      * @param f
      */
     template<typename R, typename... Args>
-    void Register(lua_State* lua, const char* name, R (*f)(Args...))
+    void GlobalRegister(lua_State* lua, const char* name, R (*f)(Args...))
     {
         // R and Args are known, so upvalues are a perfect place to store the
         // function pointer
@@ -435,12 +435,23 @@ namespace LuaRegister
         lua_setglobal(lua, name);
     }
 
+    template<typename R, typename... Args>
+    void PushRegister(lua_State* lua, const char* name, R (*f)(Args...))
+    {
+        // R and Args are known, so upvalues are a perfect place to store the
+        // function pointer
+        lua_pushlightuserdata(lua, (void*)f);
+        lua_pushcclosure(lua, LuaWrapper<R, Args...>, 1);
+        lua_pushstring(lua, name);
+        lua_settable(lua, -3);
+    }
+
     /**
      * @brief Specialization of LuaWrapperMember for a function which takes no
      * parameters.
      *
      * @see LuaWrapper for detailed comments
-     * @see RegisterMember for the function that calls this function
+     * @see GlobalMemberRegister for the function that calls this function
      */
     template<typename T, typename R>
     int LuaWrapperMember(lua_State* lua)
@@ -466,7 +477,7 @@ namespace LuaRegister
      * @brief Same as LuaWrapper but with an additional upvalue of type \p T
      *
      * @see LuaWrapper for detailed comments
-     * @see RegisterMember for the function that calls this function
+     * @see GlobalMemberRegister for the function that calls this function
      */
     template<typename T, typename R, typename... Args>
         requires(sizeof...(Args) > 0)
@@ -512,11 +523,21 @@ namespace LuaRegister
      * @param f
      */
     template<typename T, typename R, typename... Args>
-    void RegisterMember(lua_State* lua, const char* name, T instance, R (*f)(T, Args...))
+    void GlobalMemberRegister(lua_State* lua, const char* name, T instance, R (*f)(T, Args...))
     {
         lua_pushlightuserdata(lua, (void*)f);
         lua_pushlightuserdata(lua, (void*)instance);
         lua_pushcclosure(lua, LuaWrapperMember<T, R, Args...>, 2);
         lua_setglobal(lua, name);
+    }
+
+    template<typename T, typename R, typename... Args>
+    void PushMemberRegister(lua_State* lua, const char* name, T instance, R (*f)(T, Args...))
+    {
+        lua_pushlightuserdata(lua, (void*)f);
+        lua_pushlightuserdata(lua, (void*)instance);
+        lua_pushcclosure(lua, LuaWrapperMember<T, R, Args...>, 2);
+        lua_pushstring(lua, name);
+        lua_settable(lua, -3);
     }
 }

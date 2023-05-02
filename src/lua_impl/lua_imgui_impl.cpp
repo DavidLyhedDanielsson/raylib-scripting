@@ -8,14 +8,14 @@
 #include <lua_impl/lua_register.hpp>
 #include <lua_impl/lua_register_types.hpp>
 
-#define LuaImguiQuickRegister(X) LuaRegister::Register(lua, #X, ImGui::X)
+#define LuaImguiQuickRegister(X) LuaRegister::GlobalRegister(lua, #X, ImGui::X)
 // Macro to register an overloaded function with the same name as the ImGui function
 #define LuaImguiQuickRegisterOverload(X, type) \
-    LuaRegister::Register(lua, #X, static_cast<type>(ImGui::X))
+    LuaRegister::GlobalRegister(lua, #X, static_cast<type>(ImGui::X))
 // Macro to register an overloaded function with a different name then the ImGui function by
 // appending a suffix to it
 #define LuaImguiQuickRegisterUOverload(X, suff, type) \
-    LuaRegister::Register(lua, #X #suff, static_cast<type>(ImGui::X))
+    LuaRegister::GlobalRegister(lua, #X #suff, static_cast<type>(ImGui::X))
 
 namespace LuaImGui
 {
@@ -25,7 +25,7 @@ namespace LuaImGui
 
         LuaImguiQuickRegister(Begin);
         // LuaImguiQuickRegister(End);
-        LuaRegister::Register(
+        LuaRegister::GlobalRegister(
             lua,
             "End",
             +[](lua_State* lua) {
@@ -43,7 +43,7 @@ namespace LuaImGui
             bool (*)(ImGuiID, const ImVec2&, bool, ImGuiWindowFlags));
 
         // LuaImguiQuickRegister(EndChild);
-        LuaRegister::Register(
+        LuaRegister::GlobalRegister(
             lua,
             "EndChild",
             +[](lua_State* lua) {
@@ -56,7 +56,7 @@ namespace LuaImGui
         LuaImguiQuickRegister(IsWindowCollapsed);
         LuaImguiQuickRegister(IsWindowFocused);
         LuaImguiQuickRegister(IsWindowHovered);
-        LuaRegister::Register(
+        LuaRegister::GlobalRegister(
             lua,
             "WantCaptureMouse",
             +[](lua_State* lua) { return ImGui::GetIO().WantCaptureMouse; });
@@ -162,31 +162,31 @@ namespace LuaImGui
         // Below is the "correct" answer but the link above captures the feeling
         // of seeing +lambda for the first time
         // https://stackoverflow.com/questions/17822131
-        Register(
+        GlobalRegister(
             lua,
             "Text",
             +[](VStr var) { return ImGui::Text("%s", var.strcpy().data()); });
-        Register(
+        GlobalRegister(
             lua,
             "TextColored",
             +[](const ImVec4& col, VStr var) {
                 return ImGui::TextColored(col, "%s", var.strcpy().data());
             });
-        Register(
+        GlobalRegister(
             lua,
             "TextDisabled",
             +[](VStr var) { return ImGui::TextDisabled("%s", var.strcpy().data()); });
-        Register(
+        GlobalRegister(
             lua,
             "TextWrapped",
             +[](VStr var) { return ImGui::TextWrapped("%s", var.strcpy().data()); });
-        Register(
+        GlobalRegister(
             lua,
             "LabelText",
             +[](const char* label, VStr var) {
                 return ImGui::LabelText(label, "%s", var.strcpy().data());
             });
-        Register(
+        GlobalRegister(
             lua,
             "BulletText",
             +[](VStr var) { return ImGui::BulletText("%s", var.strcpy().data()); });
@@ -233,7 +233,7 @@ namespace LuaImGui
         LuaImguiQuickRegister(VSliderInt);
 
         // InputText
-        LuaRegister::Register(
+        LuaRegister::GlobalRegister(
             lua,
             "InputText",
             +[](lua_State* lua, const char* label, const char* text) -> Placeholder {
@@ -261,17 +261,17 @@ namespace LuaImGui
         LuaImguiQuickRegister(SetColorEditOptions);
 
         LuaImguiQuickRegisterOverload(TreeNode, bool (*)(const char*));
-        LuaRegister::Register(
+        LuaRegister::GlobalRegister(
             lua,
             "TreeNodeID",
             +[](const char* id, VStr var) {
                 return ImGui::TreeNode(id, "%s", var.strcpy().data());
             });
-        LuaRegister::Register(
+        LuaRegister::GlobalRegister(
             lua,
             "TreeNodeEx",
             static_cast<bool (*)(const char*, ImGuiTreeNodeFlags)>(ImGui::TreeNodeEx));
-        LuaRegister::Register(
+        LuaRegister::GlobalRegister(
             lua,
             "TreeNodeExID",
             +[](const char* id, ImGuiTreeNodeFlags flags, VStr var) {

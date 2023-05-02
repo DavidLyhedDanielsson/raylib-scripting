@@ -63,7 +63,7 @@ namespace LuaRaylib
 
     void Register(lua_State* lua, entt::registry* registry)
     {
-#define QuickRegister(Func) LuaRegister::Register(lua, #Func, Func);
+#define QuickRegister(Func) LuaRegister::GlobalRegister(lua, #Func, Func);
 
         // Screen
         QuickRegister(GetScreenWidth);
@@ -139,7 +139,7 @@ namespace LuaRaylib
         QuickRegister(IsKeyReleased);
         QuickRegister(IsKeyUp);
 
-        LuaRegister::RegisterMember(
+        LuaRegister::GlobalMemberRegister(
             lua,
             "GetMouseRay",
             registry,
@@ -151,7 +151,7 @@ namespace LuaRaylib
                     });
                 return GetMouseRay(mousePosition, camera);
             });
-        LuaRegister::RegisterMember(
+        LuaRegister::GlobalMemberRegister(
             lua,
             "GetWorldToScreen",
             registry,
@@ -164,7 +164,7 @@ namespace LuaRaylib
                 return GetWorldToScreen(world, camera);
             });
 
-        LuaRegister::RegisterMember(
+        LuaRegister::GlobalMemberRegister(
             lua,
             "GetRayCollision",
             registry,

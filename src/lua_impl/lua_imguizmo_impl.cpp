@@ -1,14 +1,14 @@
 #include "lua_imguizmo_impl.hpp"
 
-#include <lua_impl/lua_register.hpp>
 #include <entity/camera.hpp>
 #include <entity/transform.hpp>
 #include <entt/entt.hpp>
 #include <external/imgui.hpp>
 #include <external/imguizmo.hpp>
 #include <external/raylib.hpp>
+#include <lua_impl/lua_register.hpp>
 
-#define LuaImguizmoQuickRegister(X) LuaRegister::Register(lua, #X, ImGuizmo::X)
+#define LuaImguizmoQuickRegister(X) LuaRegister::GlobalRegister(lua, #X, ImGuizmo::X)
 
 namespace LuaImGuizmo
 {
@@ -16,12 +16,12 @@ namespace LuaImGuizmo
     {
         using namespace LuaRegister;
 
-        LuaRegister::Register(
+        LuaRegister::GlobalRegister(
             lua,
             "IsUsingGizmo",
             +[]() { return ImGuizmo::IsUsing(); });
 
-        RegisterMember(
+        GlobalMemberRegister(
             lua,
             "Gizmo",
             registry,
