@@ -129,5 +129,24 @@ namespace LuaEntt
                 return !registry->get<Component::AreaTracker>((entt::entity)entity)
                             .entitiesInside.empty();
             });
+
+        LuaRegister::RegisterMember(
+            lua,
+            "TransformTo",
+            registry,
+            +[](entt::registry* registry,
+                lua_State* lua,
+                lua_Integer transformeeEntity,
+                lua_Integer targetEntity) {
+                auto& transformee =
+                    registry->get<Component::Transform>((entt::entity)transformeeEntity);
+                const auto target = registry->get<Component::Transform>((entt::entity)targetEntity);
+
+                Matrix mat = MatrixRotateZYX(target.rotation);
+                Vector3 newRotation = Vector3Transform(transformee.rotation, mat);
+
+                transformee.rotation = newRotation;
+                transformee.position = Vector3Add(transformee.position, target.position);
+            });
     }
 }

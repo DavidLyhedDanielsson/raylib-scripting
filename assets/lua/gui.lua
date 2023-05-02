@@ -58,7 +58,7 @@ end
 function raylib()
 end
 
-function SpawnDarts()
+function SpawnDarts(transformTarget)
     local offsets = {
         { x = 0.05,  y = 1.286, z = 0.492 },
         { x = -0.05, y = 1.286, z = -0.492 },
@@ -68,7 +68,7 @@ function SpawnDarts()
     }
 
     for i = 1, 5 do
-        local startPosition = { x = 2 + offsets[i].x, y = 0 + offsets[i].y, z = 4 + offsets[i].z }
+        local startPosition = { x = offsets[i].x, y = offsets[i].y, z = offsets[i].z }
         local startVelocity = { x = -0.25, y = 0, z = 0 }
 
         local entity = CreateEntity()
@@ -76,8 +76,11 @@ function SpawnDarts()
         AddComponentOrPrintError("Transform", entity,
             { position = startPosition, rotation = { x = 0, y = 3.14 / 2, z = 3.14 / 2 } })
         AddComponentOrPrintError("Velocity", entity, startVelocity)
-        AddComponentOrPrintError("MaxRange", entity, { maxDistance = 5, distanceFrom = startPosition })
         AddComponentOrPrintError("Projectile", entity, { damage = 1 })
+
+        TransformTo(entity, transformTarget)
+        local transformedPosition = GetEntity(entity).Transform.position
+        AddComponentOrPrintError("MaxRange", entity, { maxDistance = 5, distanceFrom = transformedPosition })
     end
 end
 
@@ -86,7 +89,7 @@ function imgui()
     if cooldown == 0 then
         for _, v in pairs(all) do
             if TrackerHasEntities(v) then
-                SpawnDarts()
+                SpawnDarts(v)
                 cooldown = 30
             end
         end
@@ -176,7 +179,10 @@ function imgui()
         end
 
         if MenuItem("Spawn projectile", "", false, true) then
-            SpawnDarts()
+            local all = GetAllEntitiesWithComponent("AreaTracker")
+            for _, v in pairs(all) do
+                SpawnDarts(v)
+            end
         end
 
         EndMainMenuBar()
