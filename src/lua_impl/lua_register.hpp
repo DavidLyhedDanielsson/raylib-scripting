@@ -1,10 +1,6 @@
 #pragma once
 
-extern "C" {
 #include <external/lua.hpp>
-#include <lauxlib.h>
-#include <lualib.h>
-}
 
 #include <array>
 #include <tuple>
