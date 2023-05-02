@@ -6,7 +6,7 @@ function AddComponentOrPrintError(...)
 end
 
 function SaveLevel()
-    local file = io.open("outfile.lua", "w+")
+    local file = io.open("../assets/default_level.lua", "w+")
     file:write("return{")
     --print("{")
     for entity, entityInfo in pairs(DumpEntities()) do
@@ -23,7 +23,7 @@ function SaveLevel()
 end
 
 function LoadLevel()
-    local level = dofile("outfile.lua")
+    local level = dofile("../assets/default_level.lua")
     if level ~= nil then
         ClearRegistry()
 
@@ -35,7 +35,7 @@ function LoadLevel()
             end
         end
     else
-        print("Couldn't load outfile.lua or it didn't contain a table")
+        print("Couldn't load ../assets/default_level.lua or it didn't contain a table")
     end
 end
 
