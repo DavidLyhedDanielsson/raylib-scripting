@@ -8,24 +8,26 @@
 #include <lua_impl/lua_register.hpp>
 #include <lua_impl/lua_register_types.hpp>
 
-#define LuaImguiQuickRegister(X) LuaRegister::GlobalRegister(lua, #X, ImGui::X)
+#define LuaImguiQuickRegister(X) LuaRegister::PushRegister(lua, #X, ImGui::X)
 // Macro to register an overloaded function with the same name as the ImGui function
 #define LuaImguiQuickRegisterOverload(X, type) \
-    LuaRegister::GlobalRegister(lua, #X, static_cast<type>(ImGui::X))
+    LuaRegister::PushRegister(lua, #X, static_cast<type>(ImGui::X))
 // Macro to register an overloaded function with a different name then the ImGui function by
 // appending a suffix to it
 #define LuaImguiQuickRegisterUOverload(X, suff, type) \
-    LuaRegister::GlobalRegister(lua, #X #suff, static_cast<type>(ImGui::X))
+    LuaRegister::PushRegister(lua, #X #suff, static_cast<type>(ImGui::X))
 
 namespace LuaImGui
 {
     void Register(lua_State* lua)
     {
+        lua_createtable(lua, 0, 0);
+
         using namespace LuaRegister;
 
         LuaImguiQuickRegister(Begin);
         // LuaImguiQuickRegister(End);
-        LuaRegister::GlobalRegister(
+        LuaRegister::PushRegister(
             lua,
             "End",
             +[](lua_State* lua) {
@@ -43,7 +45,7 @@ namespace LuaImGui
             bool (*)(ImGuiID, const ImVec2&, bool, ImGuiWindowFlags));
 
         // LuaImguiQuickRegister(EndChild);
-        LuaRegister::GlobalRegister(
+        LuaRegister::PushRegister(
             lua,
             "EndChild",
             +[](lua_State* lua) {
@@ -56,7 +58,7 @@ namespace LuaImGui
         LuaImguiQuickRegister(IsWindowCollapsed);
         LuaImguiQuickRegister(IsWindowFocused);
         LuaImguiQuickRegister(IsWindowHovered);
-        LuaRegister::GlobalRegister(
+        LuaRegister::PushRegister(
             lua,
             "WantCaptureMouse",
             +[](lua_State* lua) { return ImGui::GetIO().WantCaptureMouse; });
@@ -162,31 +164,31 @@ namespace LuaImGui
         // Below is the "correct" answer but the link above captures the feeling
         // of seeing +lambda for the first time
         // https://stackoverflow.com/questions/17822131
-        GlobalRegister(
+        PushRegister(
             lua,
             "Text",
             +[](VStr var) { return ImGui::Text("%s", var.strcpy().data()); });
-        GlobalRegister(
+        PushRegister(
             lua,
             "TextColored",
             +[](const ImVec4& col, VStr var) {
                 return ImGui::TextColored(col, "%s", var.strcpy().data());
             });
-        GlobalRegister(
+        PushRegister(
             lua,
             "TextDisabled",
             +[](VStr var) { return ImGui::TextDisabled("%s", var.strcpy().data()); });
-        GlobalRegister(
+        PushRegister(
             lua,
             "TextWrapped",
             +[](VStr var) { return ImGui::TextWrapped("%s", var.strcpy().data()); });
-        GlobalRegister(
+        PushRegister(
             lua,
             "LabelText",
             +[](const char* label, VStr var) {
                 return ImGui::LabelText(label, "%s", var.strcpy().data());
             });
-        GlobalRegister(
+        PushRegister(
             lua,
             "BulletText",
             +[](VStr var) { return ImGui::BulletText("%s", var.strcpy().data()); });
@@ -233,7 +235,7 @@ namespace LuaImGui
         LuaImguiQuickRegister(VSliderInt);
 
         // InputText
-        LuaRegister::GlobalRegister(
+        LuaRegister::PushRegister(
             lua,
             "InputText",
             +[](lua_State* lua, const char* label, const char* text) -> Placeholder {
@@ -261,17 +263,17 @@ namespace LuaImGui
         LuaImguiQuickRegister(SetColorEditOptions);
 
         LuaImguiQuickRegisterOverload(TreeNode, bool (*)(const char*));
-        LuaRegister::GlobalRegister(
+        LuaRegister::PushRegister(
             lua,
             "TreeNodeID",
             +[](const char* id, VStr var) {
                 return ImGui::TreeNode(id, "%s", var.strcpy().data());
             });
-        LuaRegister::GlobalRegister(
+        LuaRegister::PushRegister(
             lua,
             "TreeNodeEx",
             static_cast<bool (*)(const char*, ImGuiTreeNodeFlags)>(ImGui::TreeNodeEx));
-        LuaRegister::GlobalRegister(
+        LuaRegister::PushRegister(
             lua,
             "TreeNodeExID",
             +[](const char* id, ImGuiTreeNodeFlags flags, VStr var) {
@@ -433,6 +435,7 @@ namespace LuaImGui
     lua_pushinteger(lua, ImGuiWindowFlags_##flag); \
     lua_settable(lua, -3);
 
+        lua_pushstring(lua, "WindowFlags");
         lua_createtable(lua, 0, 0);
         LuaImguiPushWindowFlag(None);
         LuaImguiPushWindowFlag(NoTitleBar);
@@ -459,13 +462,14 @@ namespace LuaImGui
         LuaImguiPushWindowFlag(NoNav);
         LuaImguiPushWindowFlag(NoDecoration);
         LuaImguiPushWindowFlag(NoInputs);
-        lua_setglobal(lua, "WindowFlags");
+        lua_settable(lua, -3);
 
 #define LuaImguiPushCol(flag)              \
     lua_pushstring(lua, #flag);            \
     lua_pushinteger(lua, ImGuiCol_##flag); \
     lua_settable(lua, -3);
 
+        lua_pushstring(lua, "Col");
         lua_createtable(lua, 0, 0);
         LuaImguiPushCol(Text);
         LuaImguiPushCol(TextDisabled);
@@ -522,13 +526,14 @@ namespace LuaImGui
         LuaImguiPushCol(NavWindowingHighlight);
         LuaImguiPushCol(NavWindowingDimBg);
         LuaImguiPushCol(ModalWindowDimBg);
-        lua_setglobal(lua, "Col");
+        lua_settable(lua, -3);
 
 #define LuaImguiPushTreeNodeFlag(flag)               \
     lua_pushstring(lua, #flag);                      \
     lua_pushinteger(lua, ImGuiTreeNodeFlags_##flag); \
     lua_settable(lua, -3);
 
+        lua_pushstring(lua, "TreeNodeFlag");
         lua_createtable(lua, 0, 0);
         LuaImguiPushTreeNodeFlag(None);
         LuaImguiPushTreeNodeFlag(Selected);
@@ -546,6 +551,8 @@ namespace LuaImGui
         LuaImguiPushTreeNodeFlag(SpanFullWidth);
         LuaImguiPushTreeNodeFlag(NavLeftJumpsBackHere);
         LuaImguiPushTreeNodeFlag(CollapsingHeader);
-        lua_setglobal(lua, "TreeNodeFlag");
+        lua_settable(lua, -3);
+
+        lua_setglobal(lua, "ImGui");
     }
 }

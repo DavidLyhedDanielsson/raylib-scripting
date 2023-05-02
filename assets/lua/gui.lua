@@ -129,22 +129,22 @@ function imgui()
         end
     end
 
-    if BeginMainMenuBar() then
-        if MenuItem("Save", "", false, true) then
+    if ImGui.BeginMainMenuBar() then
+        if ImGui.MenuItem("Save", "", false, true) then
             SaveLevel()
         end
-        if MenuItem("Load", "", false, true) then
+        if ImGui.MenuItem("Load", "", false, true) then
             LoadLevel()
         end
 
-        if BeginMenu("Spawn entity...", "", false, true) then
-            searchText = InputText("Filter", searchText)
+        if ImGui.BeginMenu("Spawn entity...", "", false, true) then
+            searchText = ImGui.InputText("Filter", searchText)
 
-            BeginChild("EntityList", { x = 0, y = 200 })
+            ImGui.BeginChild("EntityList", { x = 0, y = 200 })
             if #searchText > 0 then
                 for key, value in ipairs(Assets) do
                     if string.match(string.lower(value), searchText) then
-                        if SmallButton(value) then
+                        if ImGui.SmallButton(value) then
                             local entity = CreateEntity()
                             AddComponentOrPrintError("Render", entity, { assetName = value })
                             AddComponentOrPrintError("Transform", entity,
@@ -155,7 +155,7 @@ function imgui()
                 end
             else
                 for key, value in ipairs(Assets) do
-                    if SmallButton(value) then
+                    if ImGui.SmallButton(value) then
                         local entity = CreateEntity()
                         AddComponentOrPrintError("Render", entity, { assetName = value })
                         AddComponentOrPrintError("Transform", entity,
@@ -164,11 +164,11 @@ function imgui()
                     end
                 end
             end
-            EndChild()
-            EndMenu()
+            ImGui.EndChild()
+            ImGui.EndMenu()
         end
 
-        if MenuItem("Spawn dude", "", false, true) then
+        if ImGui.MenuItem("Spawn dude", "", false, true) then
             print("Goals: ", #enemyGoals)
             if #enemyGoals > 0 then
                 for _, spawnEntity in ipairs(enemySpawns) do
@@ -200,18 +200,18 @@ function imgui()
             end
         end
 
-        if MenuItem("Spawn projectile", "", false, true) then
+        if ImGui.MenuItem("Spawn projectile", "", false, true) then
             local all = GetAllEntitiesWithComponent("AreaTracker")
             for _, v in pairs(all) do
                 SpawnDarts(v)
             end
         end
 
-        EndMainMenuBar()
+        ImGui.EndMainMenuBar()
     end
 
     function ImGuiEntity(entity)
-        if Button("DuplicateEntity") then
+        if ImGui.Button("DuplicateEntity") then
             DuplicateEntity(entity)
         end
 
@@ -249,7 +249,7 @@ function imgui()
         for componentName, info in pairs(components) do
             if info.hasComponent then
                 checked = true
-                local open, clicked = CollapsingHeaderToggle(componentName, checked)
+                local open, clicked = ImGui.CollapsingHeaderToggle(componentName, checked)
                 if open then
                     Modify(componentName, entity)
                 end
@@ -260,20 +260,20 @@ function imgui()
             end
         end
 
-        if BeginCombo("##addcomponent", "Add component") then
+        if ImGui.BeginCombo("##addcomponent", "Add component") then
             for componentName, info in pairs(components) do
                 if not info.hasComponent and componentName ~= "Camera" then
-                    if Selectable(componentName) then
+                    if ImGui.Selectable(componentName) then
                         AddComponentOrPrintError(componentName, entity, info.default)
                     end
                 end
             end
-            EndCombo()
+            ImGui.EndCombo()
         end
     end
 
-    Begin("Entity")
-    Text("Selected entity information")
+    ImGui.Begin("Entity")
+    ImGui.Text("Selected entity information")
     if selectedEntity ~= nil then
         if ValidEntity(selectedEntity) then
             ImGuiEntity(selectedEntity)
@@ -285,10 +285,10 @@ function imgui()
     for k, _ in ipairs(enemySpawns) do enemySpawns[k] = nil end
     for k, _ in ipairs(enemyGoals) do enemyGoals[k] = nil end
 
-    Separator()
-    BeginChild("AllEntities")
+    ImGui.Separator()
+    ImGui.BeginChild("AllEntities")
     Each(function(entity)
-        PushID(entity)
+        ImGui.PushID(entity)
 
         -- Store these here so another call to `Each` can be avoided, though it
         -- does tie the logic to the GUI which is iffy
@@ -299,25 +299,25 @@ function imgui()
         end
 
         local destroy = false
-        if SmallButton("X") then
+        if ImGui.SmallButton("X") then
             destroy = true
         end
-        SameLine()
+        ImGui.SameLine()
 
-        local flags = TreeNodeFlag.None
+        local flags = ImGui.TreeNodeFlag.None
         if entity == selectedEntity then
-            flags = TreeNodeFlag.Selected
+            flags = ImGui.TreeNodeFlag.Selected
         end
         if newSelectedEntity ~= nil and newSelectedEntity == entity then
-            SetScrollHereY()
+            ImGui.SetScrollHereY()
         end
-        local open = TreeNodeEx("Entity " .. entity, flags)
+        local open = ImGui.TreeNodeEx("Entity " .. entity, flags)
         if open then
-            if Button("Select") then
+            if ImGui.Button("Select") then
                 newSelectedEntity = entity
             end
             ImGuiEntity(entity)
-            TreePop()
+            ImGui.TreePop()
         end
 
         if destroy then
@@ -326,17 +326,17 @@ function imgui()
                 selectedEntity = nil
             end
         end
-        PopID()
+        ImGui.PopID()
     end)
-    EndChild()
-    End()
+    ImGui.EndChild()
+    ImGui.End()
 
     if newSelectedEntity ~= nil then
         selectedEntity = newSelectedEntity
         newSelectedEntity = nil
     end
 
-    if not WantCaptureMouse() then
+    if not ImGui.WantCaptureMouse() then
         if IsMouseButtonPressed(0) then
             local ray = GetMouseRay(GetMousePosition())
             local hitEntity = GetRayCollision(ray)
