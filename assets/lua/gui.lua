@@ -119,10 +119,10 @@ function imgui()
         cooldown = cooldown - 1
     end
 
-    if IsKeyPressed(Key.D) and IsKeyDown(Key.LEFT_CONTROL) and selectedEntity ~= nil then
+    if Raylib.IsKeyPressed(Raylib.Key.D) and Raylib.IsKeyDown(Raylib.Key.LEFT_CONTROL) and selectedEntity ~= nil then
         DuplicateEntity(selectedEntity)
     end
-    if IsKeyPressed(Key.DELETE) and selectedEntity ~= nil then
+    if Raylib.IsKeyPressed(Raylib.Key.DELETE) and selectedEntity ~= nil then
         DestroyEntity(selectedEntity)
         if selectedEntity == entity then
             selectedEntity = nil
@@ -337,9 +337,9 @@ function imgui()
     end
 
     if not ImGui.WantCaptureMouse() then
-        if IsMouseButtonPressed(0) then
-            local ray = GetMouseRay(GetMousePosition())
-            local hitEntity = GetRayCollision(ray)
+        if Raylib.IsMouseButtonPressed(0) then
+            local ray = Raylib.GetMouseRay(Raylib.GetMousePosition())
+            local hitEntity = Raylib.GetRayCollision(ray)
             newSelectedEntity = hitEntity
 
             if newSelectedEntity == nil then

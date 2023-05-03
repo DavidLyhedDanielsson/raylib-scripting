@@ -63,7 +63,8 @@ namespace LuaRaylib
 
     void Register(lua_State* lua, entt::registry* registry)
     {
-#define QuickRegister(Func) LuaRegister::GlobalRegister(lua, #Func, Func);
+#define QuickRegister(Func) LuaRegister::PushRegister(lua, #Func, Func);
+        lua_createtable(lua, 0, 0);
 
         // Screen
         QuickRegister(GetScreenWidth);
@@ -139,7 +140,7 @@ namespace LuaRaylib
         QuickRegister(IsKeyReleased);
         QuickRegister(IsKeyUp);
 
-        LuaRegister::GlobalRegisterMember(
+        LuaRegister::PushRegisterMember(
             lua,
             "GetMouseRay",
             registry,
@@ -151,7 +152,7 @@ namespace LuaRaylib
                     });
                 return GetMouseRay(mousePosition, camera);
             });
-        LuaRegister::GlobalRegisterMember(
+        LuaRegister::PushRegisterMember(
             lua,
             "GetWorldToScreen",
             registry,
@@ -164,7 +165,7 @@ namespace LuaRaylib
                 return GetWorldToScreen(world, camera);
             });
 
-        LuaRegister::GlobalRegisterMember(
+        LuaRegister::PushRegisterMember(
             lua,
             "GetRayCollision",
             registry,
@@ -178,8 +179,8 @@ namespace LuaRaylib
                 return {};
             });
 
+        lua_pushstring(lua, "Key");
         lua_createtable(lua, 0, 0);
-
         lua_pushinteger(lua, (lua_Integer)KEY_APOSTROPHE);
         lua_setfield(lua, -2, "APOSTROPHE");
         lua_pushinteger(lua, (lua_Integer)KEY_COMMA);
@@ -392,7 +393,8 @@ namespace LuaRaylib
         lua_setfield(lua, -2, "KP_ENTER");
         lua_pushinteger(lua, (lua_Integer)KEY_KP_EQUAL);
         lua_setfield(lua, -2, "KP_EQUAL");
+        lua_settable(lua, -3);
 
-        lua_setglobal(lua, "Key");
+        lua_setglobal(lua, "Raylib");
     }
 }
