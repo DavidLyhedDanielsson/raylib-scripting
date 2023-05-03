@@ -132,10 +132,10 @@ namespace LuaEntt
                 const auto target = registry->get<Component::Transform>((entt::entity)targetEntity);
 
                 Matrix mat = MatrixRotateZYX(target.rotation);
-                Vector3 newRotation = Vector3Transform(transformee.rotation, mat);
+                Vector3 newPosition = Vector3Transform(transformee.position, mat);
 
-                transformee.rotation = newRotation;
-                transformee.position = Vector3Add(transformee.position, target.position);
+                transformee.rotation = target.rotation;
+                transformee.position = Vector3Add(newPosition, target.position);
             });
 
         LuaRegister::PushRegisterMember(
