@@ -216,6 +216,27 @@ namespace LuaEntt
 
         LuaRegister::PushRegisterMember(
             lua,
+            "ReplaceComponent",
+            registry,
+            +[](entt::registry* registry,
+                lua_State* lua,
+                const char* componentName,
+                lua_Integer entity,
+                LuaRegister::Placeholder component) {
+                EntityReflection::RemoveComponent(componentName, registry, (entt::entity)entity);
+                if(EntityReflection::AddComponentFromLua(
+                       lua,
+                       componentName,
+                       registry,
+                       (entt::entity)entity))
+                {
+                    lua_pushnil(lua);
+                }
+                return LuaRegister::Placeholder{};
+            });
+
+        LuaRegister::PushRegisterMember(
+            lua,
             "RemoveComponent",
             registry,
             +[](entt::registry* registry,
