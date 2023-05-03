@@ -349,8 +349,8 @@ function imgui()
     end
 
     if selectedEntity ~= nil then
-        Gizmo(selectedEntity, not usingGizmo)
-        usingGizmo = IsUsingGizmo()
+        ImGuizmo.Gizmo(selectedEntity, not usingGizmo)
+        usingGizmo = ImGuizmo.IsUsing()
     else
         usingGizmo = false
     end

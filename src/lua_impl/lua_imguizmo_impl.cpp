@@ -8,7 +8,7 @@
 #include <external/raylib.hpp>
 #include <lua_impl/lua_register.hpp>
 
-#define LuaImguizmoQuickRegister(X) LuaRegister::GlobalRegister(lua, #X, ImGuizmo::X)
+#define LuaImGuizmoQuickRegister(X) LuaRegister::PushRegister(lua, #X, ImGuizmo::X)
 
 namespace LuaImGuizmo
 {
@@ -16,12 +16,11 @@ namespace LuaImGuizmo
     {
         using namespace LuaRegister;
 
-        LuaRegister::GlobalRegister(
-            lua,
-            "IsUsingGizmo",
-            +[]() { return ImGuizmo::IsUsing(); });
+        lua_createtable(lua, 0, 0);
 
-        GlobalRegisterMember(
+        LuaImGuizmoQuickRegister(IsUsing);
+
+        PushRegisterMember(
             lua,
             "Gizmo",
             registry,
@@ -89,5 +88,7 @@ namespace LuaImGuizmo
                     };
                 }
             });
+
+        lua_setglobal(lua, "ImGuizmo");
     }
 }
