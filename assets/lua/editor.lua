@@ -97,28 +97,30 @@ end
 
 function SpawnDarts(transformTarget)
     local offsets = {
-        { x = 0.05,  y = 1.286, z = 0.492 },
-        { x = -0.05, y = 1.286, z = -0.492 },
-        { x = 0,     y = 0.787, z = 0 },
-        { x = 0.03,  y = 0.286, z = 0.492 },
-        { x = 0.07,  y = 0.286, z = -0.492 },
+        { x = 0.492,  y = 1.286, z = 0.05 },
+        { x = -0.492, y = 1.286, z = -0.05 },
+        { x = 0,      y = 0.787, z = 0 },
+        { x = 0.492,  y = 0.286, z = 0.03 },
+        { x = -0.492, y = 0.286, z = 0.07 },
     }
 
     for i = 1, 5 do
         local startPosition = { x = offsets[i].x, y = offsets[i].y, z = offsets[i].z }
-        local startVelocity = { x = -0.25, y = 0, z = 0 }
+        local velocity = 0.15
 
         local entity = Entity.Create()
         AddComponentOrPrintError("Render", entity, { assetName = "Dart" })
         AddComponentOrPrintError("Transform", entity,
-            { position = startPosition, rotation = { x = 0, y = 3.14 / 2, z = 3.14 / 2 } })
-        -- TODO: startVelocity is not rotated
-        AddComponentOrPrintError("Velocity", entity, startVelocity)
+            { position = startPosition, rotation = { x = 0, y = 0, z = 0 } })
         AddComponentOrPrintError("Projectile", entity, { damage = 1 })
 
         Entity.TransformTo(entity, transformTarget)
         local transformedPosition = Entity.Get(entity).Transform.position
         AddComponentOrPrintError("MaxRange", entity, { maxDistance = 5, distanceFrom = transformedPosition })
+
+        local forward = Entity.GetForwardVector(entity);
+        AddComponentOrPrintError("Velocity", entity,
+            { x = forward.x * velocity, y = forward.y * velocity, z = forward.z * velocity })
     end
 end
 

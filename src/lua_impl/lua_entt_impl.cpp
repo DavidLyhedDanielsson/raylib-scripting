@@ -121,6 +121,23 @@ namespace LuaEntt
 
         LuaRegister::PushRegisterMember(
             lua,
+            "GetForwardVector",
+            registry,
+            +[](entt::registry* registry,
+                lua_State* lua,
+                lua_Integer entity) -> LuaRegister::Placeholder {
+                const auto target = registry->get<Component::Transform>((entt::entity)entity);
+
+                Matrix mat = MatrixRotateZYX(target.rotation);
+                Vector3 forward = Vector3Transform(Vector3{0.0f, 0.0f, 1.0f}, mat);
+
+                LuaRegister::LuaSetFunc<Vector3>(lua, forward);
+
+                return {};
+            });
+
+        LuaRegister::PushRegisterMember(
+            lua,
             "TransformTo",
             registry,
             +[](entt::registry* registry,
