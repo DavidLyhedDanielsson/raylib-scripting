@@ -25,7 +25,21 @@ void LoadAssets()
 {
     // Shader with very basic lighting
     if(!shader.has_value())
-        shader = LoadShader(AssetPath("lit.vs").data(), AssetPath("lit.fs").data());
+#if defined(GRAPHICS_API_OPENGL_ES2)
+        shader = LoadShader(
+            AssetPath("shaders/lit_es2.vs").data(),
+            AssetPath("shaders/lit_es2.fs").data());
+#elif defined(GRAPHICS_API_OPENGL_21)
+        shader = LoadShader(
+            AssetPath("shaders/lit_21.vs").data(),
+            AssetPath("shaders/lit_21.fs").data());
+#elif defined(GRAPHICS_API_OPENGL_33)
+        shader = LoadShader(
+            AssetPath("shaders/lit_33.vs").data(),
+            AssetPath("shaders/lit_33.fs").data());
+#else
+    #error Aaaaaaaaah
+#endif
 
     for(const auto& entry :
         std::filesystem::directory_iterator(std::filesystem::path(DASSET_ROOT) / "ruins"))
