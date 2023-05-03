@@ -12,63 +12,51 @@
 #include <entity/tile.hpp>
 #include <entity/transform.hpp>
 #include <entity/velocity.hpp>
+#include <entity_reflection/entity_reflection.hpp>
 #include <entt/entt.hpp>
 #include <external/lua.hpp>
 #include <lua_impl/lua_register.hpp>
+#include <lua_impl/lua_register_types.hpp>
 
-#define DeclareRegistry auto registry = (entt::registry*)lua_touserdata(lua, lua_upvalueindex(1))
-#define LuaFunc(Name) extern "C" int Name(lua_State* lua)
+#define QuickRegister(Func) LuaRegister::PushRegisterMember(lua, #Func, registry, Func);
 
 namespace LuaEntt
 {
-    void RegisterTypes(lua_State* lua)
-    {
-        // Available models
-        // lua_newtable(lua);
-        // for(int i = 0; i < (int)Asset::Last; ++i)
-        // {
-        //     lua_pushstring(lua, GetAssetName((Asset)i));
-        //     lua_pushnumber(lua, i);
-        //     lua_settable(lua, -3);
-        // }
-        // lua_setglobal(lua, "Asset");
-    }
-
-    lua_Integer CreateEntity(entt::registry* registry)
-    {
-        return static_cast<lua_Integer>(registry->create());
-    }
-
     void Register(lua_State* lua, entt::registry* registry)
     {
-        RegisterTypes(lua);
+        lua_createtable(lua, 0, 0);
 
-#define QuickRegister(Func) LuaRegister::GlobalRegisterMember(lua, #Func, registry, Func);
-
-        QuickRegister(CreateEntity);
-        LuaRegister::GlobalRegisterMember(
+        LuaRegister::PushRegisterMember(
             lua,
-            "ClearRegistry",
+            "Create",
             registry,
-            +[](entt::registry* registry, lua_State* lua) { registry->clear(); });
+            +[](entt::registry* registry, lua_State* lua) {
+                return (lua_Integer)registry->create();
+            });
 
-        LuaRegister::GlobalRegisterMember(
+        LuaRegister::PushRegisterMember(
             lua,
-            "DestroyEntity",
+            "Destroy",
             registry,
             +[](entt::registry* registry, lua_State* lua, lua_Integer entity) {
                 registry->destroy((entt::entity)entity);
             });
 
-        LuaRegister::GlobalRegisterMember(
+        LuaRegister::PushRegisterMember(
             lua,
-            "ValidEntity",
+            "IsValid",
             registry,
             +[](entt::registry* registry, lua_State* lua, lua_Integer entity) {
                 return registry->valid((entt::entity)entity);
             });
 
-        LuaRegister::GlobalRegisterMember(
+        LuaRegister::PushRegisterMember(
+            lua,
+            "ClearRegistry",
+            registry,
+            +[](entt::registry* registry, lua_State* lua) { registry->clear(); });
+
+        LuaRegister::PushRegisterMember(
             lua,
             "Each",
             registry,
@@ -87,14 +75,15 @@ namespace LuaEntt
                 });
             });
 
-        LuaRegister::GlobalRegisterMember(
+        LuaRegister::PushRegisterMember(
             lua,
-            "EnttForEach",
+            "View",
             registry,
             +[](entt::registry* registry,
                 lua_State* lua,
                 LuaRegister::Placeholder func,
                 LuaRegister::Variadic<const char*> var) {
+                // Old function
                 entt::runtime_view view;
 
                 const auto& render = registry->storage<Component::Render>();
@@ -121,7 +110,7 @@ namespace LuaEntt
                 });
             });
 
-        LuaRegister::GlobalRegisterMember(
+        LuaRegister::PushRegisterMember(
             lua,
             "TrackerHasEntities",
             registry,
@@ -130,7 +119,7 @@ namespace LuaEntt
                             .entitiesInside.empty();
             });
 
-        LuaRegister::GlobalRegisterMember(
+        LuaRegister::PushRegisterMember(
             lua,
             "TransformTo",
             registry,
@@ -148,5 +137,160 @@ namespace LuaEntt
                 transformee.rotation = newRotation;
                 transformee.position = Vector3Add(transformee.position, target.position);
             });
+
+        LuaRegister::PushRegisterMember(
+            lua,
+            "Duplicate",
+            registry,
+            +[](entt::registry* registry,
+                lua_State* lua,
+                lua_Integer entity,
+                LuaRegister::Placeholder callback) {
+                EntityReflection::DuplicateEntity(*registry, (entt::entity)entity);
+            });
+
+        LuaRegister::PushRegisterMember(
+            lua,
+            "Get",
+            registry,
+            +[](entt::registry* registry,
+                lua_State* lua,
+                lua_Integer entity) -> LuaRegister::Placeholder {
+                lua_createtable(lua, 1, 0);
+                registry->each([&](entt::entity entity) {
+                    EntityReflection::PushEntityToLua(lua, registry, entity);
+                });
+                lua_geti(lua, -1, entity);
+                // Pop table
+                lua_rotate(lua, lua_gettop(lua) - 1, 1);
+                lua_pop(lua, 1);
+                return {};
+            });
+
+        LuaRegister::PushRegisterMember(
+            lua,
+            "GetAllWithComponent",
+            registry,
+            +[](entt::registry* registry,
+                lua_State* lua,
+                const char* componentName) -> LuaRegister::Placeholder {
+                lua_createtable(lua, 0, 0);
+
+                EntityReflection::PushAllEntitiesToLua(lua, componentName, registry);
+
+                return {};
+            });
+
+        LuaRegister::PushRegisterMember(
+            lua,
+            "DumpAll",
+            registry,
+            +[](entt::registry* registry, lua_State* lua) -> LuaRegister::Placeholder {
+                lua_createtable(lua, registry->alive(), 0);
+                registry->each([&](entt::entity entity) {
+                    EntityReflection::PushEntityToLua(lua, registry, entity);
+                });
+                return {};
+            });
+
+        // Component control
+        LuaRegister::PushRegisterMember(
+            lua,
+            "AddComponent",
+            registry,
+            +[](entt::registry* registry,
+                lua_State* lua,
+                const char* componentName,
+                lua_Integer entity,
+                LuaRegister::Placeholder component) {
+                if(EntityReflection::AddComponentFromLua(
+                       lua,
+                       componentName,
+                       registry,
+                       (entt::entity)entity))
+                {
+                    lua_pushnil(lua);
+                }
+                return LuaRegister::Placeholder{};
+            });
+
+        LuaRegister::PushRegisterMember(
+            lua,
+            "RemoveComponent",
+            registry,
+            +[](entt::registry* registry,
+                lua_State* lua,
+                const char* componentName,
+                lua_Integer entity) {
+                EntityReflection::RemoveComponent(componentName, registry, (entt::entity)entity);
+            });
+
+        LuaRegister::PushRegisterMember(
+            lua,
+            "ImGuiModify",
+            registry,
+            +[](entt::registry* registry,
+                lua_State* lua,
+                const char* componentName,
+                lua_Integer entity) {
+                EntityReflection::Modify(componentName, *registry, (entt::entity)entity);
+            });
+
+        LuaRegister::PushRegisterMember(
+            lua,
+            "ImGuiModifyEntityOrElse",
+            registry,
+            +[](entt::registry* registry,
+                lua_State* lua,
+                lua_Integer entity,
+                LuaRegister::Placeholder callback) {
+                EntityReflection::ModifyEntityOrElse(*registry, (entt::entity)entity, [&]() {
+                    lua_pcall(lua, 0, 0, callback.stackIndex);
+                });
+            });
+
+        LuaRegister::PushRegisterMember(
+            lua,
+            "HasComponentOrElse",
+            registry,
+            +[](entt::registry* registry,
+                lua_State* lua,
+                const char* component,
+                lua_Integer entity,
+                LuaRegister::Placeholder callback) {
+                return EntityReflection::IfComponentMissing(
+                    component,
+                    *registry,
+                    (entt::entity)entity,
+                    [&]() { lua_pcall(lua, 0, 0, callback.stackIndex); });
+            });
+
+        LuaRegister::PushRegisterMember(
+            lua,
+            "HasComponent",
+            registry,
+            +[](entt::registry* registry,
+                lua_State* lua,
+                const char* component,
+                lua_Integer entity,
+                LuaRegister::Placeholder callback) {
+                return EntityReflection::HasComponent(component, *registry, (entt::entity)entity);
+            });
+
+        LuaRegister::PushRegisterMember(
+            lua,
+            "ForEachMissingComponent",
+            registry,
+            +[](entt::registry* registry,
+                lua_State* lua,
+                const char* component,
+                lua_Integer entity,
+                LuaRegister::Placeholder callback) {
+                EntityReflection::ForEachMissing(component, *registry, (entt::entity)entity, [&]() {
+                    lua_pcall(lua, 0, 0, callback.stackIndex);
+                });
+            });
+
+        lua_setglobal(lua, "Entity");
     }
 }

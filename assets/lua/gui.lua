@@ -1,5 +1,5 @@
 function AddComponentOrPrintError(...)
-    local errorMessage = AddComponent(...)
+    local errorMessage = Entity.AddComponent(...)
     if errorMessage then
         print("Error when trying to add component:", errorMessage)
     end
@@ -31,7 +31,7 @@ function SaveLevel()
     local file = io.open("../assets/default_level.lua", "w+")
     file:write("return{")
     --print("{")
-    for entity, entityInfo in pairs(DumpEntities()) do
+    for entity, entityInfo in pairs(Entity.DumpAll()) do
         file:write("[", entity, "]={")
         --print("  ", entity, " = {")
         RecursiveWrite(file, entityInfo)
@@ -47,10 +47,10 @@ end
 function LoadLevel()
     local level = dofile("../assets/default_level.lua")
     if level ~= nil then
-        ClearRegistry()
+        Entity.ClearRegistry()
 
         for _entity, components in pairs(level) do
-            local entity = CreateEntity()
+            local entity = Entity.Create()
 
             for component, data in pairs(components) do
                 AddComponentOrPrintError(component, entity, data)
@@ -93,24 +93,24 @@ function SpawnDarts(transformTarget)
         local startPosition = { x = offsets[i].x, y = offsets[i].y, z = offsets[i].z }
         local startVelocity = { x = -0.25, y = 0, z = 0 }
 
-        local entity = CreateEntity()
+        local entity = Entity.Create()
         AddComponentOrPrintError("Render", entity, { assetName = "Dart" })
         AddComponentOrPrintError("Transform", entity,
             { position = startPosition, rotation = { x = 0, y = 3.14 / 2, z = 3.14 / 2 } })
         AddComponentOrPrintError("Velocity", entity, startVelocity)
         AddComponentOrPrintError("Projectile", entity, { damage = 1 })
 
-        TransformTo(entity, transformTarget)
-        local transformedPosition = GetEntity(entity).Transform.position
+        Entity.TransformTo(entity, transformTarget)
+        local transformedPosition = Entity.Get(entity).Transform.position
         AddComponentOrPrintError("MaxRange", entity, { maxDistance = 5, distanceFrom = transformedPosition })
     end
 end
 
 function imgui()
-    local all = GetAllEntitiesWithComponent("AreaTracker")
+    local all = Entity.GetAllWithComponent("AreaTracker")
     if cooldown == 0 then
         for _, v in pairs(all) do
-            if TrackerHasEntities(v) then
+            if Entity.TrackerHasEntities(v) then
                 SpawnDarts(v)
                 cooldown = 30
             end
@@ -120,10 +120,10 @@ function imgui()
     end
 
     if Raylib.IsKeyPressed(Raylib.Key.D) and Raylib.IsKeyDown(Raylib.Key.LEFT_CONTROL) and selectedEntity ~= nil then
-        DuplicateEntity(selectedEntity)
+        Entity.Duplicate(selectedEntity)
     end
     if Raylib.IsKeyPressed(Raylib.Key.DELETE) and selectedEntity ~= nil then
-        DestroyEntity(selectedEntity)
+        Entity.Destroy(selectedEntity)
         if selectedEntity == entity then
             selectedEntity = nil
         end
@@ -145,7 +145,7 @@ function imgui()
                 for key, value in ipairs(Assets) do
                     if string.match(string.lower(value), searchText) then
                         if ImGui.SmallButton(value) then
-                            local entity = CreateEntity()
+                            local entity = Entity.Create()
                             AddComponentOrPrintError("Render", entity, { assetName = value })
                             AddComponentOrPrintError("Transform", entity,
                                 { position = { x = 0, y = 0, z = 0 }, rotation = { x = 0, y = 0, z = 0 } })
@@ -156,7 +156,7 @@ function imgui()
             else
                 for key, value in ipairs(Assets) do
                     if ImGui.SmallButton(value) then
-                        local entity = CreateEntity()
+                        local entity = Entity.Create()
                         AddComponentOrPrintError("Render", entity, { assetName = value })
                         AddComponentOrPrintError("Transform", entity,
                             { position = { x = 0, y = 0, z = 0 }, rotation = { x = 0, y = 0, z = 0 } })
@@ -181,10 +181,10 @@ function imgui()
                         end
                     end
 
-                    local spawnPosition = GetEntity(spawnEntity).Transform.position
-                    local goalPosition = GetEntity(closestGoal).Transform.position
+                    local spawnPosition = Entity.Get(spawnEntity).Transform.position
+                    local goalPosition = Entity.Get(closestGoal).Transform.position
 
-                    local entity = CreateEntity()
+                    local entity = Entity.Create()
                     AddComponentOrPrintError("Render", entity,
                         { assetName = "Barrel" })
                     AddComponentOrPrintError("Transform", entity,
@@ -201,7 +201,7 @@ function imgui()
         end
 
         if ImGui.MenuItem("Spawn projectile", "", false, true) then
-            local all = GetAllEntitiesWithComponent("AreaTracker")
+            local all = Entity.GetAllWithComponent("AreaTracker")
             for _, v in pairs(all) do
                 SpawnDarts(v)
             end
@@ -212,50 +212,49 @@ function imgui()
 
     function ImGuiEntity(entity)
         if ImGui.Button("DuplicateEntity") then
-            DuplicateEntity(entity)
+            Entity.Duplicate(entity)
         end
 
         local components = {
             Render = {
-                hasComponent = HasComponent("Render", entity),
+                hasComponent = Entity.HasComponent("Render", entity),
                 default = { assetName = "Barrel" }
             },
             Transform = {
-                hasComponent = HasComponent("Transform", entity),
+                hasComponent = Entity.HasComponent("Transform", entity),
                 default = { position = { x = 0, y = 0, z = 0 }, rotation = { x = 0, y = 0, z = 0 } }
             },
             Velocity = {
-                hasComponent = HasComponent("Velocity", entity),
+                hasComponent = Entity.HasComponent("Velocity", entity),
                 default = { x = 0.0, y = 0.0, z = 0.0 }
             },
-            Tile = { hasComponent = HasComponent("Tile", entity) },
-            EnemyGoal = { hasComponent = HasComponent("EnemyGoal", entity) },
-            EnemySpawn = { hasComponent = HasComponent("EnemySpawn", entity) },
-            Camera = { hasComponent = HasComponent("Camera", entity) },
-            MoveTowards = { hasComponent = HasComponent("MoveTowards", entity) },
-            Projectile = { hasComponent = HasComponent("Projectile", entity), default = { damage = 1 } },
-            Health = { hasComponent = HasComponent("Health", entity), default = { currentHealth = 2 } },
+            Tile = { hasComponent = Entity.HasComponent("Tile", entity) },
+            EnemyGoal = { hasComponent = Entity.HasComponent("EnemyGoal", entity) },
+            EnemySpawn = { hasComponent = Entity.HasComponent("EnemySpawn", entity) },
+            Camera = { hasComponent = Entity.HasComponent("Camera", entity) },
+            MoveTowards = { hasComponent = Entity.HasComponent("MoveTowards", entity) },
+            Projectile = { hasComponent = Entity.HasComponent("Projectile", entity), default = { damage = 1 } },
+            Health = { hasComponent = Entity.HasComponent("Health", entity), default = { currentHealth = 2 } },
             MaxRange = {
-                hasComponent = HasComponent("MaxRange", entity),
+                hasComponent = Entity.HasComponent("MaxRange", entity),
                 -- This has to be configured manually
                 default = { maxDistance = 99999999, distanceFrom = { x = 0, y = 0, z = 0 } }
             },
             AreaTracker = {
-                hasComponent = HasComponent("AreaTracker", entity),
+                hasComponent = Entity.HasComponent("AreaTracker", entity),
                 default = { offset = { x = 0, y = 0, z = 0 }, size = { x = 2, y = 2, z = 2 } }
             },
         }
 
         for componentName, info in pairs(components) do
             if info.hasComponent then
-                checked = true
-                local open, clicked = ImGui.CollapsingHeaderToggle(componentName, checked)
+                local open, clicked = ImGui.CollapsingHeaderToggle(componentName, true)
                 if open then
-                    Modify(componentName, entity)
+                    Entity.ImGuiModify(componentName, entity)
                 end
 
                 if not clicked then
-                    RemoveComponent(componentName, entity)
+                    Entity.RemoveComponent(componentName, entity)
                 end
             end
         end
@@ -275,7 +274,7 @@ function imgui()
     ImGui.Begin("Entity")
     ImGui.Text("Selected entity information")
     if selectedEntity ~= nil then
-        if ValidEntity(selectedEntity) then
+        if Entity.IsValid(selectedEntity) then
             ImGuiEntity(selectedEntity)
         else
             selectedEntity = nil
@@ -287,14 +286,14 @@ function imgui()
 
     ImGui.Separator()
     ImGui.BeginChild("AllEntities")
-    Each(function(entity)
+    Entity.Each(function(entity)
         ImGui.PushID(entity)
 
         -- Store these here so another call to `Each` can be avoided, though it
         -- does tie the logic to the GUI which is iffy
-        if HasComponent("EnemySpawn", entity) then
+        if Entity.HasComponent("EnemySpawn", entity) then
             table.insert(enemySpawns, entity)
-        elseif HasComponent("EnemyGoal", entity) then
+        elseif Entity.HasComponent("EnemyGoal", entity) then
             table.insert(enemyGoals, entity)
         end
 
@@ -321,7 +320,7 @@ function imgui()
         end
 
         if destroy then
-            DestroyEntity(entity)
+            Entity.Destroy(entity)
             if selectedEntity == entity then
                 selectedEntity = nil
             end

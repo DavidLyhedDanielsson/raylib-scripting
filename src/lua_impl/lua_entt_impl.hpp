@@ -1,9 +1,7 @@
 #pragma once
 
-extern "C" {
-#include <external/lua.hpp>
-}
 #include <entt/entt.hpp>
+#include <external/lua.hpp>
 
 // Make sure entt and lua can play nice.
 // As long as entt::entity is backed by an integer that is smaller or the same
@@ -18,6 +16,5 @@ static_assert(
 
 namespace LuaEntt
 {
-    void RegisterTypes(lua_State* lua);
     void Register(lua_State* lua, entt::registry* registry);
 }

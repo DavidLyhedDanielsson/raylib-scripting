@@ -66,7 +66,6 @@ set(SRC
     entity_reflection/reflection_velocity.hpp
     entity_reflection/reflection_area_tracker.hpp
     lua_impl/lua_asset_impl.cpp lua_impl/lua_asset_impl.hpp
-    lua_impl/lua_entity_reflection_impl.cpp lua_impl/lua_entity_reflection_impl.hpp
     lua_impl/lua_entt_impl.cpp lua_impl/lua_entt_impl.hpp
     lua_impl/lua_imgui_impl.cpp lua_impl/lua_imgui_impl.hpp
     lua_impl/lua_imguizmo_impl.cpp lua_impl/lua_imguizmo_impl.hpp
