@@ -27,6 +27,20 @@ function RecursivePrint(tab, indent)
     end
 end
 
+function RecursiveWrite(file, tab)
+    for key, value in pairs(tab) do
+        if type(value) == "table" then
+            file:write(key, "={")
+            RecursiveWrite(file, value)
+            file:write("},")
+        elseif type(value) == "string" then
+            file:write(key, "=\"", value, "\",")
+        else
+            file:write(key, "=", value, ",")
+        end
+    end
+end
+
 function SaveLevel()
     local file = io.open("../assets/default_level.lua", "w+")
     file:write("return{")
@@ -73,6 +87,7 @@ if setup == nil then
     enemyGoals = {}
 
     cooldown = 0
+    placeTrapMode = false
 
     LoadLevel()
 end
@@ -97,6 +112,7 @@ function SpawnDarts(transformTarget)
         AddComponentOrPrintError("Render", entity, { assetName = "Dart" })
         AddComponentOrPrintError("Transform", entity,
             { position = startPosition, rotation = { x = 0, y = 3.14 / 2, z = 3.14 / 2 } })
+        -- TODO: startVelocity is not rotated
         AddComponentOrPrintError("Velocity", entity, startVelocity)
         AddComponentOrPrintError("Projectile", entity, { damage = 1 })
 
@@ -206,6 +222,9 @@ function imgui()
                 SpawnDarts(v)
             end
         end
+
+        local placeTrapToggled, newPlaceTrapMode = ImGui.Checkbox("Place trap", placeTrapMode)
+        placeTrapMode = newPlaceTrapMode
 
         ImGui.EndMainMenuBar()
     end
@@ -330,41 +349,45 @@ function imgui()
     ImGui.EndChild()
     ImGui.End()
 
-    if newSelectedEntity ~= nil then
-        selectedEntity = newSelectedEntity
-        newSelectedEntity = nil
-    end
-
-    if not ImGui.WantCaptureMouse() then
+    if placeTrapMode then
         if Raylib.IsMouseButtonPressed(0) then
             local ray = Raylib.GetMouseRay(Raylib.GetMousePosition())
             local hitEntity = Raylib.GetRayCollision(ray)
-            newSelectedEntity = hitEntity
-
-            if newSelectedEntity == nil then
-                selectedEntity = nil
+            if hitEntity ~= nil then
+                local assetName = Entity.Get(hitEntity).Render.assetName
+                if assetName == "Wall" then
+                    Entity.ReplaceComponent("Render", hitEntity, { assetName = "Trap_Wall" })
+                    Entity.AddComponent("AreaTracker", hitEntity,
+                        { offset = { x = 0, y = 1, z = 0 }, size = { x = 2, y = 2, z = 4 } })
+                elseif assetName == "Trap_Wall" then
+                    Entity.ReplaceComponent("Render", hitEntity, { assetName = "Wall" })
+                    Entity.RemoveComponent("AreaTracker", hitEntity)
+                end
             end
         end
-    end
-
-    if selectedEntity ~= nil then
-        ImGuizmo.Gizmo(selectedEntity, not usingGizmo)
-        usingGizmo = ImGuizmo.IsUsing()
     else
-        usingGizmo = false
-    end
+        if newSelectedEntity ~= nil then
+            selectedEntity = newSelectedEntity
+            newSelectedEntity = nil
+        end
 
-    function RecursiveWrite(file, tab)
-        for key, value in pairs(tab) do
-            if type(value) == "table" then
-                file:write(key, "={")
-                RecursiveWrite(file, value)
-                file:write("},")
-            elseif type(value) == "string" then
-                file:write(key, "=\"", value, "\",")
-            else
-                file:write(key, "=", value, ",")
+        if not ImGui.WantCaptureMouse() then
+            if Raylib.IsMouseButtonPressed(0) then
+                local ray = Raylib.GetMouseRay(Raylib.GetMousePosition())
+                local hitEntity = Raylib.GetRayCollision(ray)
+                newSelectedEntity = hitEntity
+
+                if newSelectedEntity == nil then
+                    selectedEntity = nil
+                end
             end
+        end
+
+        if selectedEntity ~= nil then
+            ImGuizmo.Gizmo(selectedEntity, not usingGizmo)
+            usingGizmo = ImGuizmo.IsUsing()
+        else
+            usingGizmo = false
         end
     end
 end
