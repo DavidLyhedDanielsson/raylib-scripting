@@ -58,17 +58,17 @@ void main_loop()
     sprintf(buf, "Frame time: %f", deltaMs);
     DrawText(buf, 0, 0, 20, LIGHTGRAY);
 
-    auto res = luaL_loadfile(luaState, AssetPath("lua/gui.lua").data());
+    auto res = luaL_loadfile(luaState, AssetPath("lua/editor.lua").data());
     bool guiError = false;
     if(res != LUA_OK)
     {
-        std::cerr << "Couldn't load gui.lua or error occurred" << std::endl;
+        std::cerr << "Couldn't load editor.lua or error occurred" << std::endl;
         std::cerr << lua_tostring(luaState, -1) << std::endl;
         guiError = true;
     }
-    if(lua_pcall(luaState, 0, 0, 0) != LUA_OK)
+    if(!guiError && lua_pcall(luaState, 0, 0, 0) != LUA_OK)
     {
-        std::cerr << "Error when executing gui.lua" << std::endl;
+        std::cerr << "Error when executing editor.lua" << std::endl;
         std::cerr << lua_tostring(luaState, -1) << std::endl;
         guiError = true;
     }
@@ -94,7 +94,7 @@ void main_loop()
         lua_getglobal(luaState, "raylib");
         if(lua_pcall(luaState, 0, 0, 0) != LUA_OK)
         {
-            std::cerr << "Error when executing gui.lua:raylib" << std::endl;
+            std::cerr << "Error when executing editor.lua:raylib" << std::endl;
             std::cerr << lua_tostring(luaState, -1) << std::endl;
             guiError = true;
         }
