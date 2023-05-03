@@ -7,21 +7,30 @@ A combination of:
 
 Currently just simply showcased with a basic editor
 
-### Functionality
+# Functionality
 - ImGui and Raylib exposed to lua. All gui is done through lua
 - Entity creation/deletion through ImGui/lua
 - Component creation/deletion through ImGui/lua
 - ImGuizmo to transform the selected entity
 - Entity visualiser which shows all components attached to an entity
 
-#### Components
-- Transform - translation and rotation
-- Velocity - x, y, z
-- Render - name of the mesh to render
-- Tile - aligns the entity to a grid
+## Components
+### Data components
+- AreaTracker - defines an area that can be queried for any entities within its bounds
 - Camera - middleware/interface/abstraction for Raylib's camera
+- Health - how much health the entity has, when this reaches 0 the entity is destroyed
+- MaxRange - the maximum range an entity can move, at which point is is destroyed
+- MoveTowards - moves this entity towards a position
+- Projectile - when this hits an entity with a `Health` component, it will damage it
+- Render - name of the mesh to render
+- Velocity - an entity's global space velocity
 
-### Demos
+### Tag components
+- EnemyGoal - enemies will move towards this
+- EnemySpawn - enemies will spawn here
+- Tile - aligns the entity's transform (position, orientation) to a grid
+
+## Demos
 
 Two quick demo videos can be found in the media directory.
 
@@ -29,7 +38,7 @@ The online build can be found at this repo's
 [github page](https://davidlyheddanielsson.github.io/raylib-scripting/).  The
 camera can be controlled while holding down right mouse button.
 
-## Setup
+# Setup
 
 Setup the submodules and then follow the build instructions
 
