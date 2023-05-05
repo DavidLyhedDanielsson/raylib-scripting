@@ -38,6 +38,8 @@ namespace World
     // TODO: `lua` should probably be in WorldData
     void Update(lua_State* lua)
     {
+        float time = 1.0f / 60.0f;
+
         for(auto [entity, transform, velocity, moveTowards] :
             world.registry
                 ->view<Component::Transform, Component::Velocity, Component::MoveTowards>()
@@ -47,8 +49,8 @@ namespace World
                 Vector3Normalize(Vector3Subtract(moveTowards.target, transform.position));
 
             float speed = moveTowards.speed;
-            if(Vector3Distance(moveTowards.target, transform.position) <= speed)
-                speed = Vector3Distance(moveTowards.target, transform.position);
+            if(Vector3Distance(moveTowards.target, transform.position) <= speed * time)
+                speed = 0.0f;
 
             Vector3 finalVelocity = Vector3Scale(movementDirection, speed);
             velocity.x = finalVelocity.x;
@@ -59,9 +61,9 @@ namespace World
         for(auto [entity, transform, velocity] :
             world.registry->view<Component::Transform, Component::Velocity>().each())
         {
-            transform.position.x += velocity.x;
-            transform.position.y += velocity.y;
-            transform.position.z += velocity.z;
+            transform.position.x += velocity.x * time;
+            transform.position.y += velocity.y * time;
+            transform.position.z += velocity.z * time;
         }
 
         for(auto [entity, transform] :
