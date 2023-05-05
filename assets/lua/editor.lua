@@ -41,6 +41,22 @@ function RecursiveWrite(file, tab)
     end
 end
 
+function NewLevel()
+    Entity.ClearRegistry()
+
+    local camera = Entity.Create()
+    AddComponentOrPrintError("Transform", camera, {
+        position = { x = 10, y = 10, z = 10 },
+        rotation = { x = 0, y = 0, z = 0 },
+    })
+    AddComponentOrPrintError("Camera", camera, {
+        target = { x = 0.0, y = 0.0, z = 0.0 },
+        up = { x = 0.0, y = 1.0, z = 0.0 },
+        fovy = 45.0,
+        projection = 0,
+    })
+end
+
 function SaveLevel()
     local file = io.open("../assets/default_level.lua", "w+")
     file:write("return{")
@@ -148,6 +164,9 @@ function imgui()
     end
 
     if ImGui.BeginMainMenuBar() then
+        if ImGui.MenuItem("New", "", false, true) then
+            NewLevel()
+        end
         if ImGui.MenuItem("Save", "", false, true) then
             SaveLevel()
         end
