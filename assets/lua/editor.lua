@@ -228,10 +228,13 @@ function imgui()
                     AddComponentOrPrintError("Transform", entity,
                         { position = spawnPosition, rotation = { x = 0, y = 0, z = 0 } })
                     AddComponentOrPrintError("MoveTowards", entity,
-                        { target = goalPosition, speed = 1 })
+                        { target = goalPosition, speed = 1.5 })
                     AddComponentOrPrintError("Velocity", entity,
                         { x = 0, y = 0, z = 0 })
+                    AddComponentOrPrintError("Acceleration", entity,
+                        { acceleration = { x = 0, y = 0, z = 0 } })
                     AddComponentOrPrintError("Health", entity, { currentHealth = 3 })
+                    AddComponentOrPrintError("MaxRange", entity, { maxDistance = 35, distanceFrom = spawnPosition })
                 end
             end
         end
