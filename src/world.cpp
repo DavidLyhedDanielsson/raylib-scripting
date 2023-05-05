@@ -3,6 +3,7 @@
 #include <array>
 #include <assets.hpp>
 #include <cmath>
+#include <entity/acceleration.hpp>
 #include <entity/area_tracker.hpp>
 #include <entity/camera.hpp>
 #include <entity/health.hpp>
@@ -13,10 +14,12 @@
 #include <entity/tile.hpp>
 #include <entity/transform.hpp>
 #include <entity/velocity.hpp>
-#include <entity_reflection/entity_reflection.hpp>
+#include <entt/entity/utility.hpp>
 #include <external/imgui.hpp>
 #include <external/imguizmo.hpp>
 #include <external/raylib.hpp>
+#include <optional>
+#include <random>
 
 struct WorldData
 {
@@ -26,6 +29,70 @@ struct WorldData
 float RoundToMultiple(float number, float multiple)
 {
     return std::round(number / multiple) * multiple;
+}
+
+std::random_device rd;
+std::mt19937 mt(rd());
+// This range is awctually [-1, 1), but that's fine
+std::uniform_real_distribution<float> randomNumber(-1.0, 1.0f);
+
+std::optional<Vector2> CollisionCoefficient(
+    const Vector2 position,
+    const Vector2 otherPosition,
+    const Vector2 velocity,
+    const Vector2 otherVelocity,
+    const float radius,
+    float* outTime = nullptr)
+{
+    float totalRadius = radius + radius;
+    float radiusSquared = totalRadius * totalRadius;
+
+    float distanceSquared = Vector2DistanceSqr(position, otherPosition);
+
+    if(outTime && distanceSquared < radiusSquared)
+    {
+        *outTime = 0.0f;
+        radiusSquared = std::pow(totalRadius - sqrtf(distanceSquared), 2.0f);
+    }
+
+    Vector2 relPos = Vector2Subtract(otherPosition, position);
+    Vector2 relVel = Vector2Subtract(velocity, otherVelocity);
+
+    float a = Vector2DotProduct(relVel, relVel);
+    float b = Vector2DotProduct(relPos, relVel);
+    float c = Vector2DotProduct(relPos, relPos) - radiusSquared;
+
+    float disc = b * b - a * c;
+    if(disc < 0.0f || std::abs(disc) < 0.00001f)
+        return std::nullopt;
+
+    disc = std::sqrt(disc);
+    float t = (b - disc) / a;
+
+    if(t < 0.0f)
+        return std::nullopt;
+
+    if(outTime)
+    {
+        *outTime = t;
+        return std::nullopt;
+    }
+
+    const float k = 1.5;
+    const float m = 2.0;
+    const float t0 = 3;
+
+    const float c0 = -k * std::exp(-t / t0);
+    const Vector2 c1 = Vector2Subtract(
+        relVel,
+        Vector2Scale(
+            Vector2Subtract(Vector2Scale(relVel, b), Vector2Scale(relPos, a)),
+            1.0f / disc));
+    const float c2 = a * std::pow(t, m) * (m / t + 1.0f / t0);
+
+    const Vector2 d = Vector2Scale(Vector2Scale(c1, c0), 1.0f / c2);
+
+    return d;
 }
 
 namespace World
@@ -40,22 +107,109 @@ namespace World
     {
         float time = 1.0f / 60.0f;
 
-        for(auto [entity, transform, velocity, moveTowards] :
+        // for(auto [entity, transform, velocity, moveTowards] :
+        //     world.registry
+        //         ->view<Component::Transform, Component::Velocity, Component::MoveTowards>()
+        //         .each())
+        // {
+        //     auto movementDirection =
+        //         Vector3Normalize(Vector3Subtract(moveTowards.target, transform.position));
+
+        //     float speed = moveTowards.speed;
+        //     if(Vector3Distance(moveTowards.target, transform.position) <= speed * time)
+        //         speed = 0.0f;
+
+        //     Vector3 finalVelocity = Vector3Scale(movementDirection, speed);
+        //     velocity.x = finalVelocity.x;
+        //     velocity.y = finalVelocity.y;
+        //     velocity.z = finalVelocity.z;
+        // }
+
+        for(auto [entity, transform, moveTowards, velocity, acceleration] :
             world.registry
-                ->view<Component::Transform, Component::Velocity, Component::MoveTowards>()
+                ->view<
+                    Component::Transform,
+                    Component::MoveTowards,
+                    Component::Velocity,
+                    Component::Acceleration>()
                 .each())
         {
-            auto movementDirection =
-                Vector3Normalize(Vector3Subtract(moveTowards.target, transform.position));
-
             float speed = moveTowards.speed;
             if(Vector3Distance(moveTowards.target, transform.position) <= speed * time)
-                speed = 0.0f;
+            {
+                // Quick fix
+                velocity.x = 0.0f;
+                velocity.y = 0.0f;
+                velocity.z = 0.0f;
+                acceleration.acceleration = Vector3Zero();
+                transform.position = moveTowards.target;
+                continue;
+            }
 
-            Vector3 finalVelocity = Vector3Scale(movementDirection, speed);
-            velocity.x = finalVelocity.x;
-            velocity.y = finalVelocity.y;
-            velocity.z = finalVelocity.z;
+            auto movementDirection =
+                Vector3Normalize(Vector3Subtract(moveTowards.target, transform.position));
+            Vector3 goalVelocity = Vector3Scale(movementDirection, speed);
+
+            const float ksi = 0.54f;
+            Vector2 forces = Vector2Scale(
+                Vector2Subtract({goalVelocity.x, goalVelocity.z}, {velocity.x, velocity.z}),
+                1.0f / ksi);
+
+            forces = Vector2Add(forces, Vector2Scale({randomNumber(mt), randomNumber(mt)}, 0.5f));
+
+            for(auto [otherEntity, otherTransform, otherHealth] :
+                world.registry->view<Component::Transform, Component::Health>().each())
+            {
+                if(entity == otherEntity)
+                    continue;
+
+                if(Vector3Distance(transform.position, otherTransform.position) > 7.0f)
+                    continue;
+
+                const float radius = 0.35f;
+
+                Vector3 otherVelocity = Vector3Zero();
+                if(Component::Velocity* oVel =
+                       world.registry->try_get<Component::Velocity>(otherEntity);
+                   oVel)
+                {
+                    otherVelocity = oVel->ToVector3();
+                };
+
+                std::optional<Vector2> coeff = CollisionCoefficient(
+                    {transform.position.x, transform.position.z},
+                    {otherTransform.position.x, otherTransform.position.z},
+                    {velocity.x, velocity.z},
+                    {otherVelocity.x, otherVelocity.z},
+                    radius);
+
+                if(coeff.has_value())
+                {
+                    Vector2 avoidForce = coeff.value();
+                    forces.x += avoidForce.x;
+                    forces.y += avoidForce.y;
+                }
+            }
+
+            acceleration.acceleration.x += forces.x * time;
+            acceleration.acceleration.z += forces.y * time;
+        }
+
+        for(auto [entity, velocity, acceleration] :
+            world.registry->view<Component::Velocity, Component::Acceleration>().each())
+        {
+            float length = Vector3Length(acceleration.acceleration);
+            if(length > 20.0f * time)
+            {
+                acceleration.acceleration =
+                    Vector3Scale(Vector3Normalize(acceleration.acceleration), 20.0f * time);
+            }
+
+            velocity.x += acceleration.acceleration.x;
+            velocity.y += acceleration.acceleration.y;
+            velocity.z += acceleration.acceleration.z;
+
+            acceleration.acceleration = {0.0f, 0.0f, 0.0f};
         }
 
         for(auto [entity, transform, velocity] :
@@ -145,8 +299,9 @@ namespace World
 
     void Draw()
     {
-        auto group = world.registry->group<Component::Render, Component::Transform>(
-            entt::exclude<Component::Velocity>);
+        DrawGrid(10, 1.0f);
+
+        auto group = world.registry->group<Component::Render, Component::Transform>();
         for(auto entity : group)
         {
             auto [render, transform] = group.get<Component::Render, Component::Transform>(entity);
@@ -170,84 +325,6 @@ namespace World
                     Vector3Subtract(boundingBox.max, boundingBox.min),
                     {255, 0, 0, 80});
             });
-
-        for(auto [entity, render, transform, moveTowards, velocity] :
-            world.registry
-                ->view<
-                    Component::Render,
-                    Component::Transform,
-                    Component::MoveTowards,
-                    Component::Velocity>()
-                .each())
-        {
-            DrawLine3D(transform.position, moveTowards.target, GREEN);
-
-            Vector3 mid = transform.position;
-            mid.y += 1.0f;
-            DrawLine3D(
-                mid,
-                Vector3Add(
-                    mid,
-                    Vector3Scale(
-                        Vector3Normalize({velocity.x, velocity.y, velocity.z}),
-                        moveTowards.speed)),
-                BLUE);
-
-            Color meshColor = WHITE;
-
-            for(auto [otherEntity, otherTransform, otherMoveTowards, otherVelocity] :
-                world.registry
-                    ->view<Component::Transform, Component::MoveTowards, Component::Velocity>()
-                    .each())
-            {
-                if(entity == otherEntity)
-                    continue;
-
-                const float radius = 0.45f;
-
-                if(Vector3Distance(transform.position, otherTransform.position) <= 2.0f * radius)
-                {
-                    meshColor = GREEN;
-                    continue;
-                }
-
-                Vector3 relPos = Vector3Subtract(otherTransform.position, transform.position);
-                Vector3 relVel = Vector3Subtract(
-                    // These are already normalized
-                    Vector3Normalize({velocity.x, velocity.y, velocity.z}),
-                    Vector3Normalize({otherVelocity.x, otherVelocity.y, otherVelocity.z}));
-
-                float a = Vector3DotProduct(relVel, relVel);
-                float b = Vector3DotProduct(relPos, relVel);
-                float c = Vector3DotProduct(relPos, relPos) - std::pow((2.0f * radius), 2.0f);
-
-                float disc = b * b - a * c;
-                if(disc < 0.0f || (disc < 0.00001f && disc > -0.00001))
-                    continue;
-
-                disc = std::sqrt(disc);
-                float t = (b - disc) / a;
-
-                if(t < 0.0f)
-                    continue;
-                if(t > 999.0f)
-                    continue;
-
-                DrawSphere(
-                    Vector3Add(
-                        transform.position,
-                        Vector3Scale(Vector3Normalize({velocity.x, velocity.y, velocity.z}), t)),
-                    radius,
-                    ColorAlpha(RED, 0.2f));
-            }
-
-            render.model.transform = MatrixMultiply(
-                MatrixRotateZYX(transform.rotation),
-                MatrixTranslate(transform.position.x, transform.position.y, transform.position.z));
-            DrawModel(render.model, {0.0f, 0.0f, 0.0f}, 1.0f, meshColor);
-
-            render.model.transform = MatrixIdentity();
-        }
     }
 
     void DrawImgui()
