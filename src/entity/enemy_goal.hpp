@@ -4,5 +4,6 @@ namespace Component
 {
     struct EnemyGoal
     {
+        int id;
     };
 }

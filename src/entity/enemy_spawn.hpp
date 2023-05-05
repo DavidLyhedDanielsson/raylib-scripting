@@ -6,5 +6,6 @@ namespace Component
 {
     struct EnemySpawn
     {
+        int targetGoal;
     };
 }

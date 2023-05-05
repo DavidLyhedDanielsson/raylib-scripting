@@ -206,20 +206,21 @@ function imgui()
         end
 
         if ImGui.MenuItem("Spawn dude", "", false, true) then
-            print("Goals: ", #enemyGoals)
-            if #enemyGoals > 0 then
-                for _, spawnEntity in ipairs(enemySpawns) do
-                    local closestGoal
-                    for _, goalEntity in ipairs(enemyGoals) do
-                        if closestGoal == nil then
-                            closestGoal = goalEntity
-                        else
-                            print("Too many goals yo")
-                        end
-                    end
+            for _, spawnEntity in ipairs(enemySpawns) do
+                local targetGoal = Entity.Get(spawnEntity).EnemySpawn.targetGoal
 
+                local goalPosition
+                for _, goalEntity in ipairs(enemyGoals) do
+                    local components = Entity.Get(goalEntity)
+                    if components.EnemyGoal.id == targetGoal then
+                        goalPosition = components.Transform.position
+                    end
+                end
+
+                if goalPosition == nil then
+                    print("GoalPosition is nil!")
+                else
                     local spawnPosition = Entity.Get(spawnEntity).Transform.position
-                    local goalPosition = Entity.Get(closestGoal).Transform.position
 
                     local entity = Entity.Create()
                     AddComponentOrPrintError("Render", entity,
@@ -232,8 +233,6 @@ function imgui()
                         { x = 0, y = 0, z = 0 })
                     AddComponentOrPrintError("Health", entity, { currentHealth = 3 })
                 end
-            else
-                print("Can't spawn any dudes if there are no goals")
             end
         end
 
@@ -269,8 +268,8 @@ function imgui()
                 default = { x = 0.0, y = 0.0, z = 0.0 }
             },
             Tile = { hasComponent = Entity.HasComponent("Tile", entity) },
-            EnemyGoal = { hasComponent = Entity.HasComponent("EnemyGoal", entity) },
-            EnemySpawn = { hasComponent = Entity.HasComponent("EnemySpawn", entity) },
+            EnemyGoal = { hasComponent = Entity.HasComponent("EnemyGoal", entity), default = { id = 0 } },
+            EnemySpawn = { hasComponent = Entity.HasComponent("EnemySpawn", entity), default = { targetGoal = 0 } },
             Camera = { hasComponent = Entity.HasComponent("Camera", entity) },
             MoveTowards = { hasComponent = Entity.HasComponent("MoveTowards", entity) },
             Projectile = { hasComponent = Entity.HasComponent("Projectile", entity), default = { damage = 1 } },
