@@ -145,7 +145,8 @@ namespace World
 
     void Draw()
     {
-        auto group = world.registry->group<Component::Render, Component::Transform>();
+        auto group = world.registry->group<Component::Render, Component::Transform>(
+            entt::exclude<Component::Velocity>);
         for(auto entity : group)
         {
             auto [render, transform] = group.get<Component::Render, Component::Transform>(entity);
@@ -169,6 +170,84 @@ namespace World
                     Vector3Subtract(boundingBox.max, boundingBox.min),
                     {255, 0, 0, 80});
             });
+
+        for(auto [entity, render, transform, moveTowards, velocity] :
+            world.registry
+                ->view<
+                    Component::Render,
+                    Component::Transform,
+                    Component::MoveTowards,
+                    Component::Velocity>()
+                .each())
+        {
+            DrawLine3D(transform.position, moveTowards.target, GREEN);
+
+            Vector3 mid = transform.position;
+            mid.y += 1.0f;
+            DrawLine3D(
+                mid,
+                Vector3Add(
+                    mid,
+                    Vector3Scale(
+                        Vector3Normalize({velocity.x, velocity.y, velocity.z}),
+                        moveTowards.speed)),
+                BLUE);
+
+            Color meshColor = WHITE;
+
+            for(auto [otherEntity, otherTransform, otherMoveTowards, otherVelocity] :
+                world.registry
+                    ->view<Component::Transform, Component::MoveTowards, Component::Velocity>()
+                    .each())
+            {
+                if(entity == otherEntity)
+                    continue;
+
+                const float radius = 0.45f;
+
+                if(Vector3Distance(transform.position, otherTransform.position) <= 2.0f * radius)
+                {
+                    meshColor = GREEN;
+                    continue;
+                }
+
+                Vector3 relPos = Vector3Subtract(otherTransform.position, transform.position);
+                Vector3 relVel = Vector3Subtract(
+                    // These are already normalized
+                    Vector3Normalize({velocity.x, velocity.y, velocity.z}),
+                    Vector3Normalize({otherVelocity.x, otherVelocity.y, otherVelocity.z}));
+
+                float a = Vector3DotProduct(relVel, relVel);
+                float b = Vector3DotProduct(relPos, relVel);
+                float c = Vector3DotProduct(relPos, relPos) - std::pow((2.0f * radius), 2.0f);
+
+                float disc = b * b - a * c;
+                if(disc < 0.0f || (disc < 0.00001f && disc > -0.00001))
+                    continue;
+
+                disc = std::sqrt(disc);
+                float t = (b - disc) / a;
+
+                if(t < 0.0f)
+                    continue;
+                if(t > 999.0f)
+                    continue;
+
+                DrawSphere(
+                    Vector3Add(
+                        transform.position,
+                        Vector3Scale(Vector3Normalize({velocity.x, velocity.y, velocity.z}), t)),
+                    radius,
+                    ColorAlpha(RED, 0.2f));
+            }
+
+            render.model.transform = MatrixMultiply(
+                MatrixRotateZYX(transform.rotation),
+                MatrixTranslate(transform.position.x, transform.position.y, transform.position.z));
+            DrawModel(render.model, {0.0f, 0.0f, 0.0f}, 1.0f, meshColor);
+
+            render.model.transform = MatrixIdentity();
+        }
     }
 
     void DrawImgui()
