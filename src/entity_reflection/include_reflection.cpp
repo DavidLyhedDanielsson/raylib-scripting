@@ -1,5 +1,6 @@
 // The only purpose of this file is to include all of these so the static
 // instances can be created and registered
+#include "reflection_acceleration.hpp"
 #include "reflection_area_tracker.hpp"
 #include "reflection_camera.hpp"
 #include "reflection_enemy_goal.hpp"
