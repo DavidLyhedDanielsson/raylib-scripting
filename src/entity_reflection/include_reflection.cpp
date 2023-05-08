@@ -13,3 +13,4 @@
 #include "reflection_tile.hpp"
 #include "reflection_transform.hpp"
 #include "reflection_velocity.hpp"
+#include "reflection_walkable.hpp"

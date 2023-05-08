@@ -286,6 +286,7 @@ function imgui()
                 hasComponent = Entity.HasComponent("AreaTracker", entity),
                 default = { offset = { x = 0, y = 0, z = 0 }, size = { x = 2, y = 2, z = 2 } }
             },
+            Walkable = { hasComponent = Entity.HasComponent("Walkable", entity) },
         }
 
         for componentName, info in pairs(components) do
