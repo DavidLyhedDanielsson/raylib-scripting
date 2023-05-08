@@ -122,7 +122,7 @@ function SpawnDarts(transformTarget)
 
     for i = 1, 5 do
         local startPosition = { x = offsets[i].x, y = offsets[i].y, z = offsets[i].z }
-        local velocity = 0.15
+        local velocity = 20
 
         local entity = Entity.Create()
         AddComponentOrPrintError("Render", entity, { assetName = "Dart" })
