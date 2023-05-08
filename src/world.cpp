@@ -107,24 +107,6 @@ namespace World
     {
         float time = 1.0f / 60.0f;
 
-        // for(auto [entity, transform, velocity, moveTowards] :
-        //     world.registry
-        //         ->view<Component::Transform, Component::Velocity, Component::MoveTowards>()
-        //         .each())
-        // {
-        //     auto movementDirection =
-        //         Vector3Normalize(Vector3Subtract(moveTowards.target, transform.position));
-
-        //     float speed = moveTowards.speed;
-        //     if(Vector3Distance(moveTowards.target, transform.position) <= speed * time)
-        //         speed = 0.0f;
-
-        //     Vector3 finalVelocity = Vector3Scale(movementDirection, speed);
-        //     velocity.x = finalVelocity.x;
-        //     velocity.y = finalVelocity.y;
-        //     velocity.z = finalVelocity.z;
-        // }
-
         for(auto [entity, transform, moveTowards, velocity, acceleration] :
             world.registry
                 ->view<
