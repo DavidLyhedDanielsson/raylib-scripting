@@ -147,9 +147,9 @@ void Navigation::Draw()
     ForEachTile([&](uint32_t x, uint32_t y) {
         auto direction = vectorField[y][x];
         Vector3 start = {
-            .x = (float)x * tileSize + offsetX,
+            .x = (float)x * tileSize + offsetX + tileSize * 0.5f,
             .y = 1.0,
-            .z = (float)y * tileSize + offsetY};
+            .z = (float)y * tileSize + offsetY + tileSize * 0.5f};
         Vector3 end =
             Vector3Add(start, Vector3Scale({.x = direction.x, .y = 0.0f, .z = direction.y}, 0.25f));
 

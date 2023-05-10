@@ -135,26 +135,29 @@ namespace World
                 min = Vector3Subtract(min, {1.0f, 0.0f, 1.0f});
                 max = Vector3Add(max, {1.0f, 0.0f, 1.0f});
 
-                navigation = Navigation({min.x, min.z}, {max.x, max.z}, min.x, min.z, 0.5f);
+                navigation = Navigation({min.x, min.z}, {max.x, max.z}, min.x, min.z, 1.0f);
 
                 world.registry->view<Component::Walkable, Component::Render, Component::Transform>()
                     .each([&](entt::entity entity,
                               Component::Render render,
                               Component::Transform transform) {
-                        // auto bounds = GetModelBoundingBox(render.model);
-                        // Vector3 halfBounds =
-                        //     Vector3Scale(Vector3Subtract(bounds.max, bounds.min), 0.5f);
-                        Vector3 halfBounds = {1.0f, 0.0f, 1.0f};
-                        Vector3 min = Vector3Subtract(transform.position, halfBounds);
-                        Vector3 max = Vector3Add(transform.position, halfBounds);
+                        auto bounds =
+                            GetModelBoundingBox(render.model, MatrixRotateZYX(transform.rotation));
+                        Vector2 minBounds = {.x = bounds.min.x, .y = bounds.min.z};
+                        Vector2 maxBounds = {.x = bounds.max.x, .y = bounds.max.z};
+
+                        Vector2 min =
+                            Vector2Add({transform.position.x, transform.position.z}, minBounds);
+                        Vector2 max =
+                            Vector2Add({transform.position.x, transform.position.z}, maxBounds);
 
                         if(world.registry->try_get<Component::EnemyGoal>(entity))
                         {
-                            navigation.SetGoal({min.x, min.z}, {max.x, max.z});
+                            navigation.SetGoal(min, max);
                         }
                         else
                         {
-                            navigation.SetWalkable({min.x, min.z}, {max.x, max.z});
+                            navigation.SetWalkable(min, max);
                         }
                     });
 
@@ -164,13 +167,17 @@ namespace World
                               Component::EnemyGoal _,
                               Component::Render render,
                               Component::Transform transform) {
-                        Vector3 halfBounds = {1.0f, 0.0f, 1.0f};
-                        // Vector3 halfBounds =
-                        // Vector3Scale(Vector3Subtract(bounds.max, bounds.min), 0.5f);
-                        Vector3 min = Vector3Subtract(transform.position, halfBounds);
-                        Vector3 max = Vector3Add(transform.position, halfBounds);
+                        auto bounds =
+                            GetModelBoundingBox(render.model, MatrixRotateZYX(transform.rotation));
+                        Vector2 minBounds = {.x = bounds.min.x, .y = bounds.min.z};
+                        Vector2 maxBounds = {.x = bounds.max.x, .y = bounds.max.z};
 
-                        navigation.SetGoal({min.x, min.z}, {max.x, max.z});
+                        Vector2 min =
+                            Vector2Add({transform.position.x, transform.position.z}, minBounds);
+                        Vector2 max =
+                            Vector2Add({transform.position.x, transform.position.z}, maxBounds);
+
+                        navigation.SetGoal(min, max);
                     });
 
                 navigation.Build();
