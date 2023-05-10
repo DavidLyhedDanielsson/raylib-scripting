@@ -35,6 +35,7 @@ set(SRC
     assets.cpp assets.hpp
     imgui_error_check.cpp imgui_error_check.hpp
     main.cpp
+    navigation.cpp navigation.hpp
     raylib_imgui.cpp raylib_imgui.hpp
     world.cpp world.hpp
     external/raylib.hpp
@@ -52,6 +53,7 @@ set(SRC
     entity/area_tracker.hpp
     entity_reflection/entity_reflection.hpp
     entity_reflection/include_reflection.cpp
+    entity_reflection/reflection_area_tracker.hpp
     entity_reflection/reflection_camera.hpp
     entity_reflection/reflection_enemy_goal.hpp
     entity_reflection/reflection_enemy_spawn.hpp
@@ -64,7 +66,7 @@ set(SRC
     entity_reflection/reflection_transform.hpp
     entity_reflection/reflection_tile.hpp
     entity_reflection/reflection_velocity.hpp
-    entity_reflection/reflection_area_tracker.hpp
+    entity_reflection/reflection_walkable.hpp
     lua_impl/lua_asset_impl.cpp lua_impl/lua_asset_impl.hpp
     lua_impl/lua_entt_impl.cpp lua_impl/lua_entt_impl.hpp
     lua_impl/lua_imgui_impl.cpp lua_impl/lua_imgui_impl.hpp

@@ -173,6 +173,11 @@ function imgui()
         if ImGui.MenuItem("Load", "", false, true) then
             LoadLevel()
         end
+        if ImGui.MenuItem("Build Nav", "", false, true) then
+            BuildNavigation()
+        end
+        local _, newDrawNavigation = ImGui.Checkbox("Draw nav", DrawNavigation)
+        DrawNavigation = newDrawNavigation
 
         if ImGui.BeginMenu("Spawn entity...", "", false, true) then
             searchText = ImGui.InputText("Filter", searchText)

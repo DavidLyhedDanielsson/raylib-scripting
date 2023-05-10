@@ -264,6 +264,7 @@ int main()
             .rotation{0.0f, 0.0f, 0.0f},
         });
 
+    World::Register(luaState);
     LuaAsset::Register(luaState);
     LuaEntt::Register(luaState, &registry);
     LuaImGui::Register(luaState);

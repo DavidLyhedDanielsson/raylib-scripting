@@ -1,4 +1,9 @@
 #include "world.hpp"
+#include "entity/enemy_goal.hpp"
+#include "entity/walkable.hpp"
+#include "navigation.hpp"
+#include "raylib.h"
+#include "raymath.h"
 #include <algorithm>
 #include <array>
 #include <assets.hpp>
@@ -18,6 +23,8 @@
 #include <external/imgui.hpp>
 #include <external/imguizmo.hpp>
 #include <external/raylib.hpp>
+#include <limits>
+#include <lua_impl/lua_register.hpp>
 #include <optional>
 #include <random>
 
@@ -30,6 +37,10 @@ float RoundToMultiple(float number, float multiple)
 {
     return std::round(number / multiple) * multiple;
 }
+
+// Move these
+bool drawNavigation = false;
+Navigation navigation;
 
 std::random_device rd;
 std::mt19937 mt(rd());
@@ -95,16 +106,94 @@ std::optional<Vector2> CollisionCoefficient(
     return d;
 }
 
+bool buildNavigation = false;
+
 namespace World
 {
+    void Register(lua_State* lua)
+    {
+        LuaRegister::GlobalRegister(
+            lua,
+            "BuildNavigation",
+            +[]() {
+                auto minVal = std::numeric_limits<float>::lowest();
+                auto maxVal = std::numeric_limits<float>::max();
+
+                Vector3 min{maxVal, 0.0f, maxVal};
+                Vector3 max{minVal, 0.0f, minVal};
+
+                world.registry->view<Component::Walkable, Component::Transform>().each(
+                    [&](Component::Transform transform) {
+                        min = Vector3Min(
+                            min,
+                            {.x = transform.position.x, .y = 0.0f, .z = transform.position.z});
+                        max = Vector3Max(
+                            max,
+                            {.x = transform.position.x, .y = 0.0f, .z = transform.position.z});
+                    });
+
+                min = Vector3Subtract(min, {1.0f, 0.0f, 1.0f});
+                max = Vector3Add(max, {1.0f, 0.0f, 1.0f});
+
+                navigation = Navigation({min.x, min.z}, {max.x, max.z}, min.x, min.z, 0.5f);
+
+                world.registry->view<Component::Walkable, Component::Render, Component::Transform>()
+                    .each([&](entt::entity entity,
+                              Component::Render render,
+                              Component::Transform transform) {
+                        // auto bounds = GetModelBoundingBox(render.model);
+                        // Vector3 halfBounds =
+                        //     Vector3Scale(Vector3Subtract(bounds.max, bounds.min), 0.5f);
+                        Vector3 halfBounds = {1.0f, 0.0f, 1.0f};
+                        Vector3 min = Vector3Subtract(transform.position, halfBounds);
+                        Vector3 max = Vector3Add(transform.position, halfBounds);
+
+                        if(world.registry->try_get<Component::EnemyGoal>(entity))
+                        {
+                            navigation.SetGoal({min.x, min.z}, {max.x, max.z});
+                        }
+                        else
+                        {
+                            navigation.SetWalkable({min.x, min.z}, {max.x, max.z});
+                        }
+                    });
+
+                world.registry
+                    ->view<Component::EnemyGoal, Component::Render, Component::Transform>()
+                    .each([&](entt::entity entity,
+                              Component::EnemyGoal _,
+                              Component::Render render,
+                              Component::Transform transform) {
+                        Vector3 halfBounds = {1.0f, 0.0f, 1.0f};
+                        // Vector3 halfBounds =
+                        // Vector3Scale(Vector3Subtract(bounds.max, bounds.min), 0.5f);
+                        Vector3 min = Vector3Subtract(transform.position, halfBounds);
+                        Vector3 max = Vector3Add(transform.position, halfBounds);
+
+                        navigation.SetGoal({min.x, min.z}, {max.x, max.z});
+                    });
+
+                navigation.Build();
+            });
+
+        lua_pushboolean(lua, drawNavigation);
+        lua_setglobal(lua, "DrawNavigation");
+    }
+
     void Init(entt::registry* registry)
     {
         world.registry = registry;
     }
 
+    // Don't look at this
+    lua_State* lua;
+
     // TODO: `lua` should probably be in WorldData
-    void Update(lua_State* lua)
+    void Update(lua_State* luaS)
     {
+        // Don't look at this
+        lua = luaS;
+
         float time = 1.0f / 60.0f;
 
         for(auto [entity, transform, moveTowards, velocity, acceleration] :
@@ -128,8 +217,10 @@ namespace World
                 continue;
             }
 
-            auto movementDirection =
-                Vector3Normalize(Vector3Subtract(moveTowards.target, transform.position));
+            // auto movementDirection =
+            // Vector3Normalize(Vector3Subtract(moveTowards.target, transform.position));
+            Vector2 force = navigation.GetForce({transform.position.x, transform.position.z});
+            Vector3 movementDirection = {force.x, 0.0f, force.y};
             Vector3 goalVelocity = Vector3Scale(movementDirection, speed);
 
             const float ksi = 0.54f;
@@ -307,6 +398,11 @@ namespace World
                     Vector3Subtract(boundingBox.max, boundingBox.min),
                     {255, 0, 0, 80});
             });
+
+        lua_getglobal(lua, "DrawNavigation");
+        drawNavigation = lua_toboolean(lua, -1);
+        if(drawNavigation)
+            navigation.Draw();
     }
 
     void DrawImgui()
