@@ -260,6 +260,11 @@ namespace World
 
         LuaRegister::PushRegister(
             lua,
+            "GetTileSpace",
+            +[](lua_State* lua, Vector2 position) { return navigation.GetTileSpace(position); });
+
+        LuaRegister::PushRegister(
+            lua,
             "ConvertToTileSpace",
             +[](lua_State* lua, Vector2 min, Vector2 max) {
                 return navigation.ConvertToTileSpace(min, max);

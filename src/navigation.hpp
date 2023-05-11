@@ -50,6 +50,7 @@ class Navigation
     std::vector<std::vector<Tile>> tiles;
     std::vector<std::vector<Vector2>> vectorField;
 
+    Vector2 GetTileSpace(Vector2 position) const;
     void ConvertToTileSpace(Vector2& min, Vector2& max) const;
 
     Navigation();
@@ -92,7 +93,10 @@ class Navigation
         position = Vector2Add(position, offset);
         position = Vector2Scale(position, 1.0f / this->tileSize);
 
-        return vectorField[(int)position.y][(int)position.x];
+        if(Reachable(position.x, position.y))
+            return vectorField[(int)position.y][(int)position.x];
+        else
+            return Vector2Zero();
     }
 
     void SetWalkable(Vector2 min, Vector2 max);

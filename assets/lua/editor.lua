@@ -91,6 +91,25 @@ function LoadLevel()
     end
 end
 
+function DistanceToWall(tileX, tileY)
+    for radius = 1, 4 do
+        for ry = -radius, radius do
+            for rx = -radius, radius do
+                local x = tileX + rx
+                local y = tileY + ry
+
+                if not Navigation.Reachable(x - 1, y - 1) then
+                    if math.abs(rx) + math.abs(ry) <= radius then
+                        return radius
+                    end
+                end
+            end
+        end
+    end
+
+    return 4
+end
+
 function BuildNavigation()
     Navigation.Build()
 
@@ -118,6 +137,9 @@ function BuildNavigation()
         local current = table.remove(openList, 1)
 
         local currentDistance = tileMap[current.y][current.x].distance
+        local distanceToWall = DistanceToWall(current.x, current.y)
+
+        local distance = currentDistance + 2 / (distanceToWall / 4)
 
         local neighbours = {
             { x = current.x,     y = current.y - 1 },
@@ -127,8 +149,8 @@ function BuildNavigation()
         }
         for _, n in ipairs(neighbours) do
             if Navigation.Reachable(n.x - 1, n.y - 1) then
-                if tileMap[n.y][n.x].distance > currentDistance + 1 then
-                    tileMap[n.y][n.x].distance = currentDistance + 1
+                if tileMap[n.y][n.x].distance > distance then
+                    tileMap[n.y][n.x].distance = distance
                     table.insert(openList, { x = n.x, y = n.y })
                 end
             end
@@ -157,19 +179,39 @@ function BuildNavigation()
         end
 
         local closestD = math.min(upD, math.min(downD, math.min(leftD, rightD)))
-
         local finalDirection = { x = 0, y = 0 }
+        -- Basic
+        -- if closestD == upD then
+        --     finalDirection.y = finalDirection.y - 1
+        -- elseif closestD == downD then
+        --     finalDirection.y = finalDirection.y + 1
+        -- elseif closestD == leftD then
+        --     finalDirection.x = finalDirection.x - 1
+        -- elseif closestD == rightD then
+        --     finalDirection.x = finalDirection.x + 1
+        -- end
+        -- vectorField[y][x] = finalDirection
+
+        -- Average
+        local sets = 0
         if closestD == upD then
-            finalDirection = { x = 0, y = -1 }
-        elseif closestD == downD then
-            finalDirection = { x = 0, y = 1 }
-        elseif closestD == leftD then
-            finalDirection = { x = -1, y = 0 }
-        elseif closestD == rightD then
-            finalDirection = { x = 1, y = 0 }
+            finalDirection.y = finalDirection.y - 1
+            sets = sets + 1
+        end
+        if closestD == downD then
+            finalDirection.y = finalDirection.y + 1
+            sets = sets + 1
+        end
+        if closestD == leftD then
+            finalDirection.x = finalDirection.x - 1
+            sets = sets + 1
+        end
+        if closestD == rightD then
+            finalDirection.x = finalDirection.x + 1
+            sets = sets + 1
         end
 
-        vectorField[y][x] = finalDirection
+        vectorField[y][x] = { x = finalDirection.x / sets, y = finalDirection.y / sets }
     end)
 
     Navigation.SetVectorField(vectorField)
@@ -314,7 +356,7 @@ function imgui()
 
                     local entity = Entity.Create()
                     AddComponentOrPrintError("Render", entity,
-                        { assetName = "Barrel" })
+                        { assetName = "Pot1" })
                     AddComponentOrPrintError("Transform", entity,
                         { position = spawnPosition, rotation = { x = 0, y = 0, z = 0 } })
                     AddComponentOrPrintError("MoveTowards", entity,
@@ -378,6 +420,15 @@ function imgui()
             },
             Walkable = { hasComponent = Entity.HasComponent("Walkable", entity) },
         }
+
+        if components.Walkable.hasComponent then
+            ImGui.Text("Distance to wall: ")
+            ImGui.SameLine()
+
+            local position = Entity.Get(entity).Transform.position
+            local tilePos = Navigation.GetTileSpace({ x = position.x, y = position.z })
+            ImGui.Text(DistanceToWall(tilePos.x, tilePos.y))
+        end
 
         for componentName, info in pairs(components) do
             if info.hasComponent then

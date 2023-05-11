@@ -120,6 +120,12 @@ Vector2 Vector2Round(Vector2 v)
     return result;
 }
 
+Vector2 Navigation::GetTileSpace(Vector2 position) const
+{
+    Vector2 offset = {.x = -this->offsetX, .y = -this->offsetY};
+    return Vector2Round(Vector2Scale(Vector2Add(position, offset), 1.0f / tileSize));
+}
+
 void Navigation::ConvertToTileSpace(Vector2& min, Vector2& max) const
 {
     Vector2 offset = {.x = -this->offsetX, .y = -this->offsetY};
