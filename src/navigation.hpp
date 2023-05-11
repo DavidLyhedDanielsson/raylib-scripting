@@ -9,6 +9,7 @@
 
 class Navigation
 {
+  public:
     uint32_t sizeX;
     uint32_t sizeY;
     float offsetX;
@@ -19,7 +20,7 @@ class Navigation
     {
         enum Type
         {
-            NONE,
+            NONE = 0,
             WALKABLE,
             SPAWN,
             GOAL,
@@ -51,7 +52,6 @@ class Navigation
 
     void ConvertToTileSpace(Vector2& min, Vector2& max) const;
 
-  public:
     Navigation();
     Navigation(Vector2 min, Vector2 max, float offsetX, float offsetY, float tileSize);
 
@@ -66,10 +66,7 @@ class Navigation
             for(uint32_t x = 0; x < row.size(); ++x)
             {
                 if(row[x].type != Tile::NONE)
-                {
-                    if(!func(x, y))
-                        return;
-                }
+                    func(x, y, row[x]);
             }
         }
     }
@@ -79,13 +76,10 @@ class Navigation
     {
         ConvertToTileSpace(min, max);
 
-        Vector2 startTile = {std::round(min.x / tileSize), std::round(min.y / tileSize)};
-        Vector2 endTile = {std::round(max.x / tileSize), std::round(max.y / tileSize)};
-
-        for(uint32_t y = startTile.y; y < endTile.y; ++y)
+        for(uint32_t y = min.y; y < max.y; ++y)
         {
             auto& row = tiles[y];
-            for(uint32_t x = startTile.x; x < endTile.x; ++x)
+            for(uint32_t x = min.x; x < max.x; ++x)
             {
                 func(row[x]);
             }

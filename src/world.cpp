@@ -23,8 +23,10 @@
 #include <external/imgui.hpp>
 #include <external/imguizmo.hpp>
 #include <external/raylib.hpp>
+#include <iostream>
 #include <limits>
 #include <lua_impl/lua_register.hpp>
+#include <lua_impl/lua_register_types.hpp>
 #include <optional>
 #include <random>
 
@@ -108,14 +110,35 @@ std::optional<Vector2> CollisionCoefficient(
 
 bool buildNavigation = false;
 
+namespace LuaRegister
+{
+    template<>
+    constexpr auto LuaGetFunc<Navigation::Tile> = [](lua_State* lua, int i) {
+        assert(false && "Not yet");
+    };
+
+    template<>
+    constexpr auto LuaSetFunc<Navigation::Tile> = [](lua_State* lua, Navigation::Tile tile) {
+        lua_createtable(lua, 0, 0);
+        lua_pushstring(lua, "type");
+        lua_pushinteger(lua, (int)tile.type);
+        lua_settable(lua, -3);
+    };
+
+    template<>
+    constexpr auto GetDefault<Navigation::Tile> = Navigation::Tile{.type = Navigation::Tile::NONE};
+}
+
 namespace World
 {
     void Register(lua_State* lua)
     {
-        LuaRegister::GlobalRegister(
+        lua_createtable(lua, 0, 0);
+
+        LuaRegister::PushRegister(
             lua,
-            "BuildNavigation",
-            +[]() {
+            "Build",
+            +[](lua_State* lua) {
                 auto minVal = std::numeric_limits<float>::lowest();
                 auto maxVal = std::numeric_limits<float>::max();
 
@@ -180,11 +203,110 @@ namespace World
                         navigation.SetGoal(min, max);
                     });
 
-                navigation.Build();
+                lua_getglobal(lua, "Navigation");
+                lua_pushstring(lua, "sizeX");
+                lua_pushinteger(lua, navigation.sizeX);
+                lua_settable(lua, -3);
+                lua_pushstring(lua, "sizeY");
+                lua_pushinteger(lua, navigation.sizeY);
+                lua_settable(lua, -3);
+                lua_pop(lua, 1);
+
+                // lua_pcall(lua, 0, 0, 0);
+
+                // navigation.Build();
             });
 
+        lua_pushstring(lua, "TileType");
+        lua_createtable(lua, 0, 0);
+
+        lua_pushstring(lua, "NONE");
+        lua_pushnumber(lua, (int)Navigation::Tile::Type::NONE);
+        lua_settable(lua, -3);
+        lua_pushstring(lua, "WALKABLE");
+        lua_pushnumber(lua, (int)Navigation::Tile::Type::WALKABLE);
+        lua_settable(lua, -3);
+        lua_pushstring(lua, "SPAWN");
+        lua_pushnumber(lua, (int)Navigation::Tile::Type::SPAWN);
+        lua_settable(lua, -3);
+        lua_pushstring(lua, "GOAL");
+        lua_pushnumber(lua, (int)Navigation::Tile::Type::GOAL);
+        lua_settable(lua, -3);
+
+        lua_settable(lua, -3);
+
+        LuaRegister::PushRegister(
+            lua,
+            "ForEachTile",
+            +[](lua_State* lua, LuaRegister::Placeholder callback) {
+                static bool error = false;
+                error = false;
+                navigation.ForEachTile([&](uint32_t x, uint32_t y, Navigation::Tile tile) {
+                    if(error)
+                        return;
+
+                    lua_pushvalue(lua, -1);
+
+                    lua_pushinteger(lua, x);
+                    lua_pushinteger(lua, y);
+                    LuaRegister::LuaSetFunc<Navigation::Tile>(lua, tile);
+                    if(lua_pcall(lua, 3, 0, 0) != LUA_OK)
+                    {
+                        std::cerr << lua_tostring(lua, -1) << std::endl;
+                        error = true;
+                    }
+                });
+            });
+
+        LuaRegister::PushRegister(
+            lua,
+            "ConvertToTileSpace",
+            +[](lua_State* lua, Vector2 min, Vector2 max) {
+                return navigation.ConvertToTileSpace(min, max);
+            });
+
+        LuaRegister::PushRegister(
+            lua,
+            "Reachable",
+            +[](lua_State* lua, int x, int y) { return navigation.Reachable(x, y); });
+
+        LuaRegister::PushRegister(
+            lua,
+            "SetVectorField",
+            +[](lua_State* lua, LuaRegister::Placeholder table) {
+                auto sizeY = luaL_len(lua, table.stackIndex);
+                lua_geti(lua, table.stackIndex, 1);
+                auto sizeX = luaL_len(lua, -1);
+                lua_pop(lua, 1);
+
+                std::vector<std::vector<Vector2>> vectorField(
+                    sizeY,
+                    std::vector<Vector2>(sizeX, {.x = 0.0f, .y = 0.0f}));
+                for(uint32_t y = 0; y < sizeY; ++y)
+                {
+                    lua_geti(lua, table.stackIndex, y + 1);
+                    for(uint32_t x = 0; x < sizeX; ++x)
+                    {
+                        lua_geti(lua, -1, x + 1);
+                        lua_getfield(lua, -1, "x");
+                        lua_getfield(lua, -2, "y");
+                        vectorField[y][x] = {
+                            .x = (float)lua_tonumber(lua, -2),
+                            .y = (float)lua_tonumber(lua, -1),
+                        };
+                        lua_pop(lua, 3);
+                    }
+                    lua_pop(lua, 1);
+                }
+
+                navigation.vectorField = std::move(vectorField);
+            });
+
+        lua_pushstring(lua, "draw");
         lua_pushboolean(lua, drawNavigation);
-        lua_setglobal(lua, "DrawNavigation");
+        lua_settable(lua, -3);
+
+        lua_setglobal(lua, "Navigation");
     }
 
     void Init(entt::registry* registry)
@@ -406,8 +528,10 @@ namespace World
                     {255, 0, 0, 80});
             });
 
-        lua_getglobal(lua, "DrawNavigation");
+        lua_getglobal(lua, "Navigation");
+        lua_getfield(lua, -1, "draw");
         drawNavigation = lua_toboolean(lua, -1);
+        lua_pop(lua, 2);
         if(drawNavigation)
             navigation.Draw();
     }

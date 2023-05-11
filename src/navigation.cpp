@@ -32,13 +32,12 @@ void Navigation::Build()
 
     std::queue<TileRef> openList;
 
-    ForEachTile([&](uint32_t x, uint32_t y) {
-        if(tiles[y][x].type == Tile::GOAL)
+    ForEachTile([&](uint32_t x, uint32_t y, Tile tile) {
+        if(tile.type == Tile::GOAL)
         {
             goalDistance[y][x] = 0;
             openList.push({.x = x, .y = y});
         }
-        return true;
     });
 
     while(!openList.empty())
@@ -115,11 +114,17 @@ void Navigation::Build()
     this->vectorField = vectorField;
 }
 
+Vector2 Vector2Round(Vector2 v)
+{
+    Vector2 result{.x = std::round(v.x), .y = std::round(v.y)};
+    return result;
+}
+
 void Navigation::ConvertToTileSpace(Vector2& min, Vector2& max) const
 {
     Vector2 offset = {.x = -this->offsetX, .y = -this->offsetY};
-    min = Vector2Add(min, offset);
-    max = Vector2Add(max, offset);
+    min = Vector2Round(Vector2Scale(Vector2Add(min, offset), 1.0f / tileSize));
+    max = Vector2Round(Vector2Scale(Vector2Add(max, offset), 1.0f / tileSize));
 }
 
 void Navigation::SetWalkable(Vector2 min, Vector2 max)
@@ -144,20 +149,19 @@ bool Navigation::Reachable(int64_t x, int64_t y)
 
 void Navigation::Draw()
 {
-    ForEachTile([&](uint32_t x, uint32_t y) {
+    ForEachTile([&](uint32_t x, uint32_t y, Tile) {
         auto direction = vectorField[y][x];
         Vector3 start = {
             .x = (float)x * tileSize + offsetX + tileSize * 0.5f,
-            .y = 1.0,
+            .y = 0.2,
             .z = (float)y * tileSize + offsetY + tileSize * 0.5f};
-        Vector3 end =
-            Vector3Add(start, Vector3Scale({.x = direction.x, .y = 0.0f, .z = direction.y}, 0.25f));
+        Vector3 end = Vector3Add(
+            start,
+            Vector3Scale({.x = direction.x, .y = 0.0f, .z = direction.y}, tileSize * 0.75f));
 
         Color color = tiles[y][x].type == Tile::GOAL ? GREEN : RED;
 
         DrawSphere(start, 0.1f, color);
         DrawLine3D(start, end, color);
-
-        return true;
     });
 }
