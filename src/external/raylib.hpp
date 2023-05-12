@@ -94,3 +94,23 @@ inline bool CheckCollisionPointBox(Vector3 point, BoundingBox box)
     return point.x >= box.min.x && point.y >= box.min.y && point.z >= box.min.z
            && point.x <= box.max.x && point.y <= box.max.y && point.z <= box.max.z;
 }
+
+inline Matrix MatrixTranslate(Vector3 v)
+{
+    return MatrixTranslate(v.x, v.y, v.z);
+}
+
+inline float Vector2Dot(Vector2 v1, Vector2 v2)
+{
+    return v1.x * v2.x + v1.y * v2.y;
+}
+
+inline float Vector2Det(Vector2 v1, Vector2 v2)
+{
+    return v1.x * v2.y - v1.y * v2.x;
+}
+
+inline float Vector2Perpendicular(Vector2 v1, Vector2 v2)
+{
+    return v1.x * v2.y - v1.y * v2.x;
+}
