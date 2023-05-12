@@ -14,6 +14,7 @@
 #include <entity/health.hpp>
 #include <entity/max_range.hpp>
 #include <entity/move_towards.hpp>
+#include <entity/obstacle.hpp>
 #include <entity/projectile.hpp>
 #include <entity/render.hpp>
 #include <entity/tile.hpp>

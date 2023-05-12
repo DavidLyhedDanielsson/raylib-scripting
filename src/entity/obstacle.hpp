@@ -2,7 +2,7 @@
 
 namespace Component
 {
-    struct Walkable
+    struct Obstacle
     {
     };
 }
