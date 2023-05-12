@@ -237,6 +237,12 @@ end
 
 function raylib()
     for entity in pairs(selectedEntities) do
+        if not Entity.IsValid(entity) then
+            selectedEntities[entity] = nil
+        end
+    end
+
+    for entity in pairs(selectedEntities) do
         Raylib.DrawEntityBoundingBox(entity)
     end
 end
