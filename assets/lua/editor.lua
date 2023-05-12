@@ -92,7 +92,7 @@ function LoadLevel()
 end
 
 function DistanceToWall(tileX, tileY)
-    for radius = 1, 4 do
+    for radius = 1, 4 / Navigation.tileSize do
         for ry = -radius, radius do
             for rx = -radius, radius do
                 local x = tileX + rx
@@ -107,11 +107,11 @@ function DistanceToWall(tileX, tileY)
         end
     end
 
-    return 4
+    return 4 / Navigation.tileSize
 end
 
 function BuildNavigation()
-    Navigation.Build()
+    Navigation.Build(0.5)
 
     local tileMap = {}
     for y = 1, Navigation.sizeY do
@@ -139,7 +139,7 @@ function BuildNavigation()
         local currentDistance = tileMap[current.y][current.x].distance
         local distanceToWall = DistanceToWall(current.x, current.y)
 
-        local distance = currentDistance + 2 / (distanceToWall / 4)
+        local distance = currentDistance + 2 / (distanceToWall / (4 / Navigation.tileSize))
 
         local neighbours = {
             { x = current.x,     y = current.y - 1 },
@@ -360,7 +360,7 @@ function imgui()
                     AddComponentOrPrintError("Transform", entity,
                         { position = spawnPosition, rotation = { x = 0, y = 0, z = 0 } })
                     AddComponentOrPrintError("MoveTowards", entity,
-                        { target = goalPosition, speed = 1.5 })
+                        { target = goalPosition, speed = 2.5 })
                     AddComponentOrPrintError("Velocity", entity,
                         { x = 0, y = 0, z = 0 })
                     AddComponentOrPrintError("Acceleration", entity,

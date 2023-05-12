@@ -138,7 +138,7 @@ namespace World
         LuaRegister::PushRegister(
             lua,
             "Build",
-            +[](lua_State* lua) {
+            +[](lua_State* lua, float tileSize) {
                 auto minVal = std::numeric_limits<float>::lowest();
                 auto maxVal = std::numeric_limits<float>::max();
 
@@ -158,7 +158,12 @@ namespace World
                 min = Vector3Subtract(min, {1.0f, 0.0f, 1.0f});
                 max = Vector3Add(max, {1.0f, 0.0f, 1.0f});
 
-                navigation = Navigation({min.x, min.z}, {max.x, max.z}, min.x, min.z, 1.0f);
+                navigation = Navigation(
+                    {min.x, min.z},
+                    {max.x, max.z},
+                    min.x,
+                    min.z,
+                    tileSize == 0.0f ? 1.0f : tileSize);
 
                 world.registry->view<Component::Walkable, Component::Render, Component::Transform>()
                     .each([&](entt::entity entity,
@@ -209,6 +214,9 @@ namespace World
                 lua_settable(lua, -3);
                 lua_pushstring(lua, "sizeY");
                 lua_pushinteger(lua, navigation.sizeY);
+                lua_settable(lua, -3);
+                lua_pushstring(lua, "tileSize");
+                lua_pushnumber(lua, navigation.tileSize);
                 lua_settable(lua, -3);
                 lua_pop(lua, 1);
 
