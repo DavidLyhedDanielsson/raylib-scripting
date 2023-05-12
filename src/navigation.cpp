@@ -153,6 +153,14 @@ bool Navigation::Reachable(int64_t x, int64_t y)
     return tiles[y][x].type != Tile::NONE;
 }
 
+bool Navigation::IsGoal(Vector3 pos)
+{
+    auto tilePos = GetTileSpace({.x = pos.x, .y = pos.z});
+    if(!Reachable(tilePos.x, tilePos.y))
+        return false;
+    return tiles[tilePos.y][tilePos.x].type == Tile::GOAL;
+}
+
 void Navigation::Draw()
 {
     ForEachTile([&](uint32_t x, uint32_t y, Tile) {

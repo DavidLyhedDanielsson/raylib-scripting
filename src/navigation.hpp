@@ -104,5 +104,7 @@ class Navigation
 
     bool Reachable(int64_t x, int64_t y);
 
+    bool IsGoal(Vector3 position);
+
     void Draw();
 };

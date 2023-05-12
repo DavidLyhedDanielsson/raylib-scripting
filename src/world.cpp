@@ -349,14 +349,11 @@ namespace World
                 .each())
         {
             float speed = moveTowards.speed;
-            if(Vector3Distance(moveTowards.target, transform.position) <= speed * time)
+
+            if(navigation.IsGoal(transform.position))
             {
-                // Quick fix
-                velocity.x = 0.0f;
-                velocity.y = 0.0f;
-                velocity.z = 0.0f;
-                acceleration.acceleration = Vector3Zero();
-                transform.position = moveTowards.target;
+                if(auto health = world.registry->try_get<Component::Health>(entity); health)
+                    health->currentHealth = 0.0f;
                 continue;
             }
 
