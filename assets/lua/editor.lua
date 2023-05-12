@@ -481,7 +481,6 @@ function imgui()
                     AddComponentOrPrintError("Acceleration", entity,
                         { acceleration = { x = 0, y = 0, z = 0 } })
                     AddComponentOrPrintError("Health", entity, { currentHealth = 3 })
-                    AddComponentOrPrintError("MaxRange", entity, { maxDistance = 35, distanceFrom = spawnPosition })
                 end
             end
         end
