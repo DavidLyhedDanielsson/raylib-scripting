@@ -220,7 +220,7 @@ end
 if setup == nil then
     setup = true
 
-    selectedEntity = nil
+    selectedEntities = {}
     newSelectedEntity = nil
     searchText = ""
     usingGizmo = false
@@ -280,14 +280,17 @@ function imgui()
         cooldown = cooldown - 1
     end
 
-    if Raylib.IsKeyPressed(Raylib.Key.D) and Raylib.IsKeyDown(Raylib.Key.LEFT_CONTROL) and selectedEntity ~= nil then
-        Entity.Duplicate(selectedEntity)
-    end
-    if Raylib.IsKeyPressed(Raylib.Key.DELETE) and selectedEntity ~= nil then
-        Entity.Destroy(selectedEntity)
-        if selectedEntity == entity then
-            selectedEntity = nil
+    if Raylib.IsKeyPressed(Raylib.Key.D) and Raylib.IsKeyDown(Raylib.Key.LEFT_CONTROL) then
+        for k in pairs(selectedEntities) do
+            Entity.Duplicate(k)
         end
+    end
+    if Raylib.IsKeyPressed(Raylib.Key.DELETE) then
+        for k in pairs(selectedEntities) do
+            Entity.Destroy(k)
+        end
+
+        for k in pairs(selectedEntities) do selectedEntities[k] = nil end
     end
 
     if ImGui.BeginMainMenuBar() then
@@ -455,13 +458,31 @@ function imgui()
         end
     end
 
+    for entity in pairs(selectedEntities) do
+        if not Entity.IsValid(entity) then
+            selectedEntities[entity] = nil
+        end
+    end
+
     ImGui.Begin("Entity")
     ImGui.Text("Selected entity information")
-    if selectedEntity ~= nil then
-        if Entity.IsValid(selectedEntity) then
-            ImGuiEntity(selectedEntity)
+    local firstEntity
+    local selectedEntitiesCount = 0
+    for k in pairs(selectedEntities) do
+        if not firstEntity then
+            firstEntity = k
+        end
+        selectedEntitiesCount = selectedEntitiesCount + 1
+        if selectedEntitiesCount > 1 then
+            break
+        end
+    end
+
+    if selectedEntitiesCount > 0 then
+        if selectedEntitiesCount == 1 then
+            ImGuiEntity(firstEntity)
         else
-            selectedEntity = nil
+            ImGui.Text("Multiple entities selected")
         end
     end
 
@@ -488,7 +509,8 @@ function imgui()
         ImGui.SameLine()
 
         local flags = ImGui.TreeNodeFlag.None
-        if entity == selectedEntity then
+
+        if selectedEntities[entity] then
             flags = ImGui.TreeNodeFlag.Selected
         end
         if newSelectedEntity ~= nil and newSelectedEntity == entity then
@@ -505,8 +527,8 @@ function imgui()
 
         if destroy then
             Entity.Destroy(entity)
-            if selectedEntity == entity then
-                selectedEntity = nil
+            if selectedEntities[entity] then
+                selectedEntities[entity] = nil
             end
         end
         ImGui.PopID()
@@ -531,25 +553,42 @@ function imgui()
             end
         end
     else
-        if newSelectedEntity ~= nil then
-            selectedEntity = newSelectedEntity
-            newSelectedEntity = nil
-        end
-
         if not ImGui.WantCaptureMouse() then
             if Raylib.IsMouseButtonPressed(0) then
                 local ray = Raylib.GetMouseRay(Raylib.GetMousePosition())
                 local hitEntity = Raylib.GetRayCollision(ray)
                 newSelectedEntity = hitEntity
 
-                if newSelectedEntity == nil then
-                    selectedEntity = nil
+                if Raylib.IsKeyDown(Raylib.Key.LEFT_CONTROL) or Raylib.IsKeyDown(Raylib.Key.LEFT_SHIFT) then
+                    if newSelectedEntity ~= nil then
+                        selectedEntities[newSelectedEntity] = true
+                    end
+                else
+                    for k in pairs(selectedEntities) do
+                        selectedEntities[k] = nil
+                    end
+
+                    if newSelectedEntity ~= nil then
+                        selectedEntities[newSelectedEntity] = true
+                    end
                 end
             end
         end
 
-        if selectedEntity ~= nil then
-            ImGuizmo.Gizmo(selectedEntity, not usingGizmo)
+        local firstEntity
+        local selectedEntitiesCount = 0
+        for k in pairs(selectedEntities) do
+            if not firstEntity then
+                firstEntity = k
+            end
+            selectedEntitiesCount = selectedEntitiesCount + 1
+            if selectedEntitiesCount > 1 then
+                break
+            end
+        end
+
+        if selectedEntitiesCount == 1 then
+            ImGuizmo.Gizmo(firstEntity, not usingGizmo)
             usingGizmo = ImGuizmo.IsUsing()
         else
             usingGizmo = false
