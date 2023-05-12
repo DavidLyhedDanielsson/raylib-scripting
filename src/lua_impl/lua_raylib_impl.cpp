@@ -179,6 +179,32 @@ namespace LuaRaylib
                 return {};
             });
 
+        LuaRegister::PushRegisterMember(
+            lua,
+            "DrawEntityBoundingBox",
+            registry,
+            +[](entt::registry* registry, lua_Integer entityL) {
+                entt::entity entity = (entt::entity)entityL;
+
+                Component::Render* render = registry->try_get<Component::Render>(entity);
+                if(!render)
+                    return;
+
+                Component::Transform* transform = registry->try_get<Component::Transform>(entity);
+                if(!transform)
+                    return;
+
+                auto bbox = GetModelBoundingBox(
+                    render->model,
+                    MatrixMultiply(
+                        MatrixRotateZYX(transform->rotation),
+                        MatrixTranslate(
+                            transform->position.x,
+                            transform->position.y,
+                            transform->position.z)));
+                DrawBoundingBox(bbox, RED);
+            });
+
         lua_pushstring(lua, "Key");
         lua_createtable(lua, 0, 0);
         lua_pushinteger(lua, (lua_Integer)KEY_APOSTROPHE);

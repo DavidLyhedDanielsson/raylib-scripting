@@ -236,6 +236,9 @@ if setup == nil then
 end
 
 function raylib()
+    for entity in pairs(selectedEntities) do
+        Raylib.DrawEntityBoundingBox(entity)
+    end
 end
 
 function SpawnDarts(transformTarget)
