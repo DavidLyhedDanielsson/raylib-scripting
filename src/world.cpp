@@ -62,16 +62,15 @@ std::optional<Vector2> CollisionCoefficient(
     const float radius,
     float* outTime = nullptr)
 {
+    if(outTime)
+        *outTime = 0.0f;
+
     float totalRadius = radius + radius;
     float radiusSquared = totalRadius * totalRadius;
 
     float distanceSquared = Vector2DistanceSqr(position, otherPosition);
-
-    if(outTime && distanceSquared < radiusSquared)
-    {
-        *outTime = 0.0f;
-        radiusSquared = std::pow(totalRadius - sqrtf(distanceSquared), 2.0f);
-    }
+    if(distanceSquared < radiusSquared)
+        radiusSquared = std::pow(totalRadius - std::sqrt(distanceSquared), 2.0f);
 
     Vector2 relPos = Vector2Subtract(otherPosition, position);
     Vector2 relVel = Vector2Subtract(velocity, otherVelocity);
