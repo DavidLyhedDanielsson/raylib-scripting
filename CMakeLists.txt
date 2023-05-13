@@ -82,6 +82,7 @@ add_executable(raylib_test
 target_link_libraries(raylib_test PRIVATE
     raylib
     imgui
+    imgui_flame_graph
     imguizmo
     lua
 )

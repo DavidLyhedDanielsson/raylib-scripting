@@ -18,10 +18,10 @@
 #include <map>
 
 #include <external/imgui.hpp>
+#include <external/imgui_internal.hpp>
 #include <external/imguizmo.hpp>
 #include <external/raylib.hpp>
 #include <imgui_error_check.hpp>
-#include <imgui_impl_opengl3.h>
 
 ImGuiKey TranslateKey(KeyboardKey key)
 {

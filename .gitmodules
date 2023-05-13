@@ -13,3 +13,6 @@
 [submodule "libs/raylib"]
 	path = libs/raylib
 	url = git@github.com:raysan5/raylib.git
+[submodule "libs/imgui-flame-graph"]
+	path = libs/imgui-flame-graph
+	url = git@github.com:bwrsandman/imgui-flame-graph.git

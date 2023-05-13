@@ -19,6 +19,19 @@ target_include_directories(imgui PUBLIC
 )
 set_compile_options(imgui)
 
+file(GLOB IMGUI_FLAME_GRAPH_SRC
+    ${LIB_DIR}/imgui-flame-graph/imgui_widget_flamegraph.cpp
+    ${LIB_DIR}/imgui-flame-graph/imgui_widget_flamegraph.h
+)
+add_library(imgui_flame_graph STATIC ${IMGUI_FLAME_GRAPH_SRC})
+target_include_directories(imgui_flame_graph PUBLIC
+    ${LIB_DIR}/imgui
+    ${LIB_DIR}/imgui/backends
+    ${LIB_DIR}/imgui-flame-graph
+)
+target_compile_definitions(imgui_flame_graph PRIVATE IMGUI_DEFINE_MATH_OPERATORS)
+set_compile_options(imgui_flame_graph)
+
 set(IMGUIZMO_SRC
     ${LIB_DIR}/imguizmo/ImGuizmo.h
     ${LIB_DIR}/imguizmo/ImGuizmo.cpp
