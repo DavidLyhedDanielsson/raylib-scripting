@@ -39,7 +39,10 @@ EntityReflectionStruct(RComponent)
             {
                 registry.emplace<Component::RComponent>(
                     entity,
-                    Component::RComponent{.assetName = key.c_str(), .model = value});
+                    Component::RComponent{
+                        .assetName = key.c_str(),
+                        .model = value,
+                        .boundingBox = GetModelBoundingBox(value)});
                 break;
             }
         }

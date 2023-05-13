@@ -36,6 +36,7 @@ set(SRC
     imgui_error_check.cpp imgui_error_check.hpp
     main.cpp
     navigation.cpp navigation.hpp
+    profiling.cpp profiling.hpp
     raylib_imgui.cpp raylib_imgui.hpp
     world.cpp world.hpp
     external/raylib.hpp

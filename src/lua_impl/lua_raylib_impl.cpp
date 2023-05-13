@@ -194,14 +194,10 @@ namespace LuaRaylib
                 if(!transform)
                     return;
 
-                auto bbox = GetModelBoundingBox(
-                    render->model,
-                    MatrixMultiply(
-                        MatrixRotateZYX(transform->rotation),
-                        MatrixTranslate(
-                            transform->position.x,
-                            transform->position.y,
-                            transform->position.z)));
+                auto bbox = BoundingBoxTransform(
+                    render->boundingBox,
+                    transform->position,
+                    MatrixRotateZYX(transform->rotation));
                 DrawBoundingBox(bbox, RED);
             });
 

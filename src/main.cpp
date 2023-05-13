@@ -20,6 +20,7 @@
 #include <lua_impl/lua_imgui_impl.hpp>
 #include <lua_impl/lua_imguizmo_impl.hpp>
 #include <lua_impl/lua_raylib_impl.hpp>
+#include <profiling.hpp>
 #include <raylib_imgui.hpp>
 #include <world.hpp>
 
@@ -43,7 +44,10 @@ std::vector<std::string> history;
 
 void main_loop()
 {
-    World::Update(luaState);
+    Profiling::NewFrame();
+
+    // Not sure about this syntax but let's see
+    PROFILE_CALL(World::Update, luaState);
 
     // Calculate time delta
     auto now = std::chrono::high_resolution_clock::now();
@@ -58,6 +62,7 @@ void main_loop()
     sprintf(buf, "Frame time: %f", deltaMs);
     DrawText(buf, 0, 0, 20, LIGHTGRAY);
 
+    Profiling::Start("Load editor.lua");
     auto res = luaL_loadfile(luaState, AssetPath("lua/editor.lua").data());
     bool guiError = false;
     if(res != LUA_OK)
@@ -66,12 +71,15 @@ void main_loop()
         std::cerr << lua_tostring(luaState, -1) << std::endl;
         guiError = true;
     }
-    if(!guiError && lua_pcall(luaState, 0, 0, 0) != LUA_OK)
-    {
-        std::cerr << "Error when executing editor.lua" << std::endl;
-        std::cerr << lua_tostring(luaState, -1) << std::endl;
-        guiError = true;
-    }
+    Profiling::End();
+    Profiling::ProfileCall("Execute editor.lua", [&]() {
+        if(!guiError && lua_pcall(luaState, 0, 0, 0) != LUA_OK)
+        {
+            std::cerr << "Error when executing editor.lua" << std::endl;
+            std::cerr << lua_tostring(luaState, -1) << std::endl;
+            guiError = true;
+        }
+    });
 
     Camera camera;
     for(auto [entity, transform, cameraComponent] :
@@ -86,25 +94,28 @@ void main_loop()
         };
     }
 
-    BeginMode3D(camera);
-    World::Draw();
+    PROFILE_CALL(BeginMode3D, camera);
+    PROFILE_CALL(World::Draw);
 
-    if(!guiError)
-    {
-        lua_getglobal(luaState, "raylib");
-        if(lua_pcall(luaState, 0, 0, 0) != LUA_OK)
+    Profiling::ProfileCall("Execute editor.lua::raylib", [&]() {
+        if(!guiError)
         {
-            std::cerr << "Error when executing editor.lua:raylib" << std::endl;
-            std::cerr << lua_tostring(luaState, -1) << std::endl;
-            guiError = true;
+            lua_getglobal(luaState, "raylib");
+            if(lua_pcall(luaState, 0, 0, 0) != LUA_OK)
+            {
+                std::cerr << "Error when executing editor.lua:raylib" << std::endl;
+                std::cerr << lua_tostring(luaState, -1) << std::endl;
+                guiError = true;
+            }
         }
-    }
+    });
 
-    EndMode3D();
+    PROFILE_CALL(EndMode3D);
 
-    RaylibImGui::Begin();
+    PROFILE_CALL(RaylibImGui::Begin);
 
-    World::DrawImgui();
+    PROFILE_CALL(World::DrawImgui);
+
     // Imgui might update the camera
     for(auto [entity, transform, cameraComponent] :
         registry.view<Component::Transform, Component::Camera>().each())
@@ -154,13 +165,15 @@ void main_loop()
     ImGui::EndChild();
     ImGui::End();
 
-    lua_getglobal(luaState, "imgui");
-    if(lua_pcall(luaState, 0, 0, 0) != LUA_OK)
-    {
-        std::cerr << lua_tostring(luaState, -1) << std::endl;
-        lua_pop(luaState, 1);
-        ErrorCheckEndWindowRecover();
-    }
+    Profiling::ProfileCall("Execute editor.lua::imgui", [&]() {
+        lua_getglobal(luaState, "imgui");
+        if(lua_pcall(luaState, 0, 0, 0) != LUA_OK)
+        {
+            std::cerr << lua_tostring(luaState, -1) << std::endl;
+            lua_pop(luaState, 1);
+            ErrorCheckEndWindowRecover();
+        }
+    });
 
     // Camera might be modified by lua
     for(auto [entity, transform, cameraComponent] :
@@ -175,7 +188,9 @@ void main_loop()
         };
     }
 
-    RaylibImGui::End();
+    Profiling::Draw();
+
+    PROFILE_CALL(RaylibImGui::End);
 
     if(!ImGui::GetIO().WantCaptureMouse && IsMouseButtonDown(1))
         UpdateCamera(&camera, CAMERA_THIRD_PERSON);
@@ -192,7 +207,9 @@ void main_loop()
         };
     }
 
-    EndDrawing();
+    PROFILE_CALL(EndDrawing);
+
+    Profiling::EndFrame();
 }
 
 // Function to write to the console output window instead of stdout when `print` is used in lua

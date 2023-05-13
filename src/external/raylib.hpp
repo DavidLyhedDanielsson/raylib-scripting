@@ -15,6 +15,80 @@
     #pragma warning(pop)
 #endif
 
+inline BoundingBox BoundingBoxTransform(BoundingBox box, Vector3 translation)
+{
+    Vector3 min = Vector3Add(box.min, translation);
+    Vector3 max = Vector3Add(box.max, translation);
+
+    return BoundingBox{.min = min, .max = max};
+}
+
+inline BoundingBox BoundingBoxTransform(BoundingBox box, Matrix rotation)
+{
+    // Thanks Real-Time Collision Detection
+    Vector3 min = {};
+    Vector3 max = {};
+
+    float* floats = &rotation.m0;
+
+    for(int i = 0; i < 3; ++i)
+    {
+        for(int j = 0; j < 3; ++j)
+        {
+            const int index = i * 4 + j;
+
+            float e = floats[index] * *(&box.min.x + j);
+            float f = floats[index] * *(&box.max.x + j);
+
+            if(e < f)
+            {
+                *(&min.x + i) += e;
+                *(&max.x + i) += f;
+            }
+            else
+            {
+                *(&min.x + i) += f;
+                *(&max.x + i) += e;
+            }
+        }
+    }
+
+    return BoundingBox{.min = min, .max = max};
+}
+
+inline BoundingBox BoundingBoxTransform(BoundingBox box, Vector3 translation, Matrix rotation)
+{
+    // Thanks Real-Time Collision Detection
+    Vector3 min = translation;
+    Vector3 max = translation;
+
+    float* floats = &rotation.m0;
+
+    for(int i = 0; i < 3; ++i)
+    {
+        for(int j = 0; j < 3; ++j)
+        {
+            const int index = i * 4 + j;
+
+            float e = floats[index] * *(&box.min.x + j);
+            float f = floats[index] * *(&box.max.x + j);
+
+            if(e < f)
+            {
+                *(&min.x + i) += e;
+                *(&max.x + i) += f;
+            }
+            else
+            {
+                *(&min.x + i) += f;
+                *(&max.x + i) += e;
+            }
+        }
+    }
+
+    return BoundingBox{.min = min, .max = max};
+}
+
 // Taken from Raylib's source and modified
 inline BoundingBox GetModelBoundingBox(Model model, Vector3 translation)
 {

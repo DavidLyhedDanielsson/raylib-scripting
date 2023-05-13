@@ -2,6 +2,7 @@
 #include "entity/enemy_goal.hpp"
 #include "entity/walkable.hpp"
 #include "navigation.hpp"
+#include "profiling.hpp"
 #include "raylib.h"
 #include "raymath.h"
 #include <algorithm>
@@ -182,8 +183,9 @@ namespace World
                     .each([&](entt::entity entity,
                               Component::Render render,
                               Component::Transform transform) {
-                        auto bounds =
-                            GetModelBoundingBox(render.model, MatrixRotateZYX(transform.rotation));
+                        auto bounds = BoundingBoxTransform(
+                            render.boundingBox,
+                            MatrixRotateZYX(transform.rotation));
                         Vector2 minBounds = {.x = bounds.min.x, .y = bounds.min.z};
                         Vector2 maxBounds = {.x = bounds.max.x, .y = bounds.max.z};
 
@@ -208,8 +210,9 @@ namespace World
                               Component::EnemyGoal _,
                               Component::Render render,
                               Component::Transform transform) {
-                        auto bounds =
-                            GetModelBoundingBox(render.model, MatrixRotateZYX(transform.rotation));
+                        auto bounds = BoundingBoxTransform(
+                            render.boundingBox,
+                            MatrixRotateZYX(transform.rotation));
                         Vector2 minBounds = {.x = bounds.min.x, .y = bounds.min.z};
                         Vector2 maxBounds = {.x = bounds.max.x, .y = bounds.max.z};
 
@@ -351,317 +354,345 @@ namespace World
 
         float time = 1.0f / 60.0f;
 
-        for(auto [entity, transform, moveTowards, velocityComponent, acceleration] :
-            world.registry
-                ->view<
-                    Component::Transform,
-                    Component::MoveTowards,
-                    Component::Velocity,
-                    Component::Acceleration>()
-                .each())
-        {
-            const float radius = 0.35f;
+        static std::vector<std::string> entityNames;
+        entityNames.clear();
 
-            float speed = moveTowards.speed;
-
-            if(navigation.IsGoal(transform.position))
-            {
-                if(auto health = world.registry->try_get<Component::Health>(entity); health)
-                    health->currentHealth = 0.0f;
-                continue;
-            }
-
-            const Vector2 velocity = {.x = velocityComponent.x, .y = velocityComponent.z};
-
-            // auto movementDirection =
-            //     Vector3Normalize(Vector3Subtract(moveTowards.target, transform.position));
-
-            Vector2 force = navigation.GetForce({transform.position.x, transform.position.z});
-            Vector3 movementDirection = {force.x, 0.0f, force.y};
-
-            Vector3 goalVelocity = Vector3Scale(movementDirection, speed);
-
-            const float ksi = 0.54f;
-            Vector2 forces = Vector2Scale(
-                Vector2Subtract({goalVelocity.x, goalVelocity.z}, velocity),
-                1.0f / ksi);
-
-            forces = Vector2Add(forces, Vector2Scale({randomNumber(mt), randomNumber(mt)}, 0.5f));
-
-            for(auto [otherEntity, otherTransform, otherHealth] :
-                world.registry->view<Component::Transform, Component::Health>().each())
-            {
-                if(entity == otherEntity)
-                    continue;
-
-                if(Vector3Distance(transform.position, otherTransform.position) > 3.0f)
-                    continue;
-
-                Vector3 otherVelocity = Vector3Zero();
-                if(Component::Velocity* oVel =
-                       world.registry->try_get<Component::Velocity>(otherEntity);
-                   oVel)
-                {
-                    otherVelocity = oVel->ToVector3();
-                };
-
-                std::optional<Vector2> coeff = CollisionCoefficient(
-                    {transform.position.x, transform.position.z},
-                    {otherTransform.position.x, otherTransform.position.z},
-                    velocity,
-                    {otherVelocity.x, otherVelocity.z},
-                    radius);
-
-                if(coeff.has_value())
-                {
-                    Vector2 avoidForce = coeff.value();
-                    forces.x += avoidForce.x;
-                    forces.y += avoidForce.y;
-                }
-            }
-
-            for(auto [obstacle, oTransform, render] :
-                world.registry->view<Component::Transform, Component::Render, Component::Obstacle>()
+        Profiling::ProfileCall("MoveEntities", [&]() {
+            for(auto [entity, transform, moveTowards, velocityComponent, acceleration] :
+                world.registry
+                    ->view<
+                        Component::Transform,
+                        Component::MoveTowards,
+                        Component::Velocity,
+                        Component::Acceleration>()
                     .each())
             {
-                auto bbox = GetModelBoundingBox(
-                    render.model,
-                    MatrixMultiply(
-                        MatrixRotateZYX(oTransform.rotation),
-                        MatrixTranslate(oTransform.position)));
+                entityNames.push_back(std::to_string((int)entity));
+                PROFILE_SCOPE(entityNames.back().c_str());
 
-                Vector2 bboxMin = {.x = bbox.min.x, .y = bbox.min.z};
-                Vector2 bboxMax = {.x = bbox.max.x, .y = bbox.max.z};
-                Vector2 bboxSize = Vector2Subtract(bboxMax, bboxMin);
-                Vector2 bboxCenter = Vector2Add(bboxMin, Vector2Scale(bboxSize, 0.5f));
+                const float radius = 0.35f;
 
-                float bboxWidth = bboxMax.x - bboxMin.x;
-                float bboxHeight = bboxMax.y - bboxMin.y;
+                float speed = moveTowards.speed;
 
-                Vector2 p0;
-                Vector2 p1;
-                Vector2 normal; // It doesn't actually matter which direction this points
-                if(bboxWidth > bboxHeight)
+                if(navigation.IsGoal(transform.position))
                 {
-                    p0 = {.x = bboxCenter.x - bboxWidth * 0.5f, .y = bboxCenter.y};
-                    p1 = {.x = bboxCenter.x + bboxWidth * 0.5f, .y = bboxCenter.y};
-
-                    float x = p1.x - p0.x;
-                    float y = p1.y - p0.y;
-                    normal = Vector2Normalize({.x = -y, .y = x});
-                }
-                else
-                {
-                    p0 = {.x = bboxCenter.x, .y = bboxCenter.y - bboxHeight * 0.5f};
-                    p1 = {.x = bboxCenter.x, .y = bboxCenter.y + bboxHeight * 0.5f};
-
-                    float x = p1.x - p0.x;
-                    float y = p1.y - p0.y;
-                    normal = Vector2Normalize({.x = -y, .y = x});
-                }
-
-                Vector2 position = {.x = transform.position.x, .y = transform.position.z};
-
-                Vector2 nw = Vector2Subtract(linePointDistance(p0, p1, position), position);
-                float dw = Vector2DotProduct(nw, nw);
-
-                if(Vector2Dot(velocity, nw) < 0 || std::abs(dw - radius * radius) < 0.00001
-                   || dw > 3.0f * 3.0f)
-                {
+                    if(auto health = world.registry->try_get<Component::Health>(entity); health)
+                        health->currentHealth = 0.0f;
                     continue;
                 }
 
-                enum CollisionType
-                {
-                    NONE,
-                    DISC,
-                    SEGMENT
-                };
+                const Vector2 velocity = {.x = velocityComponent.x, .y = velocityComponent.z};
 
-                struct
-                {
-                    float tmin = std::numeric_limits<float>::max();
-                    CollisionType collisionType = NONE;
-                    union
+                // auto movementDirection =
+                //     Vector3Normalize(Vector3Subtract(moveTowards.target, transform.position));
+
+                Vector2 force = navigation.GetForce({transform.position.x, transform.position.z});
+                Vector3 movementDirection = {force.x, 0.0f, force.y};
+
+                Vector3 goalVelocity = Vector3Scale(movementDirection, speed);
+
+                const float ksi = 0.54f;
+                Vector2 forces = Vector2Scale(
+                    Vector2Subtract({goalVelocity.x, goalVelocity.z}, velocity),
+                    1.0f / ksi);
+
+                forces =
+                    Vector2Add(forces, Vector2Scale({randomNumber(mt), randomNumber(mt)}, 0.5f));
+
+                Profiling::ProfileCall("EntityAvoidance", [&]() {
+                    for(auto [otherEntity, otherTransform, otherHealth] :
+                        world.registry->view<Component::Transform, Component::Health>().each())
                     {
-                        struct
+                        if(entity == otherEntity)
+                            continue;
+
+                        if(Vector3Distance(transform.position, otherTransform.position) > 3.0f)
+                            continue;
+
+                        Vector3 otherVelocity = Vector3Zero();
+                        if(Component::Velocity* oVel =
+                               world.registry->try_get<Component::Velocity>(otherEntity);
+                           oVel)
                         {
-                            float b;
-                            float c;
-                            float disc;
-                            Vector2 w;
-                        } discData;
-                        struct
-                        {
-                            Vector2 o;
-                            Vector2 wo;
-                        } segmentData;
-                    };
-                } hitInfo;
+                            otherVelocity = oVel->ToVector3();
+                        };
 
-                const float correctRadius = dw < radius * radius ? std::sqrt(dw) : radius;
-                const float a = Vector2DotProduct(velocity, velocity);
-
-                auto DiscCollision = [&](Vector2 point) {
-                    Vector2 w = Vector2Subtract(point, position);
-                    float b = Vector2DotProduct(w, velocity);
-                    float c = Vector2DotProduct(w, w) - correctRadius * correctRadius;
-                    float disc = b * b - a * c;
-                    if(disc > 0.0f && std::abs(a) > 0.0001f)
-                    {
-                        disc = std::sqrt(disc);
-                        float t = (b - disc) / a;
-                        if(t > 0 && t < hitInfo.tmin)
-                        {
-                            hitInfo = {
-                                .tmin = t,
-                                .collisionType = CollisionType::DISC,
-                                .discData = {
-                                    .b = b,
-                                    .c = c,
-                                    .disc = disc,
-                                    .w = w,
-                                }};
-                        }
-                    }
-                };
-
-                DiscCollision(p0);
-                DiscCollision(p1);
-
-                auto SegmentCollision = [&](Vector2 p0, Vector2 p1) {
-                    Vector2 o = Vector2Subtract(p1, p0);
-                    float d = Vector2Det(velocity, o);
-                    if(std::abs(d) > 0.0001f)
-                    {
-                        float invD = 1.0f / d;
-                        float t = Vector2Det(o, Vector2Subtract(position, p0)) * invD;
-                        float s = Vector2Det(velocity, Vector2Subtract(position, p0)) * invD;
-                        if(t > 0.0f && s >= 0.0f && s <= 1.0f && t < hitInfo.tmin)
-                        {
-                            hitInfo = {
-                                .tmin = t,
-                                .collisionType = CollisionType::SEGMENT,
-                                .segmentData = {
-                                    .o = o,
-                                    .wo = Vector2Subtract(position, p0),
-                                }};
-                        }
-                    }
-                };
-
-                SegmentCollision(
-                    Vector2Add(p0, Vector2Scale(normal, correctRadius)),
-                    Vector2Add(p1, Vector2Scale(normal, correctRadius)));
-                SegmentCollision(
-                    Vector2Subtract(p0, Vector2Scale(normal, correctRadius)),
-                    Vector2Subtract(p1, Vector2Scale(normal, correctRadius)));
-
-                switch(hitInfo.collisionType)
-                {
-                    case CollisionType::DISC: {
-                        const float c0 = -k * std::exp(-hitInfo.tmin / t0);
-                        const Vector2 c1 = Vector2Subtract(
+                        std::optional<Vector2> coeff = CollisionCoefficient(
+                            {transform.position.x, transform.position.z},
+                            {otherTransform.position.x, otherTransform.position.z},
                             velocity,
-                            Vector2Scale(
-                                Vector2Subtract(
-                                    Vector2Scale(velocity, hitInfo.discData.b),
-                                    Vector2Scale(hitInfo.discData.w, a)),
-                                1.0f / hitInfo.discData.disc));
-                        const float c2 = a * std::pow(hitInfo.tmin, m);
-                        const float c3 = (m / hitInfo.tmin + 1.0f / t0);
-                        const Vector2 d =
-                            Vector2Scale(Vector2Scale(Vector2Scale(c1, c0), 1.0f / c2), c3);
+                            {otherVelocity.x, otherVelocity.z},
+                            radius);
 
-                        forces = Vector2Add(forces, d);
-                        break;
+                        if(coeff.has_value())
+                        {
+                            Vector2 avoidForce = coeff.value();
+                            forces.x += avoidForce.x;
+                            forces.y += avoidForce.y;
+                        }
                     }
-                    case CollisionType::SEGMENT: {
-                        const float c0 = k * std::exp(-hitInfo.tmin / t0);
-                        const float c1 =
-                            std::pow(hitInfo.tmin, m) * Vector2Det(velocity, hitInfo.segmentData.o);
-                        const float c2 = (m / hitInfo.tmin + 1.0f / t0);
+                });
 
-                        const Vector2 d = Vector2Scale(
-                            {.x = -hitInfo.segmentData.o.y, .y = hitInfo.segmentData.o.x},
-                            c0 / c1 * c2);
-                        forces = Vector2Add(forces, d);
-                        break;
+                Profiling::ProfileCall("ObstacleAvoidance", [&]() {
+                    for(auto [obstacle, oTransform, render] :
+                        world.registry
+                            ->view<Component::Transform, Component::Render, Component::Obstacle>()
+                            .each())
+                    {
+                        auto bbox = BoundingBoxTransform(
+                            render.boundingBox,
+                            oTransform.position,
+                            MatrixRotateZYX(oTransform.rotation));
+
+                        Vector2 bboxMin = {.x = bbox.min.x, .y = bbox.min.z};
+                        Vector2 bboxMax = {.x = bbox.max.x, .y = bbox.max.z};
+                        Vector2 bboxSize = Vector2Subtract(bboxMax, bboxMin);
+                        Vector2 bboxCenter = Vector2Add(bboxMin, Vector2Scale(bboxSize, 0.5f));
+
+                        float bboxWidth = bboxMax.x - bboxMin.x;
+                        float bboxHeight = bboxMax.y - bboxMin.y;
+
+                        Vector2 p0;
+                        Vector2 p1;
+                        Vector2 normal; // It doesn't actually matter which direction this points
+                        if(bboxWidth > bboxHeight)
+                        {
+                            p0 = {.x = bboxCenter.x - bboxWidth * 0.5f, .y = bboxCenter.y};
+                            p1 = {.x = bboxCenter.x + bboxWidth * 0.5f, .y = bboxCenter.y};
+
+                            float x = p1.x - p0.x;
+                            float y = p1.y - p0.y;
+                            normal = Vector2Normalize({.x = -y, .y = x});
+                        }
+                        else
+                        {
+                            p0 = {.x = bboxCenter.x, .y = bboxCenter.y - bboxHeight * 0.5f};
+                            p1 = {.x = bboxCenter.x, .y = bboxCenter.y + bboxHeight * 0.5f};
+
+                            float x = p1.x - p0.x;
+                            float y = p1.y - p0.y;
+                            normal = Vector2Normalize({.x = -y, .y = x});
+                        }
+
+                        Vector2 position = {.x = transform.position.x, .y = transform.position.z};
+
+                        Vector2 nw = Vector2Subtract(linePointDistance(p0, p1, position), position);
+                        float dw = Vector2DotProduct(nw, nw);
+
+                        if(Vector2Dot(velocity, nw) < 0 || std::abs(dw - radius * radius) < 0.00001
+                           || dw > 3.0f * 3.0f)
+                        {
+                            continue;
+                        }
+
+                        enum CollisionType
+                        {
+                            NONE,
+                            DISC,
+                            SEGMENT
+                        };
+
+                        struct
+                        {
+                            float tmin = std::numeric_limits<float>::max();
+                            CollisionType collisionType = NONE;
+                            union
+                            {
+                                struct
+                                {
+                                    float b;
+                                    float c;
+                                    float disc;
+                                    Vector2 w;
+                                } discData;
+                                struct
+                                {
+                                    Vector2 o;
+                                    Vector2 wo;
+                                } segmentData;
+                            };
+                        } hitInfo;
+
+                        const float correctRadius = dw < radius * radius ? std::sqrt(dw) : radius;
+                        const float a = Vector2DotProduct(velocity, velocity);
+
+                        auto DiscCollision = [&](Vector2 point) {
+                            Vector2 w = Vector2Subtract(point, position);
+                            float b = Vector2DotProduct(w, velocity);
+                            float c = Vector2DotProduct(w, w) - correctRadius * correctRadius;
+                            float disc = b * b - a * c;
+                            if(disc > 0.0f && std::abs(a) > 0.0001f)
+                            {
+                                disc = std::sqrt(disc);
+                                float t = (b - disc) / a;
+                                if(t > 0 && t < hitInfo.tmin)
+                                {
+                                    hitInfo = {
+                                        .tmin = t,
+                                        .collisionType = CollisionType::DISC,
+                                        .discData = {
+                                            .b = b,
+                                            .c = c,
+                                            .disc = disc,
+                                            .w = w,
+                                        }};
+                                }
+                            }
+                        };
+
+                        DiscCollision(p0);
+                        DiscCollision(p1);
+
+                        auto SegmentCollision = [&](Vector2 p0, Vector2 p1) {
+                            Vector2 o = Vector2Subtract(p1, p0);
+                            float d = Vector2Det(velocity, o);
+                            if(std::abs(d) > 0.0001f)
+                            {
+                                float invD = 1.0f / d;
+                                float t = Vector2Det(o, Vector2Subtract(position, p0)) * invD;
+                                float s =
+                                    Vector2Det(velocity, Vector2Subtract(position, p0)) * invD;
+                                if(t > 0.0f && s >= 0.0f && s <= 1.0f && t < hitInfo.tmin)
+                                {
+                                    hitInfo = {
+                                        .tmin = t,
+                                        .collisionType = CollisionType::SEGMENT,
+                                        .segmentData = {
+                                            .o = o,
+                                            .wo = Vector2Subtract(position, p0),
+                                        }};
+                                }
+                            }
+                        };
+
+                        SegmentCollision(
+                            Vector2Add(p0, Vector2Scale(normal, correctRadius)),
+                            Vector2Add(p1, Vector2Scale(normal, correctRadius)));
+                        SegmentCollision(
+                            Vector2Subtract(p0, Vector2Scale(normal, correctRadius)),
+                            Vector2Subtract(p1, Vector2Scale(normal, correctRadius)));
+
+                        switch(hitInfo.collisionType)
+                        {
+                            case CollisionType::DISC: {
+                                const float c0 = -k * std::exp(-hitInfo.tmin / t0);
+                                const Vector2 c1 = Vector2Subtract(
+                                    velocity,
+                                    Vector2Scale(
+                                        Vector2Subtract(
+                                            Vector2Scale(velocity, hitInfo.discData.b),
+                                            Vector2Scale(hitInfo.discData.w, a)),
+                                        1.0f / hitInfo.discData.disc));
+                                const float c2 = a * std::pow(hitInfo.tmin, m);
+                                const float c3 = (m / hitInfo.tmin + 1.0f / t0);
+                                const Vector2 d =
+                                    Vector2Scale(Vector2Scale(Vector2Scale(c1, c0), 1.0f / c2), c3);
+
+                                forces = Vector2Add(forces, d);
+                                break;
+                            }
+                            case CollisionType::SEGMENT: {
+                                const float c0 = k * std::exp(-hitInfo.tmin / t0);
+                                const float c1 = std::pow(hitInfo.tmin, m)
+                                                 * Vector2Det(velocity, hitInfo.segmentData.o);
+                                const float c2 = (m / hitInfo.tmin + 1.0f / t0);
+
+                                const Vector2 d = Vector2Scale(
+                                    {.x = -hitInfo.segmentData.o.y, .y = hitInfo.segmentData.o.x},
+                                    c0 / c1 * c2);
+                                forces = Vector2Add(forces, d);
+                                break;
+                            }
+                            case CollisionType::NONE: // Do nothing
+                                break;
+                        }
                     }
-                    case CollisionType::NONE: // Do nothing
-                        break;
-                }
+                });
+
+                acceleration.acceleration.x += forces.x * time;
+                acceleration.acceleration.z += forces.y * time;
             }
+        });
 
-            acceleration.acceleration.x += forces.x * time;
-            acceleration.acceleration.z += forces.y * time;
-        }
-
-        for(auto [entity, velocity, acceleration] :
-            world.registry->view<Component::Velocity, Component::Acceleration>().each())
-        {
-            float length = Vector3Length(acceleration.acceleration);
-            if(length > 20.0f * time)
+        Profiling::ProfileCall("CalculateVelocity", [&]() {
+            for(auto [entity, velocity, acceleration] :
+                world.registry->view<Component::Velocity, Component::Acceleration>().each())
             {
-                acceleration.acceleration =
-                    Vector3Scale(Vector3Normalize(acceleration.acceleration), 20.0f * time);
+                float length = Vector3Length(acceleration.acceleration);
+                if(length > 20.0f * time)
+                {
+                    acceleration.acceleration =
+                        Vector3Scale(Vector3Normalize(acceleration.acceleration), 20.0f * time);
+                }
+
+                velocity.x += acceleration.acceleration.x;
+                velocity.y += acceleration.acceleration.y;
+                velocity.z += acceleration.acceleration.z;
+
+                acceleration.acceleration = {0.0f, 0.0f, 0.0f};
             }
+        });
 
-            velocity.x += acceleration.acceleration.x;
-            velocity.y += acceleration.acceleration.y;
-            velocity.z += acceleration.acceleration.z;
+        Profiling::ProfileCall("MoveEntities", [&]() {
+            for(auto [entity, transform, velocity] :
+                world.registry->view<Component::Transform, Component::Velocity>().each())
+            {
+                transform.position.x += velocity.x * time;
+                transform.position.y += velocity.y * time;
+                transform.position.z += velocity.z * time;
+            }
+        });
 
-            acceleration.acceleration = {0.0f, 0.0f, 0.0f};
-        }
+        Profiling::ProfileCall("Tile", [&]() {
+            for(auto [entity, transform] :
+                world.registry->view<Component::Transform, Component::Tile>().each())
+            {
+                transform.position.x = std::roundf(transform.position.x);
+                transform.position.y = std::roundf(transform.position.y);
+                transform.position.z = std::roundf(transform.position.z);
 
-        for(auto [entity, transform, velocity] :
-            world.registry->view<Component::Transform, Component::Velocity>().each())
-        {
-            transform.position.x += velocity.x * time;
-            transform.position.y += velocity.y * time;
-            transform.position.z += velocity.z * time;
-        }
+                transform.rotation.x =
+                    RoundToMultiple(transform.rotation.x * RAD2DEG, 90.0f) * DEG2RAD;
+                transform.rotation.y =
+                    RoundToMultiple(transform.rotation.y * RAD2DEG, 90.0f) * DEG2RAD;
+                transform.rotation.z =
+                    RoundToMultiple(transform.rotation.z * RAD2DEG, 90.0f) * DEG2RAD;
+            }
+        });
 
-        for(auto [entity, transform] :
-            world.registry->view<Component::Transform, Component::Tile>().each())
-        {
-            transform.position.x = std::roundf(transform.position.x);
-            transform.position.y = std::roundf(transform.position.y);
-            transform.position.z = std::roundf(transform.position.z);
-
-            transform.rotation.x = RoundToMultiple(transform.rotation.x * RAD2DEG, 90.0f) * DEG2RAD;
-            transform.rotation.y = RoundToMultiple(transform.rotation.y * RAD2DEG, 90.0f) * DEG2RAD;
-            transform.rotation.z = RoundToMultiple(transform.rotation.z * RAD2DEG, 90.0f) * DEG2RAD;
-        }
-
-        for(auto [projectileEntity, projectileRender, projectileTransform, projectile] :
-            world.registry->view<Component::Render, Component::Transform, Component::Projectile>()
-                .each())
-        {
-            bool destroy = false;
-
-            auto projectileHitBox =
-                GetModelBoundingBox(projectileRender.model, projectileTransform.position);
-
-            // Entity = entity (potentially) affected by projectile
-            for(auto [entity, entityRender, entityTransform, entityHealth] :
-                world.registry->view<Component::Render, Component::Transform, Component::Health>()
+        Profiling::ProfileCall("Projectiles", [&]() {
+            for(auto [projectileEntity, projectileRender, projectileTransform, projectile] :
+                world.registry
+                    ->view<Component::Render, Component::Transform, Component::Projectile>()
                     .each())
             {
-                auto entityHitBox =
-                    GetModelBoundingBox(entityRender.model, entityTransform.position);
+                bool destroy = false;
 
-                if(CheckCollisionBoxes(projectileHitBox, entityHitBox))
+                auto projectileHitBox = BoundingBoxTransform(
+                    projectileRender.boundingBox,
+                    projectileTransform.position);
+
+                // Entity = entity (potentially) affected by projectile
+                for(auto [entity, entityRender, entityTransform, entityHealth] :
+                    world.registry
+                        ->view<Component::Render, Component::Transform, Component::Health>()
+                        .each())
                 {
-                    // Entity will be destroyed in a different system
-                    entityHealth.currentHealth -= projectile.damage;
-                    destroy = true;
-                }
-            }
+                    auto entityHitBox =
+                        BoundingBoxTransform(entityRender.boundingBox, entityTransform.position);
 
-            if(destroy)
-                world.registry->destroy(projectileEntity);
-        }
+                    if(CheckCollisionBoxes(projectileHitBox, entityHitBox))
+                    {
+                        // Entity will be destroyed in a different system
+                        entityHealth.currentHealth -= projectile.damage;
+                        destroy = true;
+                    }
+                }
+
+                if(destroy)
+                    world.registry->destroy(projectileEntity);
+            }
+        });
 
         // From the docs:
         // "Deleting the current entity or removing its components is allowed during iterations"
@@ -678,25 +709,28 @@ namespace World
                 world.registry->destroy(entity);
         }
 
-        for(auto [trackerEntity, trackerTransform, tracker] :
-            world.registry->view<Component::Transform, Component::AreaTracker>().each())
-        {
-            tracker.entitiesInside.clear();
-
-            auto trackerHitBox = tracker.GetBoundingBox(trackerTransform);
-
-            // TODO: Add BoundingBox component
-            for(auto [entity, entityRender, entityTransform, entityHealth] :
-                world.registry->view<Component::Render, Component::Transform, Component::Health>()
-                    .each())
+        Profiling::ProfileCall("AreaTracker", [&]() {
+            for(auto [trackerEntity, trackerTransform, tracker] :
+                world.registry->view<Component::Transform, Component::AreaTracker>().each())
             {
-                auto entityHitBox =
-                    GetModelBoundingBox(entityRender.model, entityTransform.position);
+                tracker.entitiesInside.clear();
 
-                if(CheckCollisionBoxes(trackerHitBox, entityHitBox))
-                    tracker.entitiesInside.push_back(entity);
+                auto trackerHitBox = tracker.GetBoundingBox(trackerTransform);
+
+                // TODO: Add BoundingBox component
+                for(auto [entity, entityRender, entityTransform, entityHealth] :
+                    world.registry
+                        ->view<Component::Render, Component::Transform, Component::Health>()
+                        .each())
+                {
+                    auto entityHitBox =
+                        BoundingBoxTransform(entityRender.boundingBox, entityTransform.position);
+
+                    if(CheckCollisionBoxes(trackerHitBox, entityHitBox))
+                        tracker.entitiesInside.push_back(entity);
+                }
             }
-        }
+        });
     }
 
     void Draw()
