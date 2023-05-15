@@ -168,6 +168,26 @@ class ReflectionComponent
         }
     }
 
+    static void ForEach(lua_State* lua, entt::registry& registry, int callbackStackIndex)
+    {
+        if constexpr(std::is_empty_v<ComponentType>)
+        {
+            registry.view<ComponentType>().each([&](auto entity) {
+                lua_pushvalue(lua, callbackStackIndex);
+                lua_pushinteger(lua, (lua_Integer)entity);
+                lua_pcall(lua, 1, 0, 0);
+            });
+        }
+        else
+        {
+            registry.view<ComponentType>().each([&](auto entity, auto) {
+                lua_pushvalue(lua, callbackStackIndex);
+                lua_pushinteger(lua, (lua_Integer)entity);
+                lua_pcall(lua, 1, 0, 0);
+            });
+        }
+    }
+
     // constexpr static uint32_t ID = IDValue;
 
   protected:

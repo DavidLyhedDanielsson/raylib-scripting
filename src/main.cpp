@@ -260,6 +260,20 @@ int main()
     luaL_setfuncs(luaState, printarr, 0);
     lua_pop(luaState, 1);
 
+    lua_getglobal(luaState, "package");
+
+    lua_getfield(luaState, -1, "path");
+    std::string val = lua_tostring(luaState, -1);
+    lua_pop(luaState, 1);
+
+    if(!val.empty())
+        val += ";";
+    val += DASSET_ROOT;
+    val += "/lua/?.lua";
+    lua_pushstring(luaState, val.c_str());
+    lua_setfield(luaState, -2, "path");
+    lua_pop(luaState, 1);
+
     last = std::chrono::high_resolution_clock::now();
 
     LoadAssets();

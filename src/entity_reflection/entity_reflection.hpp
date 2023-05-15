@@ -25,6 +25,7 @@ struct EntityReflection
         bool (*createFromLua)(lua_State*, entt::registry&, entt::entity);
         void (*pushToLua)(lua_State*, void*);
         void (*pushAllOfToLua)(lua_State*, entt::registry&);
+        void (*forEach)(lua_State*, entt::registry&, int);
 #endif
     };
 
@@ -51,6 +52,7 @@ struct EntityReflection
                 .createFromLua = Component::CreateFromLua,
                 .pushToLua = Component::PushToLua,
                 .pushAllOfToLua = Component::PushAllOfToLua,
+                .forEach = Component::ForEach,
 #endif
             }));
     }
@@ -211,6 +213,20 @@ struct EntityReflection
         assert(iter != entityMap.end());
 
         iter->second.pushAllOfToLua(lua, *registry);
+    }
+
+    static void ForEachWith(
+        lua_State* lua,
+        const char* componentName,
+        entt::registry& registry,
+        int callbackStackIndex)
+    {
+        auto entityMap = ComponentMap();
+
+        auto iter = entityMap.find(componentName);
+        assert(iter != entityMap.end());
+
+        iter->second.forEach(lua, registry, callbackStackIndex);
     }
 #endif
 };

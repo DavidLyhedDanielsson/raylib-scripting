@@ -329,6 +329,17 @@ namespace LuaEntt
                 });
             });
 
+        LuaRegister::PushRegisterMember(
+            lua,
+            "ForEachWithComponent",
+            registry,
+            +[](entt::registry* registry,
+                lua_State* lua,
+                const char* component,
+                LuaRegister::Placeholder callback) {
+                EntityReflection::ForEachWith(lua, component, *registry, (int)callback.stackIndex);
+            });
+
         lua_setglobal(lua, "Entity");
     }
 }
