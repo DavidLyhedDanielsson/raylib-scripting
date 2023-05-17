@@ -371,8 +371,6 @@ namespace World
 
                 const float radius = 0.35f;
 
-                float speed = moveTowards.speed;
-
                 if(navigation.IsGoal(transform.position))
                 {
                     if(auto health = world.registry->try_get<Component::Health>(entity); health)
@@ -380,16 +378,16 @@ namespace World
                     continue;
                 }
 
-                const Vector2 velocity = {.x = velocityComponent.x, .y = velocityComponent.z};
-
                 // auto movementDirection =
                 //     Vector3Normalize(Vector3Subtract(moveTowards.target, transform.position));
 
                 Vector2 force = navigation.GetForce({transform.position.x, transform.position.z});
                 Vector3 movementDirection = {force.x, 0.0f, force.y};
 
+                float speed = moveTowards.speed;
                 Vector3 goalVelocity = Vector3Scale(movementDirection, speed);
 
+                const Vector2 velocity = {.x = velocityComponent.x, .y = velocityComponent.z};
                 const float ksi = 0.54f;
                 Vector2 forces = Vector2Scale(
                     Vector2Subtract({goalVelocity.x, goalVelocity.z}, velocity),

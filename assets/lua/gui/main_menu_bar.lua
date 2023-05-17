@@ -1,4 +1,5 @@
 local EntityTools = require("entity_tools")
+local NavigationTools = require("navigation_tools")
 local Level = require("level")
 
 local function Window()

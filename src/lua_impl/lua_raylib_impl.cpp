@@ -1,5 +1,4 @@
 #include "lua_raylib_impl.hpp"
-
 #include <entt/entt.hpp>
 #include <external/raylib.hpp>
 #include <lua_impl/lua_register_types.hpp>

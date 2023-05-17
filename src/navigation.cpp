@@ -175,7 +175,8 @@ void Navigation::Draw()
 
         Color color = tiles[y][x].type == Tile::GOAL ? GREEN : RED;
 
-        DrawSphere(start, 0.1f, color);
+        // DrawSphere(start, 0.1f, color);
+        DrawCube(start, 0.1f, 0.1f, 0.1f, ColorAlpha(color, 0.2f));
         DrawLine3D(start, end, color);
     });
 }

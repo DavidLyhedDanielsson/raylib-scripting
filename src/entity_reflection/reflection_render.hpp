@@ -88,7 +88,12 @@ EntityReflectionStruct(RComponent)
         const Component::RComponent& component,
         entt::entity target)
     {
-        registry.emplace<Component::RComponent>(target, component.assetName, component.model);
+        registry.emplace<Component::RComponent>(
+            target,
+            Component::RComponent{
+                .assetName = component.assetName,
+                .model = component.model,
+                .boundingBox = component.boundingBox});
     }
 };
 EntityReflectionStructTail(RComponent)

@@ -102,8 +102,8 @@ void main_loop()
     ClearBackground(DARKGRAY);
 
     char buf[128];
-    sprintf(buf, "Frame time: %f", deltaMs);
-    DrawText(buf, 0, 0, 20, LIGHTGRAY);
+    sprintf(buf, "Frame time: %f", deltaMs.count());
+    DrawText(buf, 0, 64, 20, LIGHTGRAY);
 
     Profiling::Start("Load editor.lua");
     auto res = luaL_loadfile(luaState, AssetPath("lua/editor.lua").data());
@@ -235,7 +235,7 @@ void main_loop()
 
     PROFILE_CALL(RaylibImGui::End);
 
-    if(!ImGui::GetIO().WantCaptureMouse && IsMouseButtonDown(1))
+    if(!ImGui::GetIO().WantCaptureMouse && IsKeyDown(KEY_LEFT_ALT))
         UpdateCamera(&camera, CAMERA_THIRD_PERSON);
 
     for(auto [entity, transform, cameraComponent] :
