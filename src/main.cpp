@@ -30,10 +30,21 @@
 #endif
 
 // Global variables for simplicity
+using dnanoseconds = std::chrono::duration<double, std::nano>;
+using dmicroseconds = std::chrono::duration<double, std::micro>;
+using dmilliseconds = std::chrono::duration<double, std::milli>;
+using dseconds = std::chrono::duration<double>;
 
-std::chrono::time_point<std::chrono::high_resolution_clock> last;
+std::chrono::steady_clock::time_point last;
 
 lua_State* luaState;
+struct LuaThread
+{
+    int refIndex;
+    std::chrono::steady_clock::time_point sleepStart;
+    dmilliseconds sleepTime;
+};
+static std::vector<LuaThread> luaThreads;
 entt::registry registry;
 
 // Hacky lua console
@@ -46,12 +57,44 @@ void main_loop()
 {
     Profiling::NewFrame();
 
+    auto threadNow = std::chrono::steady_clock::now();
+    for(uint32_t i = 0; i < luaThreads.size(); ++i)
+    {
+        LuaThread& thread = luaThreads[i];
+
+        auto sleepGoal = thread.sleepStart + thread.sleepTime;
+        if(sleepGoal > threadNow)
+            continue;
+
+        assert(lua_rawgeti(luaState, LUA_REGISTRYINDEX, thread.refIndex) == LUA_TTHREAD);
+        lua_State* luaThread = lua_tothread(luaState, -1);
+        assert(lua_getglobal(luaThread, "func") == LUA_TFUNCTION);
+
+        int nres = 0;
+        auto ret = lua_resume(luaThread, luaState, 0, &nres);
+        if(ret == LUA_OK)
+        {
+            luaL_unref(luaState, LUA_REGISTRYINDEX, thread.refIndex);
+            luaThreads.erase(luaThreads.begin() + i);
+            --i;
+        }
+        else if(ret == LUA_YIELD)
+        {
+            assert(lua_isnumber(luaThread, nres));
+            thread.sleepStart = std::chrono::steady_clock::now();
+            thread.sleepTime = dmilliseconds{lua_tointeger(luaThread, nres)};
+        }
+        else
+        {
+            assert(false);
+        }
+    }
     // Not sure about this syntax but let's see
     PROFILE_CALL(World::Update, luaState);
 
     // Calculate time delta
-    auto now = std::chrono::high_resolution_clock::now();
-    float deltaMs = std::chrono::duration<float, std::milli>(now - last).count();
+    auto now = std::chrono::steady_clock::now();
+    dmilliseconds deltaMs = now - last;
     last = now;
 
     BeginDrawing();
@@ -274,7 +317,41 @@ int main()
     lua_setfield(luaState, -2, "path");
     lua_pop(luaState, 1);
 
-    last = std::chrono::high_resolution_clock::now();
+    lua_pushcclosure(
+        luaState,
+        [](lua_State* lua) {
+            lua_State* thread = lua_newthread(lua);
+
+            assert(lua_isthread(lua, -1));
+            assert(lua_isfunction(lua, -2));
+            lua_rotate(lua, -2, 1);
+            assert(lua_isfunction(lua, -1));
+            lua_xmove(lua, thread, 1);
+            assert(lua_isfunction(thread, -1));
+            lua_setglobal(thread, "func");
+
+            assert(lua_isthread(lua, -1));
+            int ref = luaL_ref(lua, LUA_REGISTRYINDEX);
+            luaThreads.push_back(LuaThread{
+                .refIndex = ref,
+                .sleepStart = std::chrono::steady_clock::now(),
+                .sleepTime{0},
+            });
+
+            return 0;
+        },
+        0);
+    lua_setglobal(luaState, "RegisterThread");
+    lua_pushcclosure(
+        luaState,
+        [](lua_State* lua) {
+            luaThreads.clear();
+            return 0;
+        },
+        0);
+    lua_setglobal(luaState, "StopAllThreads");
+
+    last = std::chrono::steady_clock::now();
 
     LoadAssets();
 
