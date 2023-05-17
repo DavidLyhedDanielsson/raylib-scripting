@@ -2,6 +2,13 @@ local EntityTools = require("entity_tools")
 local NavigationTools = require("navigation_tools")
 local Level = require("level")
 
+if menuBarState == nil then
+    menuBarState = {
+        drawTileInfo = true,
+        drawWallInfo = true,
+    }
+end
+
 local function Window()
     if ImGui.BeginMainMenuBar() then
         if ImGui.MenuItem("New", "", false, true) then
@@ -13,11 +20,49 @@ local function Window()
         if ImGui.MenuItem("Load", "", false, true) then
             Level.LoadLevel()
         end
-        if ImGui.MenuItem("Build Nav", "", false, true) then
-            NavigationTools.Build()
+        if ImGui.BeginMenu("Nav", true) then
+            if ImGui.MenuItem("Build", "", false, true) then
+                NavigationTools.Build()
+            end
+            ImGui.Separator()
+            if ImGui.MenuItem("Smooth field", "", navigationState.smoothField, true) then
+                navigationState.smoothField = not navigationState.smoothField
+            end
+            if ImGui.MenuItem("Fix disconnected", "", navigationState.fixDisconnected, true) then
+                navigationState.fixDisconnected = not navigationState.fixDisconnected
+            end
+            local sizeChanged, newSize = ImGui.InputFloat("Tile size", navigationState.tileSize, 0.1, 0.1)
+            if sizeChanged then
+                navigationState.tileSize = newSize
+            end
+            ImGui.Separator()
+            if ImGui.MenuItem("Draw field", "", Navigation.draw, true) then
+                Navigation.draw = not Navigation.draw
+            end
+
+            local selectedRadio = -1
+            if menuBarState.drawTileInfo then
+                selectedRadio = 1
+            elseif menuBarState.drawWallInfo then
+                selectedRadio = 2
+            else
+                selectedRadio = 0
+            end
+
+            if ImGui.RadioButtonMult("Nothing", selectedRadio, 0) then
+                menuBarState.drawTileInfo = false
+                menuBarState.drawWallInfo = false
+            end
+            if ImGui.RadioButtonMult("Draw tile info", selectedRadio, 1) then
+                menuBarState.drawTileInfo = true
+                menuBarState.drawWallInfo = false
+            end
+            if ImGui.RadioButtonMult("Draw wall info", selectedRadio, 2) then
+                menuBarState.drawTileInfo = false
+                menuBarState.drawWallInfo = true
+            end
+            ImGui.EndMenu()
         end
-        local _, newDrawNavigation = ImGui.Checkbox("Draw nav", Navigation.draw)
-        Navigation.draw = newDrawNavigation
 
         if ImGui.BeginMenu("Spawn entity...", "", false, true) then
             searchText = ImGui.InputText("Filter", searchText)

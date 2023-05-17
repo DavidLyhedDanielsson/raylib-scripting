@@ -1,3 +1,11 @@
+if navigationState == nil then
+    navigationState = {
+        smoothField = true,
+        tileSize = 1,
+        fixDisconnected = false,
+    }
+end
+
 local function DistanceToWall(tileX, tileY)
     for radius = 1, 100 do
         for ry = -radius, radius do
@@ -67,7 +75,7 @@ function DirectionToWall(x, y, distanceToWall)
 end
 
 local function Build()
-    Navigation.Build(1.0)
+    Navigation.Build(navigationState.tileSize)
 
     local idCounter = 1
     local maxDistanceToWall = -1
@@ -194,37 +202,39 @@ local function Build()
         end
     end
 
-    -- When a walker is spawned at a random position, it won't have a
-    -- parentDirection, so set it
-    Navigation.ForEachTile(function(x, y, _)
-        local current = { x = x + 1, y = y + 1 }
+    if navigationState.fixDisconnected then
+        -- When a walker is spawned at a random position, it won't have a
+        -- parentDirection, so set it
+        Navigation.ForEachTile(function(x, y, _)
+            local current = { x = x + 1, y = y + 1 }
 
-        if wallMap[current.y][current.x].parentDirection == "none" then
-            local lowestId = wallMap[current.y][current.x].id
-            local bestDirection = nil
+            if wallMap[current.y][current.x].parentDirection == "none" then
+                local lowestId = wallMap[current.y][current.x].id
+                local bestDirection = nil
 
-            local neighbours = {
-                { x = current.x,     y = current.y - 1, direction = "up",    opposite = "down" },
-                { x = current.x,     y = current.y + 1, direction = "down",  opposite = "up" },
-                { x = current.x - 1, y = current.y,     direction = "left",  opposite = "right" },
-                { x = current.x + 1, y = current.y,     direction = "right", opposite = "left" },
-            }
-            for _, n in ipairs(neighbours) do
-                if Navigation.Reachable(n.x - 1, n.y - 1) then
-                    if wallMap[n.y][n.x].id < lowestId then
-                        lowestId = wallMap[n.y][n.x].id
-                        bestDirection = n.direction
+                local neighbours = {
+                    { x = current.x,     y = current.y - 1, direction = "up",    opposite = "down" },
+                    { x = current.x,     y = current.y + 1, direction = "down",  opposite = "up" },
+                    { x = current.x - 1, y = current.y,     direction = "left",  opposite = "right" },
+                    { x = current.x + 1, y = current.y,     direction = "right", opposite = "left" },
+                }
+                for _, n in ipairs(neighbours) do
+                    if Navigation.Reachable(n.x - 1, n.y - 1) then
+                        if wallMap[n.y][n.x].id < lowestId then
+                            lowestId = wallMap[n.y][n.x].id
+                            bestDirection = n.direction
+                        end
                     end
                 end
-            end
 
-            if lowestId == wallMap[current.y][current.x].lowestId then
-                print(":(")
-            else
-                wallMap[current.y][current.x].parentDirection = bestDirection
+                if lowestId == wallMap[current.y][current.x].lowestId then
+                    print(":(")
+                else
+                    wallMap[current.y][current.x].parentDirection = bestDirection
+                end
             end
-        end
-    end)
+        end)
+    end
 
 
     -- "raw" vector field without any smoothing
@@ -252,39 +262,42 @@ local function Build()
         end
     end)
 
-
     -- Vector field with some smoothing
     local finalVectorField = {}
-    for y = 1, Navigation.sizeY do
-        finalVectorField[y] = {}
-        for x = 1, Navigation.sizeX do
-            finalVectorField[y][x] = { x = 0, y = 0 }
+    if navigationState.smoothField then
+        for y = 1, Navigation.sizeY do
+            finalVectorField[y] = {}
+            for x = 1, Navigation.sizeX do
+                finalVectorField[y][x] = { x = 0, y = 0 }
+            end
         end
-    end
 
-    -- Average over a 3x3 area
-    for y = 1, Navigation.sizeY do
-        for x = 1, Navigation.sizeX do
-            local average = { x = 0, y = 0 }
-            for yy = -1, 1 do
-                for xx = -1, 1 do
-                    if Navigation.Reachable(x + xx - 1, y + yy - 1) then
-                        local tileDir = vectorField[y + yy][x + xx]
-                        average.x = average.x + tileDir.x
-                        average.y = average.y + tileDir.y
+        -- Average over a 3x3 area
+        for y = 1, Navigation.sizeY do
+            for x = 1, Navigation.sizeX do
+                local average = { x = 0, y = 0 }
+                for yy = -1, 1 do
+                    for xx = -1, 1 do
+                        if Navigation.Reachable(x + xx - 1, y + yy - 1) then
+                            local tileDir = vectorField[y + yy][x + xx]
+                            average.x = average.x + tileDir.x
+                            average.y = average.y + tileDir.y
+                        end
                     end
                 end
-            end
-            local len = math.sqrt(average.x * average.x + average.y * average.y)
-            average.x = average.x / len
-            average.y = average.y / len
+                local len = math.sqrt(average.x * average.x + average.y * average.y)
+                average.x = average.x / len
+                average.y = average.y / len
 
-            finalVectorField[y][x] = average
+                finalVectorField[y][x] = average
+            end
         end
+
+        Navigation.SetVectorField(finalVectorField)
+    else
+        Navigation.SetVectorField(vectorField)
     end
 
-    Navigation.SetVectorField(finalVectorField)
-    --Navigation.SetVectorField(vectorField)
 
     print("Navigation built")
 end
