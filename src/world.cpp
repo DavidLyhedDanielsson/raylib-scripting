@@ -233,6 +233,12 @@ namespace World
                 lua_pushstring(lua, "tileSize");
                 lua_pushnumber(lua, navigation.tileSize);
                 lua_settable(lua, -3);
+                lua_pushstring(lua, "offsetX");
+                lua_pushnumber(lua, navigation.offsetX);
+                lua_settable(lua, -3);
+                lua_pushstring(lua, "offsetY");
+                lua_pushnumber(lua, navigation.offsetY);
+                lua_settable(lua, -3);
                 lua_pop(lua, 1);
 
                 // lua_pcall(lua, 0, 0, 0);
