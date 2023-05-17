@@ -178,4 +178,34 @@ function imgui()
             usingGizmo = false
         end
     end
+
+    if wallMap then
+        for y = 1, #wallMap do
+            for x = 1, #wallMap[y] do
+                local distance = wallMap[y][x].distance
+                local pos = Raylib.GetWorldToScreen({
+                    x = x + Navigation.offsetX - Navigation.tileSize / 2,
+                    y = 0,
+                    z = y + Navigation.offsetY - Navigation.tileSize / 2
+                })
+                if pos.x > 0 and pos.y > 0 then
+                    -- if wallMap[y][x].id ~= -1 then
+                    --     Raylib.DrawText(wallMap[y][x].id, pos.x, pos.y - 14, 12)
+                    --     Raylib.DrawText(wallMap[y][x].distance, pos.x, pos.y, 12)
+                    --     if wallMap[y][x].parentDirection == "none" then
+                    --         Raylib.DrawText(wallMap[y][x].parentDirection, pos.x, pos.y + 14, 20)
+                    --     else
+                    --         Raylib.DrawText(wallMap[y][x].parentDirection, pos.x, pos.y + 14, 12)
+                    --     end
+                    -- end
+
+
+                    -- if tileMap[y][x].distance ~= 9999 then
+                    --     Raylib.DrawText(tileMap[y][x].distance, pos.x, pos.y - 7, 12)
+                    --     Raylib.DrawText(tileMap[y][x].distanceToWall, pos.x, pos.y + 7, 12)
+                    -- end
+                end
+            end
+        end
+    end
 end

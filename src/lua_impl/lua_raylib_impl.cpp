@@ -77,6 +77,20 @@ namespace LuaRaylib
         QuickRegister(GetRenderHeight);
         QuickRegister(GetMousePosition);
 
+        LuaRegister::PushRegisterMember(
+            lua,
+            "GetWorldToScreen",
+            registry,
+            +[](entt::registry* registry, lua_State* lua, Vector3 position) {
+                entt::entity entity =
+                    *registry->view<Component::Camera, Component::Transform>().begin();
+
+                auto camera = registry->get<Component::Camera>(entity);
+                auto transform = registry->get<Component::Transform>(entity);
+
+                return GetWorldToScreen(position, camera.CreateRaylibCamera(transform.position));
+            });
+
         // Window control
         QuickRegister(ToggleFullscreen);
         QuickRegister(CloseWindow);
@@ -128,6 +142,14 @@ namespace LuaRaylib
         QuickRegister(DrawPlane);
         QuickRegister(DrawRay);
         QuickRegister(DrawGrid);
+        // QuickRegister(DrawText);
+        LuaRegister::PushRegister(
+            lua,
+            "DrawText",
+            +[](lua_State* lua, const char* text, float x, float y, float fontSize) {
+                // If x and y are int this doesn't work ????
+                DrawText(text, x, y, fontSize, WHITE);
+            });
 
         QuickRegister(IsMouseButtonUp);
         QuickRegister(IsMouseButtonDown);
