@@ -28,6 +28,45 @@ local function DistanceToWall(tileX, tileY)
     return -1
 end
 
+local function IsSameWall(x, y, ox, oy, distanceToWall)
+    local map = {}
+    for y = 0, distanceToWall * 2 + 1 + 1 do
+        map[y] = {}
+        for x = 0, distanceToWall * 2 + 1 + 1 do
+            map[y][x] = 0
+        end
+    end
+
+    local offsetX = x > ox and 1 or 0
+    local offsetY = y > oy and 1 or 0
+
+    for yy = -distanceToWall, distanceToWall do
+        for xx = -distanceToWall, distanceToWall do
+            if not Navigation.Reachable(x + xx - 1, y + yy - 1) then
+                local val = map[yy + distanceToWall + offsetY][xx + distanceToWall + offsetX]
+                map[yy + distanceToWall + offsetY][xx + distanceToWall + offsetX] = val + 1
+            end
+        end
+    end
+
+    local offsetX = ox > x and 1 or 0
+    local offsetY = oy > y and 1 or 0
+
+    local maxValue = 0
+
+    for yy = -distanceToWall, distanceToWall do
+        for xx = -distanceToWall, distanceToWall do
+            if not Navigation.Reachable(ox + xx - 1, oy + yy - 1) then
+                local val = map[yy + distanceToWall + offsetY][xx + distanceToWall + offsetX]
+                --map[yy + distanceToWall + offsetY][xx + distanceToWall + offsetX] = val + 1
+                maxValue = math.max(maxValue, val + 1)
+            end
+        end
+    end
+
+    return maxValue == 2
+end
+
 function DirectionToWall(x, y, distanceToWall)
     local dirToCurrentWall = { x = 0, y = 0 }
     local sum = 0
@@ -91,8 +130,7 @@ local function Build()
             local distanceToWall = DistanceToWall(x, y)
             maxDistanceToWall = math.max(distanceToWall, maxDistanceToWall)
 
-            tileMap[y][x] = { distance = 9999, distanceToWall = distanceToWall }
-
+            tileMap[y][x] = { distance = 9999, distanceToWall = distanceToWall, spawn = false }
             wallMap[y][x] = {
                 distance = 9999,
                 parentDirection = "none",
@@ -111,6 +149,8 @@ local function Build()
         if tile.type == Navigation.TileType.GOAL then
             tileMap[y][x].distance = 0
             table.insert(openList, { x = x, y = y })
+        elseif tile.type == Navigation.TileType.SPAWN then
+            tileMap[y][x].spawn = true
         end
     end)
 
@@ -172,30 +212,59 @@ local function Build()
             local cDistanceToWall = tileMap[current.y][current.x].distanceToWall
             local currentDistance = wallMap[current.y][current.x].distance
             local currentId = wallMap[current.y][current.x].id
-            local currentWallDir = DirectionToWall(current.x, current.y, cDistanceToWall)
+            --local currentWallDir = DirectionToWall(current.x, current.y, cDistanceToWall)
 
-            local neighbours = {
-                { x = current.x,     y = current.y - 1, direction = "up",    opposite = "down" },
-                { x = current.x,     y = current.y + 1, direction = "down",  opposite = "up" },
-                { x = current.x - 1, y = current.y,     direction = "left",  opposite = "right" },
-                { x = current.x + 1, y = current.y,     direction = "right", opposite = "left" },
-            }
-            for _, n in ipairs(neighbours) do
-                if Navigation.Reachable(n.x - 1, n.y - 1) then
-                    local nDistanceToWall = tileMap[n.y][n.x].distanceToWall
-                    local nWallDir = DirectionToWall(n.x, n.y, nDistanceToWall)
-                    local wallDot = currentWallDir.x * nWallDir.x + currentWallDir.y * nWallDir.y
+            if not tileMap[current.y][current.x].spawn then
+                local neighbours = {
+                    { x = current.x,     y = current.y - 1, direction = "up",    opposite = "down" },
+                    { x = current.x,     y = current.y + 1, direction = "down",  opposite = "up" },
+                    { x = current.x - 1, y = current.y,     direction = "left",  opposite = "right" },
+                    { x = current.x + 1, y = current.y,     direction = "right", opposite = "left" },
+                }
+                for _, n in ipairs(neighbours) do
+                    if Navigation.Reachable(n.x - 1, n.y - 1) then
+                        local nDistanceToWall = tileMap[n.y][n.x].distanceToWall
+                        --local nWallDir = DirectionToWall(n.x, n.y, nDistanceToWall)
+                        --local wallDot = currentWallDir.x * nWallDir.x + currentWallDir.y * nWallDir.y
 
-                    -- Only consider nodes that have the same distance from a
-                    -- wall as the current node. Also, only consider nodes where
-                    -- the wall is on the same side as the current node
-                    if nDistanceToWall == cDistanceToWall and wallDot >= 0 then
-                        if wallMap[n.y][n.x].distance > currentDistance + 1 then
-                            table.insert(openList, { x = n.x, y = n.y })
-                            wallMap[n.y][n.x].id = currentId
-                            wallMap[n.y][n.x].distance = currentDistance + 1
-                            wallMap[n.y][n.x].parentDirection = n.opposite
+                        -- Only consider nodes that have the same distance from a
+                        -- wall as the current node. Also, only consider nodes where
+                        -- the wall is on the same side as the current node
+                        --if nDistanceToWall == cDistanceToWall and wallDot >= 0 then
+                        if nDistanceToWall == cDistanceToWall and IsSameWall(current.x, current.y, n.x, n.y, cDistanceToWall) then
+                            if wallMap[n.y][n.x].id == -1 then
+                                if wallMap[n.y][n.x].distance > currentDistance + 1 then
+                                    table.insert(openList, { x = n.x, y = n.y })
+                                    wallMap[n.y][n.x].id = currentId
+                                    wallMap[n.y][n.x].distance = currentDistance + 1
+                                    wallMap[n.y][n.x].parentDirection = n.opposite
+                                end
+                            elseif wallMap[n.y][n.x].id ~= currentId then
+                                local tCurrentDistance = tileMap[current.y][current.x].distance
+                                if tileMap[n.y][n.x].distance == tCurrentDistance + 1 then
+                                    print("Changing " .. wallMap[n.y][n.x].id .. " to " .. currentId)
+                                    table.insert(openList, { x = n.x, y = n.y })
+                                    wallMap[n.y][n.x].id = currentId
+                                    wallMap[n.y][n.x].distance = currentDistance + 1
+                                    wallMap[n.y][n.x].parentDirection = n.opposite
+                                end
+                            end
                         end
+                    end
+                end
+            else
+                local neighbours = {
+                    { x = current.x,     y = current.y - 1, direction = "up",    opposite = "down" },
+                    { x = current.x,     y = current.y + 1, direction = "down",  opposite = "up" },
+                    { x = current.x - 1, y = current.y,     direction = "left",  opposite = "right" },
+                    { x = current.x + 1, y = current.y,     direction = "right", opposite = "left" },
+                }
+                for _, n in ipairs(neighbours) do
+                    if Navigation.Reachable(n.x - 1, n.y - 1) and n.opposite == wallMap[current.y][current.x].parentDirection then
+                        table.insert(openList, { x = n.x, y = n.y })
+                        wallMap[n.y][n.x].id = currentId
+                        wallMap[n.y][n.x].distance = currentDistance + 1
+                        wallMap[n.y][n.x].parentDirection = n.opposite
                     end
                 end
             end
