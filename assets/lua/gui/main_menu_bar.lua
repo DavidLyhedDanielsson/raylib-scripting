@@ -4,8 +4,8 @@ local Level = require("level")
 
 if menuBarState == nil then
     menuBarState = {
-        drawTileInfo = true,
-        drawWallInfo = true,
+        drawTileInfo = false,
+        drawWallInfo = false,
     }
 end
 

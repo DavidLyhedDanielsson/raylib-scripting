@@ -101,6 +101,7 @@ class Navigation
 
     void SetWalkable(Vector2 min, Vector2 max);
     void SetGoal(Vector2 min, Vector2 max);
+    void SetSpawn(Vector2 min, Vector2 max);
 
     bool Reachable(int64_t x, int64_t y);
 

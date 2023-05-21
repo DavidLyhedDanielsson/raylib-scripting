@@ -143,6 +143,11 @@ void Navigation::SetGoal(Vector2 min, Vector2 max)
     ForArea(min, max, [](Tile& tile) { tile.type = Tile::GOAL; });
 }
 
+void Navigation::SetSpawn(Vector2 min, Vector2 max)
+{
+    ForArea(min, max, [](Tile& tile) { tile.type = Tile::SPAWN; });
+}
+
 bool Navigation::Reachable(int64_t x, int64_t y)
 {
     if(x < 0 || x >= sizeX)

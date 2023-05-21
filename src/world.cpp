@@ -1,5 +1,6 @@
 #include "world.hpp"
 #include "entity/enemy_goal.hpp"
+#include "entity/enemy_spawn.hpp"
 #include "entity/walkable.hpp"
 #include "navigation.hpp"
 #include "profiling.hpp"
@@ -196,6 +197,10 @@ namespace World
                         if(world.registry->try_get<Component::EnemyGoal>(entity))
                         {
                             navigation.SetGoal(min, max);
+                        }
+                        else if(world.registry->try_get<Component::EnemySpawn>(entity))
+                        {
+                            navigation.SetSpawn(min, max);
                         }
                         else
                         {
