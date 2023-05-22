@@ -31,10 +31,10 @@ local function Window()
             if ImGui.MenuItem("Fix disconnected", "", navigationState.fixDisconnected, true) then
                 navigationState.fixDisconnected = not navigationState.fixDisconnected
             end
-            local sizeChanged, newSize = ImGui.InputFloat("Tile size", navigationState.tileSize, 0.1, 0.1)
-            if sizeChanged then
-                navigationState.tileSize = newSize
-            end
+
+            _, navigationState.tileSize = ImGui.InputFloat("Tile size", navigationState.tileSize, 0.1, 0.1)
+            _, Navigation.ksi = ImGui.InputFloat("KSI", Navigation.ksi, 0.1, 0.1)
+
             ImGui.Separator()
             if ImGui.MenuItem("Draw field", "", Navigation.draw, true) then
                 Navigation.draw = not Navigation.draw
@@ -179,8 +179,8 @@ local function Window()
             end
         end
 
-        local placeTrapToggled, newPlaceTrapMode = ImGui.Checkbox("Place trap", placeTrapMode)
-        placeTrapMode = newPlaceTrapMode
+        _, placeTrapMode = ImGui.Checkbox("Place trap", placeTrapMode)
+        _, placeFloorMode = ImGui.Checkbox("Place floor", placeFloorMode)
 
         ImGui.EndMainMenuBar()
     end

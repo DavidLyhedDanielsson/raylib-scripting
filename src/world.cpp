@@ -81,13 +81,13 @@ std::optional<Vector2> CollisionCoefficient(
     float c = Vector2DotProduct(relPos, relPos) - radiusSquared;
 
     float disc = b * b - a * c;
-    if(disc < 0.0f || std::abs(disc) < 0.00001f)
+    if(disc < 0.0f || std::abs(disc) < 0.00001f || std::abs(a) < 0.00001f)
         return std::nullopt;
 
     disc = std::sqrt(disc);
     float t = (b - disc) / a;
 
-    if(t < 0.0f)
+    if(t <= 0.0f)
         return std::nullopt;
 
     if(outTime)
@@ -244,6 +244,9 @@ namespace World
                 lua_pushstring(lua, "offsetY");
                 lua_pushnumber(lua, navigation.offsetY);
                 lua_settable(lua, -3);
+                lua_pushstring(lua, "ksi");
+                lua_pushnumber(lua, 0.1f);
+                lua_settable(lua, -3);
                 lua_pop(lua, 1);
 
                 // lua_pcall(lua, 0, 0, 0);
@@ -366,6 +369,11 @@ namespace World
 
         static std::vector<std::string> entityNames;
         entityNames.clear();
+
+        lua_getglobal(luaS, "Navigation");
+        lua_getfield(luaS, -1, "ksi");
+        const float ksi = lua_tonumber(luaS, -1);
+        lua_pop(luaS, 2);
 
         Profiling::ProfileCall("MoveEntities", [&]() {
             for(auto [entity, transform, moveTowards, velocityComponent, acceleration] :
@@ -743,8 +751,6 @@ namespace World
 
     void Draw()
     {
-        DrawGrid(10, 1.0f);
-
         auto group = world.registry->group<Component::Render, Component::Transform>();
         for(auto entity : group)
         {

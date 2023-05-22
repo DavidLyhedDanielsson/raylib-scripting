@@ -1,7 +1,7 @@
 if navigationState == nil then
     navigationState = {
-        smoothField = false,
-        tileSize = 1,
+        smoothField = true,
+        tileSize = 0.5,
         fixDisconnected = false,
     }
 end
@@ -126,6 +126,10 @@ function DirectionToWall(x, y, distanceToWall)
         dirToCurrentWall.x = dirToCurrentWall.x + 1
         dirToCurrentWall.y = dirToCurrentWall.y + 1
         sum = sum + 1
+    end
+
+    if sum == 0 then
+        return { x = 0, y = 0 }
     end
 
     dirToCurrentWall.x = dirToCurrentWall.x / sum

@@ -151,7 +151,7 @@ local function Window(selectedEntities)
             if ImGui.Button("Select") then
                 newSelectedEntity = entity
             end
-            ImGuiEntity(entity)
+            Single(entity)
             ImGui.TreePop()
         end
 

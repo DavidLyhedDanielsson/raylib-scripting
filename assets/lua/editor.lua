@@ -28,6 +28,7 @@ if setup == nil then
 
     cooldown = 0
     placeTrapMode = false
+    placeFloorMode = false
 
     Level.LoadLevel()
     NavigationTools.Build()
@@ -43,6 +44,8 @@ function raylib()
     for entity in pairs(selectedEntities) do
         Raylib.DrawEntityBoundingBox(entity)
     end
+
+    Raylib.DrawGrid(500, 1)
 end
 
 function SpawnDarts(transformTarget)
@@ -133,6 +136,37 @@ function imgui()
                 elseif assetName == "Trap_Wall" then
                     Entity.ReplaceComponent("Render", hitEntity, { assetName = "Wall" })
                     Entity.RemoveComponent("AreaTracker", hitEntity)
+                end
+            end
+        end
+    elseif placeFloorMode then
+        if not ImGui.WantCaptureMouse() then
+            if Raylib.IsMouseButtonPressed(0) then
+                local ray = Raylib.GetMouseRay(Raylib.GetMousePosition())
+                -- Should be big enough
+                local min = -500
+                local max = 500
+                local p1 = { x = min, y = 0, z = min }
+                local p2 = { x = max, y = 0, z = min }
+                local p3 = { x = max, y = 0, z = max }
+                local p4 = { x = min, y = 0, z = max }
+                local hitPosition = Raylib.GetRayCollisionQuad(ray, p1, p2, p3, p4)
+                if hitPosition ~= nil then
+                    local entity = Entity.Create()
+                    EntityTools.AddComponentOrPrintError("Render", entity, { assetName = "Floor_Standard" })
+                    EntityTools.AddComponentOrPrintError("Transform", entity,
+                        {
+                            position = { x = math.floor(hitPosition.x), y = 0, z = math.floor(hitPosition.z) },
+                            rotation = { x = 0, y = 0, z = 0 }
+                        })
+                    EntityTools.AddComponentOrPrintError("Tile", entity)
+                    EntityTools.AddComponentOrPrintError("Walkable", entity)
+                end
+            elseif Raylib.IsMouseButtonPressed(1) then
+                local ray = Raylib.GetMouseRay(Raylib.GetMousePosition())
+                local hitEntity = Raylib.GetRayCollision(ray)
+                if hitEntity ~= nil then
+                    Entity.Destroy(hitEntity)
                 end
             end
         end

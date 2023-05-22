@@ -14,6 +14,8 @@ Navigation::Navigation(Vector2 min, Vector2 max, float offsetX, float offsetY, f
     , offsetY(offsetY)
     , tileSize(tileSize)
 {
+    assert(tileSize != 0.0f);
+
     tiles.resize(this->sizeY, std::vector<Tile>(this->sizeX, Tile{.type = Tile::NONE}));
 }
 

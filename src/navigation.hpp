@@ -79,9 +79,13 @@ class Navigation
 
         for(uint32_t y = min.y; y < max.y; ++y)
         {
+            if(y < 0 || y >= sizeY)
+                continue;
             auto& row = tiles[y];
             for(uint32_t x = min.x; x < max.x; ++x)
             {
+                if(x < 0 || x >= sizeX)
+                    continue;
                 func(row[x]);
             }
         }

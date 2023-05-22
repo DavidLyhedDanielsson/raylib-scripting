@@ -200,6 +200,20 @@ namespace LuaRaylib
                 return {};
             });
 
+        LuaRegister::PushRegister(
+            lua,
+            "GetRayCollisionQuad",
+            +[](lua_State* lua, Ray ray, Vector3 p1, Vector3 p2, Vector3 p3, Vector3 p4)
+                -> LuaRegister::Placeholder {
+                RayCollision collision = GetRayCollisionQuad(ray, p1, p2, p3, p4);
+                if(collision.hit)
+                    LuaRegister::LuaSetFunc<Vector3>(lua, collision.point);
+                else
+                    lua_pushnil(lua);
+
+                return {};
+            });
+
         LuaRegister::PushRegisterMember(
             lua,
             "DrawEntityBoundingBox",

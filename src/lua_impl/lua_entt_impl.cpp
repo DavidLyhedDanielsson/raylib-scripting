@@ -69,8 +69,8 @@ namespace LuaEntt
                     if(lua_pcall(lua, 1, 0, 0) != LUA_OK)
                     {
                         auto err = lua_tostring(lua, -1);
-                        (void)err;
-                        assert(false);
+                        std::cerr << "Error when calling each" << std::endl;
+                        std::cerr << err << std::endl;
                     }
                 });
             });
