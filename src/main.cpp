@@ -24,6 +24,10 @@
 #include <raylib_imgui.hpp>
 #include <world.hpp>
 
+#if __has_include(<fenv.h>)
+    #include <fenv.h>
+#endif
+
 // #include <Windows.h>
 #ifdef PLATFORM_WEB
     #include <emscripten/emscripten.h>
@@ -87,7 +91,10 @@ void main_loop()
         else
         {
             std::cerr << "Error when executing coroutine" << std::endl;
-            std::cerr << lua_tostring(luaThread, -1) << std::endl;
+            for(int j = 0; j < ret; ++j)
+                std::cerr << lua_tostring(luaThread, -(j + 1)) << std::endl;
+            luaL_where(luaThread, 0);
+            std::cerr << "at " << lua_tostring(luaThread, -1) << std::endl;
 
             luaL_unref(luaState, LUA_REGISTRYINDEX, thread.refIndex);
             luaThreads.erase(luaThreads.begin() + i);
@@ -120,6 +127,11 @@ void main_loop()
         guiError = true;
     }
     Profiling::End();
+
+#if __has_include(<fenv.h>)
+    fedisableexcept(FE_INVALID);
+    fedisableexcept(FE_DIVBYZERO);
+#endif
     Profiling::ProfileCall("Execute editor.lua", [&]() {
         if(!guiError && lua_pcall(luaState, 0, 0, 0) != LUA_OK)
         {
@@ -128,6 +140,10 @@ void main_loop()
             guiError = true;
         }
     });
+#if __has_include(<fenv.h>)
+    feenableexcept(FE_INVALID);
+    feenableexcept(FE_DIVBYZERO);
+#endif
 
     Camera camera;
     for(auto [entity, transform, cameraComponent] :
@@ -290,6 +306,11 @@ static int lua_print(lua_State* state)
 
 int main()
 {
+#if __has_include(<fenv.h>)
+    feenableexcept(FE_INVALID);
+    feenableexcept(FE_DIVBYZERO);
+#endif
+
     const int screenWidth = 1280;
     const int screenHeight = 720;
 

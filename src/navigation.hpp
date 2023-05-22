@@ -91,6 +91,33 @@ class Navigation
         }
     }
 
+    Vector2 GetAverageForce(Vector2 position)
+    {
+        Vector2 offset = {.x = -this->offsetX, .y = -this->offsetY};
+        position = Vector2Add(position, offset);
+        position = Vector2Scale(position, 1.0f / this->tileSize);
+
+        int32_t minX = (int32_t)position.x;
+        int32_t minY = (int32_t)position.y;
+        int32_t maxX = (int32_t)position.x + 1;
+        int32_t maxY = (int32_t)position.y + 1;
+
+        if(maxX >= this->sizeX)
+            maxX--;
+        if(maxY >= this->sizeY)
+            maxY--;
+
+        // If any of max are < 0, that means min is also < 0
+        if(maxX < 0 || maxY < 0)
+            return Vector2Zero();
+
+        return Vector2Scale(
+            Vector2Add(
+                Vector2Add(vectorField[minY][minX], vectorField[minY][maxX]),
+                Vector2Add(vectorField[maxY][minX], vectorField[maxY][maxX])),
+            0.25f);
+    }
+
     Vector2 GetForce(Vector2 position)
     {
         Vector2 offset = {.x = -this->offsetX, .y = -this->offsetY};

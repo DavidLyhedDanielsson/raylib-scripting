@@ -400,14 +400,15 @@ namespace World
                 // auto movementDirection =
                 //     Vector3Normalize(Vector3Subtract(moveTowards.target, transform.position));
 
-                Vector2 force = navigation.GetForce({transform.position.x, transform.position.z});
+                Vector2 force = navigation.GetAverageForce(
+                    {.x = transform.position.x, .y = transform.position.z});
+
                 Vector3 movementDirection = {force.x, 0.0f, force.y};
 
                 float speed = moveTowards.speed;
                 Vector3 goalVelocity = Vector3Scale(movementDirection, speed);
 
                 const Vector2 velocity = {.x = velocityComponent.x, .y = velocityComponent.z};
-                const float ksi = 0.10f;
                 Vector2 forces = Vector2Scale(
                     Vector2Subtract({goalVelocity.x, goalVelocity.z}, velocity),
                     1.0f / ksi);
@@ -422,7 +423,10 @@ namespace World
                         if(entity == otherEntity)
                             continue;
 
-                        if(Vector3Distance(transform.position, otherTransform.position) > 3.0f)
+                        float distance =
+                            Vector3Distance(transform.position, otherTransform.position);
+
+                        if(distance > 3.0f)
                             continue;
 
                         Vector3 otherVelocity = Vector3Zero();
@@ -443,8 +447,26 @@ namespace World
                         if(coeff.has_value())
                         {
                             Vector2 avoidForce = coeff.value();
+                            assert(!std::isnan(avoidForce.x));
+                            assert(!std::isnan(avoidForce.y));
                             forces.x += avoidForce.x;
                             forces.y += avoidForce.y;
+                            assert(!std::isnan(forces.x));
+                            assert(!std::isnan(forces.y));
+                        }
+
+                        if(distance > 0.01f)
+                        {
+                            assert(!std::isnan(forces.x));
+                            assert(!std::isnan(forces.y));
+
+                            Vector3 otherDir =
+                                Vector3DirectionTo(transform.position, otherTransform.position);
+                            forces.x -= otherDir.x / std::pow(distance / 2.0f, 2.0);
+                            forces.y -= otherDir.y / std::pow(distance / 2.0f, 2.0);
+
+                            assert(!std::isnan(forces.x));
+                            assert(!std::isnan(forces.y));
                         }
                     }
                 });

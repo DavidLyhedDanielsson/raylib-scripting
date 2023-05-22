@@ -2,6 +2,7 @@
 #include "raylib.h"
 #include "raymath.h"
 
+#include <cassert>
 #include <limits>
 #include <queue>
 

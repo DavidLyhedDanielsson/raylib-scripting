@@ -188,3 +188,18 @@ inline float Vector2Perpendicular(Vector2 v1, Vector2 v2)
 {
     return v1.x * v2.y - v1.y * v2.x;
 }
+
+inline Vector2 Vector2Floor(Vector2 v1)
+{
+    return {.x = std::floor(v1.x), .y = std::floor(v1.y)};
+}
+
+inline Vector2 Vector2Ceil(Vector2 v1)
+{
+    return {.x = std::ceil(v1.x), .y = std::ceil(v1.y)};
+}
+
+inline Vector3 Vector3DirectionTo(Vector3 v1, Vector3 v2)
+{
+    return Vector3Normalize(Vector3Subtract(v2, v1));
+}
