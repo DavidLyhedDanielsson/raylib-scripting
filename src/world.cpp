@@ -77,17 +77,20 @@ std::optional<Vector2> CollisionCoefficient(
     Vector2 relVel = Vector2Subtract(velocity, otherVelocity);
 
     float a = Vector2DotProduct(relVel, relVel);
-    float b = Vector2DotProduct(relPos, relVel);
-    float c = Vector2DotProduct(relPos, relPos) - radiusSquared;
-
-    float disc = b * b - a * c;
-    if(disc < 0.0f || std::abs(disc) < 0.00001f || std::abs(a) < 0.00001f)
+    if(std::abs(a) < 0.0000000001f)
         return std::nullopt;
 
-    disc = std::sqrt(disc);
-    float t = (b - disc) / a;
+    float b = 2.0f * Vector2DotProduct(relPos, relVel);
+    float c =
+        Vector2DotProduct(relPos, relPos) - (radiusSquared + 2.0f * radiusSquared + radiusSquared);
 
-    if(t <= 0.0f)
+    float disc = b * b - 4.0f * a * c;
+    if(disc < 0.0f || std::abs(disc) < 0.00000001f)
+        return std::nullopt;
+
+    float t = (-b - std::sqrt(disc)) / (2.0f * a);
+
+    if(t < 0.0f)
         return std::nullopt;
 
     if(outTime)

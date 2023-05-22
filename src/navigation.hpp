@@ -102,13 +102,21 @@ class Navigation
         int32_t maxX = (int32_t)position.x + 1;
         int32_t maxY = (int32_t)position.y + 1;
 
-        if(maxX >= this->sizeX)
+        if((uint32_t)maxX >= this->sizeX)
             maxX--;
-        if(maxY >= this->sizeY)
+        if((uint32_t)maxY >= this->sizeY)
             maxY--;
 
-        // If any of max are < 0, that means min is also < 0
-        if(maxX < 0 || maxY < 0)
+        // max has been adjusted, so if it is unreachable so is min
+        if(!Reachable(maxX, maxY))
+            return Vector2Zero();
+
+        if(minX < 0)
+            minX++;
+        if(minY < 0)
+            minY++;
+
+        if(!Reachable(minX, minY))
             return Vector2Zero();
 
         return Vector2Scale(
