@@ -86,7 +86,12 @@ void main_loop()
         }
         else
         {
-            assert(false);
+            std::cerr << "Error when executing coroutine" << std::endl;
+            std::cerr << lua_tostring(luaThread, -1) << std::endl;
+
+            luaL_unref(luaState, LUA_REGISTRYINDEX, thread.refIndex);
+            luaThreads.erase(luaThreads.begin() + i);
+            --i;
         }
     }
     // Not sure about this syntax but let's see

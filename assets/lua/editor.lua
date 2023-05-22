@@ -195,20 +195,21 @@ function imgui()
                             if wallMap[y][x].id ~= -1 then
                                 Raylib.DrawText(wallMap[y][x].id, pos.x, pos.y - 14, 12)
                                 Raylib.DrawText(wallMap[y][x].distance, pos.x, pos.y, 12)
-                                if wallMap[y][x].parentDirection == "none" then
-                                    Raylib.DrawText(wallMap[y][x].parentDirection, pos.x, pos.y + 14, 20)
-                                else
-                                    Raylib.DrawText(wallMap[y][x].parentDirection, pos.x, pos.y + 14, 12)
-                                end
-                                if wallMap[y][x].locked then
-                                    Raylib.DrawText("locked", pos.x, pos.y + 28, 12)
-                                end
+                                Raylib.DrawText(wallMap[y][x].wallId, pos.x, pos.y + 14, 12)
+                                --Raylib.DrawText(wallMap[y][x].distanceAlongWall, pos.x, pos.y + 28, 12)
+                                -- if wallMap[y][x].parentDirection == "none" then
+                                --     Raylib.DrawText(wallMap[y][x].parentDirection, pos.x, pos.y + 14, 20)
+                                -- else
+                                --     Raylib.DrawText(wallMap[y][x].parentDirection, pos.x, pos.y + 14, 12)
+                                -- end
+                                -- if wallMap[y][x].locked then
+                                --     Raylib.DrawText("locked", pos.x, pos.y + 28, 12)
+                                -- end
                             end
                         elseif menuBarState.drawTileInfo then
-                            if tileMap[y][x].distance ~= 9999 then
-                                Raylib.DrawText(tileMap[y][x].distance, pos.x, pos.y - 14, 12)
-                                Raylib.DrawText(tileMap[y][x].distanceToWall, pos.x, pos.y + 0, 12)
-                            end
+                            Raylib.DrawText(x .. "x" .. y, pos.x, pos.y - 14, 12)
+                            Raylib.DrawText(tileMap[y][x].distance, pos.x, pos.y + 0, 12)
+                            Raylib.DrawText(tileMap[y][x].distanceToWall, pos.x, pos.y + 14, 12)
                         end
                     end
                 end

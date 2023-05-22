@@ -169,6 +169,11 @@ bool Navigation::IsGoal(Vector3 pos)
 void Navigation::Draw()
 {
     ForEachTile([&](uint32_t x, uint32_t y, Tile) {
+        if(vectorField.size() <= y)
+            return;
+        if(vectorField[y].size() <= x)
+            return;
+
         auto direction = vectorField[y][x];
         Vector3 start = {
             .x = (float)x * tileSize + offsetX + tileSize * 0.5f,
