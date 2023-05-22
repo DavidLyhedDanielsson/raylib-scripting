@@ -10,6 +10,8 @@
 #include "../../libs/raylib/src/raylib.h"
 #include "../../libs/raylib/src/raymath.h"
 
+#include <cmath>
+
 #if defined(__GNUC__)
 #elif defined(_MSC_VER)
     #pragma warning(pop)
@@ -102,17 +104,17 @@ inline BoundingBox GetModelBoundingBox(Model model, Vector3 translation)
         Mesh mesh = model.meshes[i];
         if(mesh.vertices != NULL)
         {
-            for(int i = 0; i < mesh.vertexCount; i++)
+            for(int j = 0; j < mesh.vertexCount; j++)
             {
                 minVertex = Vector3Min(
                     minVertex,
                     Vector3Add(
-                        {mesh.vertices[i * 3], mesh.vertices[i * 3 + 1], mesh.vertices[i * 3 + 2]},
+                        {mesh.vertices[j * 3], mesh.vertices[j * 3 + 1], mesh.vertices[j * 3 + 2]},
                         translation));
                 maxVertex = Vector3Max(
                     maxVertex,
                     Vector3Add(
-                        {mesh.vertices[i * 3], mesh.vertices[i * 3 + 1], mesh.vertices[i * 3 + 2]},
+                        {mesh.vertices[j * 3], mesh.vertices[j * 3 + 1], mesh.vertices[j * 3 + 2]},
                         translation));
             }
         }

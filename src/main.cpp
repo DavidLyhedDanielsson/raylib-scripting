@@ -24,10 +24,6 @@
 #include <raylib_imgui.hpp>
 #include <world.hpp>
 
-#if __has_include(<fenv.h>)
-    #include <fenv.h>
-#endif
-
 // #include <Windows.h>
 #ifdef PLATFORM_WEB
     #include <emscripten/emscripten.h>
@@ -128,10 +124,6 @@ void main_loop()
     }
     Profiling::End();
 
-#if __has_include(<fenv.h>)
-    fedisableexcept(FE_INVALID);
-    fedisableexcept(FE_DIVBYZERO);
-#endif
     Profiling::ProfileCall("Execute editor.lua", [&]() {
         if(!guiError && lua_pcall(luaState, 0, 0, 0) != LUA_OK)
         {
@@ -140,10 +132,6 @@ void main_loop()
             guiError = true;
         }
     });
-#if __has_include(<fenv.h>)
-    feenableexcept(FE_INVALID);
-    feenableexcept(FE_DIVBYZERO);
-#endif
 
     Camera camera;
     for(auto [entity, transform, cameraComponent] :
@@ -306,11 +294,6 @@ static int lua_print(lua_State* state)
 
 int main()
 {
-#if __has_include(<fenv.h>)
-    feenableexcept(FE_INVALID);
-    feenableexcept(FE_DIVBYZERO);
-#endif
-
     const int screenWidth = 1280;
     const int screenHeight = 720;
 
