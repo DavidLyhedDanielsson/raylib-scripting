@@ -399,7 +399,7 @@ namespace World
                 Vector3 goalVelocity = Vector3Scale(movementDirection, speed);
 
                 const Vector2 velocity = {.x = velocityComponent.x, .y = velocityComponent.z};
-                const float ksi = 0.54f;
+                const float ksi = 0.10f;
                 Vector2 forces = Vector2Scale(
                     Vector2Subtract({goalVelocity.x, goalVelocity.z}, velocity),
                     1.0f / ksi);
