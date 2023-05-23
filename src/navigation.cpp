@@ -9,112 +9,39 @@
 Navigation::Navigation() {}
 
 Navigation::Navigation(Vector2 min, Vector2 max, float offsetX, float offsetY, float tileSize)
-    : sizeX((max.x - min.x) / tileSize) // If size is 5, [0; 5] are all valid positions
-    , sizeY((max.y - min.y) / tileSize)
+    : sizeX((uint32_t)((max.x - min.x) / tileSize)) // If size is 5, [0; 5] are all valid positions
+    , sizeY((uint32_t)((max.y - min.y) / tileSize))
     , offsetX(offsetX)
     , offsetY(offsetY)
     , tileSize(tileSize)
 {
     assert(tileSize != 0.0f);
+    assert(max.x >= min.x);
+    assert(max.y >= min.y);
 
-    tiles.resize(this->sizeY, std::vector<Tile>(this->sizeX, Tile{.type = Tile::NONE}));
+    tiles.resize(
+        this->sizeY,
+        std::vector<Tile>(
+            this->sizeX,
+            Tile{.type = Tile::NONE, .wallSides = (int32_t)Tile::Side::NONE}));
 }
 
 void Navigation::Build()
 {
-    // Size of map is uint32_t, so use int64_t to avoid unsigned issues
-    struct TileRef
-    {
-        int64_t x;
-        int64_t y;
-    };
+    // This is implemented in lua now!
+    assert(false);
+}
 
-    std::vector<std::vector<uint32_t>> goalDistance(
-        sizeY,
-        std::vector<uint32_t>(sizeX, std::numeric_limits<uint32_t>::max()));
+Vector2 Navigation::GetForce(Vector2 position)
+{
+    Vector2 offset = {.x = -this->offsetX, .y = -this->offsetY};
+    position = Vector2Add(position, offset);
+    position = Vector2Scale(position, 1.0f / this->tileSize);
 
-    std::queue<TileRef> openList;
-
-    ForEachTile([&](uint32_t x, uint32_t y, Tile tile) {
-        if(tile.type == Tile::GOAL)
-        {
-            goalDistance[y][x] = 0;
-            openList.push({.x = x, .y = y});
-        }
-    });
-
-    while(!openList.empty())
-    {
-        auto current = openList.front();
-        openList.pop();
-
-        const auto currentDistance = goalDistance[current.y][current.x];
-
-        const TileRef neighbours[]{
-            {.x = current.x, .y = current.y - 1},
-            {.x = current.x, .y = current.y + 1},
-            {.x = current.x - 1, .y = current.y},
-            {.x = current.x + 1, .y = current.y},
-        };
-        for(auto [x, y] : neighbours)
-        {
-            if(Reachable(x, y) && goalDistance[y][x] > currentDistance + 1)
-            {
-                goalDistance[y][x] = currentDistance + 1;
-                openList.push({.x = x, .y = y});
-            }
-        }
-    }
-
-    std::vector<std::vector<Vector2>> vectorField(
-        sizeY,
-        std::vector<Vector2>(sizeX, {.x = 0.0f, .y = 0.0f}));
-
-    for(uint32_t y = 0; y < sizeY; ++y)
-    {
-        for(uint32_t x = 0; x < sizeX; ++x)
-        {
-            if(tiles[y][x].type == Tile::NONE)
-                continue;
-
-            auto upDistance =
-                Reachable(x, y - 1) ? goalDistance[y - 1][x] : std::numeric_limits<uint32_t>::max();
-            auto downDistance =
-                Reachable(x, y + 1) ? goalDistance[y + 1][x] : std::numeric_limits<uint32_t>::max();
-            auto leftDistance =
-                Reachable(x - 1, y) ? goalDistance[y][x - 1] : std::numeric_limits<uint32_t>::max();
-            auto rightDistance =
-                Reachable(x + 1, y) ? goalDistance[y][x + 1] : std::numeric_limits<uint32_t>::max();
-
-            if(upDistance == std::numeric_limits<uint32_t>::max()
-               && downDistance == std::numeric_limits<uint32_t>::max()
-               && leftDistance == std::numeric_limits<uint32_t>::max()
-               && rightDistance == std::numeric_limits<uint32_t>::max())
-            {
-                continue;
-            }
-
-            auto closestNeighbour =
-                std::min(upDistance, std::min(downDistance, std::min(leftDistance, rightDistance)));
-
-            Vector2 vectorDirection{};
-
-            if(upDistance == closestNeighbour)
-                vectorDirection = {.x = 0.0f, .y = -1.0f};
-            else if(downDistance == closestNeighbour)
-                vectorDirection = {.x = 0.0f, .y = 1.0f};
-            else if(leftDistance == closestNeighbour)
-                vectorDirection = {.x = -1.0f, .y = 0.0f};
-            // This could be an else if, but there is a high chance it would
-            // fall through somehow, even though it shouldn't be able to
-            else
-                vectorDirection = {.x = 1.0f, .y = 0.0f};
-
-            vectorField[y][x] = vectorDirection;
-        }
-    }
-
-    this->vectorField = vectorField;
+    if(Valid((int64_t)position.x, (int64_t)position.y))
+        return vectorField[(int)position.y][(int)position.x];
+    else
+        return Vector2Zero();
 }
 
 Vector2 Vector2Round(Vector2 v)
@@ -136,6 +63,63 @@ void Navigation::ConvertToTileSpace(Vector2& min, Vector2& max) const
     max = Vector2Round(Vector2Scale(Vector2Add(max, offset), 1.0f / tileSize));
 }
 
+Vector2 Navigation::ConvertToWorldSpace(uint32_t tileX, uint32_t tileY) const
+{
+    return {
+        .x = (float)tileX * tileSize + offsetX,
+        .y = (float)tileY * tileSize + offsetY,
+    };
+}
+
+Navigation::Wall Navigation::GetWall(uint32_t tileX, uint32_t tileY, Tile::Side wallSide) const
+{
+    const Vector2 topLeft = {
+        .x = (float)tileX * tileSize + offsetX,
+        .y = (float)tileY * tileSize + offsetY,
+    };
+    const Vector2 topRight = {
+        .x = (float)tileX * tileSize + offsetX + tileSize,
+        .y = (float)tileY * tileSize + offsetY,
+    };
+    const Vector2 bottomLeft = {
+        .x = (float)tileX * tileSize + offsetX,
+        .y = (float)tileY * tileSize + offsetY + tileSize,
+    };
+    const Vector2 bottomRight = {
+        .x = (float)tileX * tileSize + offsetX + tileSize,
+        .y = (float)tileY * tileSize + offsetY + tileSize,
+    };
+
+    switch(wallSide)
+    {
+        case Tile::Side::TOP:
+            return {
+                .start = topLeft,
+                .end = topRight,
+                .normal = {.x = 0.0f, .y = 1.0f},
+            };
+        case Tile::Side::BOTTOM:
+            return {
+                .start = bottomLeft,
+                .end = bottomRight,
+                .normal = {.x = 0.0f, .y = -1.0f},
+            };
+        case Tile::Side::LEFT:
+            return {
+                .start = topLeft,
+                .end = bottomLeft,
+                .normal = {.x = 1.0f, .y = 0.0f},
+            };
+        case Tile::Side::RIGHT:
+            return {
+                .start = topRight,
+                .end = bottomRight,
+                .normal = {.x = -1.0f, .y = 0.0f},
+            };
+    }
+    assert(false && "No you");
+}
+
 void Navigation::SetWalkable(Vector2 min, Vector2 max)
 {
     ForArea(min, max, [](Tile& tile) { tile.type = Tile::WALKABLE; });
@@ -151,45 +135,96 @@ void Navigation::SetSpawn(Vector2 min, Vector2 max)
     ForArea(min, max, [](Tile& tile) { tile.type = Tile::SPAWN; });
 }
 
-bool Navigation::Reachable(int64_t x, int64_t y)
+void Navigation::SetObstacle(Vector2 min, Vector2 max)
+{
+    ForArea(min, max, [](Tile& tile) { tile.type = Tile::OBSTACLE; });
+}
+
+void Navigation::SetWall(uint64_t x, uint64_t y, Tile::Side side)
+{
+    if(Reachable(x, y))
+        tiles[y][x].wallSides |= (int32_t)side;
+}
+
+bool Navigation::Valid(int64_t x, int64_t y)
 {
     if(x < 0 || x >= sizeX)
         return false;
     if(y < 0 || y >= sizeY)
         return false;
 
-    return tiles[y][x].type != Tile::NONE;
+    return true;
+}
+
+bool Navigation::Reachable(int64_t x, int64_t y)
+{
+    return Valid(x, y) && tiles[y][x].type != Tile::NONE;
+}
+
+bool Navigation::Walkable(int64_t x, int64_t y)
+{
+    return Valid(x, y) && tiles[y][x].type != Tile::NONE && tiles[y][x].type != Tile::OBSTACLE;
 }
 
 bool Navigation::IsGoal(Vector3 pos)
 {
     auto tilePos = GetTileSpace({.x = pos.x, .y = pos.z});
-    if(!Reachable(tilePos.x, tilePos.y))
+    if(!Reachable((int64_t)tilePos.x, (int64_t)tilePos.y))
         return false;
-    return tiles[tilePos.y][tilePos.x].type == Tile::GOAL;
+    return tiles[(int64_t)tilePos.y][(int64_t)tilePos.x].type == Tile::GOAL;
 }
 
 void Navigation::Draw()
 {
-    ForEachTile([&](uint32_t x, uint32_t y, Tile) {
-        if(vectorField.size() <= y)
-            return;
-        if(vectorField[y].size() <= x)
-            return;
+    for(uint32_t y = 0; y < vectorField.size(); ++y)
+    {
+        for(uint32_t x = 0; x < vectorField[y].size(); ++x)
+        {
+            auto direction = vectorField[y][x];
+            Vector3 start = {
+                .x = (float)x * tileSize + offsetX + tileSize * 0.5f,
+                .y = 0.2f,
+                .z = (float)y * tileSize + offsetY + tileSize * 0.5f};
+            Vector3 end = Vector3Add(
+                start,
+                Vector3Scale({.x = direction.x, .y = 0.0f, .z = direction.y}, tileSize * 0.75f));
 
-        auto direction = vectorField[y][x];
-        Vector3 start = {
-            .x = (float)x * tileSize + offsetX + tileSize * 0.5f,
-            .y = 0.2,
-            .z = (float)y * tileSize + offsetY + tileSize * 0.5f};
-        Vector3 end = Vector3Add(
-            start,
-            Vector3Scale({.x = direction.x, .y = 0.0f, .z = direction.y}, tileSize * 0.75f));
+            Color color = [&]() {
+                switch(tiles[y][x].type)
+                {
+                    case(Tile::GOAL): return GREEN;
+                    case(Tile::SPAWN): return BLUE;
+                    default: return RED;
+                }
+            }();
 
-        Color color = tiles[y][x].type == Tile::GOAL ? GREEN : RED;
+            // DrawSphere(start, 0.1f, color);
+            DrawCube(start, 0.1f, 0.1f, 0.1f, ColorAlpha(color, 0.2f));
+            DrawLine3D(start, end, color);
+        }
+    }
 
-        // DrawSphere(start, 0.1f, color);
-        DrawCube(start, 0.1f, 0.1f, 0.1f, ColorAlpha(color, 0.2f));
-        DrawLine3D(start, end, color);
-    });
+    for(uint32_t y = 0; y < tiles.size(); ++y)
+    {
+        for(uint32_t x = 0; x < tiles[y].size(); ++x)
+        {
+            tiles[y][x].forEachWall([&](Tile::Side side) {
+                Wall wall = GetWall(x, y, side);
+                DrawLine3D(
+                    Vector3{wall.start.x, 0.5f, wall.start.y},
+                    {wall.end.x, 0.5f, wall.end.y},
+                    ORANGE);
+
+                Vector2 center = Vector2Add(
+                    wall.start,
+                    Vector2Scale(Vector2Subtract(wall.end, wall.start), 0.5f));
+                DrawLine3D(
+                    {center.x, 0.5f, center.y},
+                    Vector3Add(
+                        {center.x, 0.5f, center.y},
+                        {.x = wall.normal.x, .y = 0.0f, .z = wall.normal.y}),
+                    ORANGE);
+            });
+        }
+    }
 }

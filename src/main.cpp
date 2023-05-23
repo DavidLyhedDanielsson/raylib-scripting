@@ -66,9 +66,9 @@ void main_loop()
         if(sleepGoal > threadNow)
             continue;
 
-        assert(lua_rawgeti(luaState, LUA_REGISTRYINDEX, thread.refIndex) == LUA_TTHREAD);
+        lua_rawgeti(luaState, LUA_REGISTRYINDEX, thread.refIndex);
         lua_State* luaThread = lua_tothread(luaState, -1);
-        assert(lua_getglobal(luaThread, "func") == LUA_TFUNCTION);
+        lua_getglobal(luaThread, "func");
 
         int nres = 0;
         auto ret = lua_resume(luaThread, luaState, 0, &nres);

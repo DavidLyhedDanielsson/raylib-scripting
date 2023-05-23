@@ -141,17 +141,17 @@ inline BoundingBox GetModelBoundingBox(Model model, Matrix transform)
         Mesh mesh = model.meshes[i];
         if(mesh.vertices != NULL)
         {
-            for(int i = 0; i < mesh.vertexCount; i++)
+            for(int j = 0; j < mesh.vertexCount; j++)
             {
                 minVertex = Vector3Min(
                     minVertex,
                     Vector3Transform(
-                        {mesh.vertices[i * 3], mesh.vertices[i * 3 + 1], mesh.vertices[i * 3 + 2]},
+                        {mesh.vertices[j * 3], mesh.vertices[j * 3 + 1], mesh.vertices[j * 3 + 2]},
                         transform));
                 maxVertex = Vector3Max(
                     maxVertex,
                     Vector3Transform(
-                        {mesh.vertices[i * 3], mesh.vertices[i * 3 + 1], mesh.vertices[i * 3 + 2]},
+                        {mesh.vertices[j * 3], mesh.vertices[j * 3 + 1], mesh.vertices[j * 3 + 2]},
                         transform));
             }
         }
@@ -204,4 +204,19 @@ inline Vector2 Vector2Ceil(Vector2 v1)
 inline Vector3 Vector3DirectionTo(Vector3 v1, Vector3 v2)
 {
     return Vector3Normalize(Vector3Subtract(v2, v1));
+}
+
+inline Vector2 Vector2DirectionTo(Vector2 v1, Vector2 v2)
+{
+    return Vector2Normalize(Vector2Subtract(v2, v1));
+}
+
+inline Vector2 Vector3Flatten(Vector3 v)
+{
+    return {.x = v.x, .y = v.z};
+}
+
+inline Vector3 Vector2Inflate(Vector2 v, float y = 0.0f)
+{
+    return {.x = v.x, .y = y, .z = v.y};
 }

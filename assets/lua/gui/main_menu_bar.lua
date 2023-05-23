@@ -34,6 +34,10 @@ local function Window()
 
             _, navigationState.tileSize = ImGui.InputFloat("Tile size", navigationState.tileSize, 0.1, 0.1)
             _, Navigation.ksi = ImGui.InputFloat("KSI", Navigation.ksi, 0.1, 0.1)
+            _, Navigation.avoidanceLookAhead = ImGui.DragFloat("Avoidance look-ahead", Navigation.avoidanceLookAhead, 0.1,
+                0.0, 10.0)
+            _, Navigation.obstacleLookAhead = ImGui.DragFloat("Obstacle look-ahead", Navigation.obstacleLookAhead, 0.1,
+                0.0, 10.0)
 
             ImGui.Separator()
             if ImGui.MenuItem("Draw field", "", Navigation.draw, true) then
@@ -163,9 +167,9 @@ local function Window()
                     end
                 end
 
-                local shortest = 500
+                local shortest = 300
 
-                for i = 0, 30 do
+                for i = 0, 70 do
                     Spawn()
                     coroutine.yield(shortest)
                 end

@@ -45,7 +45,9 @@ function raylib()
         Raylib.DrawEntityBoundingBox(entity)
     end
 
-    Raylib.DrawGrid(500, 1)
+    if placeFloorMode then
+        Raylib.DrawGrid(500, 1)
+    end
 end
 
 function SpawnDarts(transformTarget)
@@ -213,8 +215,6 @@ function imgui()
         end
     end
 
-    ImGui.ShowDemoWindow()
-
     if menuBarState.drawTileInfo or menuBarState.drawWallInfo then
         if wallMap then
             for y = 1, #wallMap do
@@ -231,19 +231,19 @@ function imgui()
                                 Raylib.DrawText(wallMap[y][x].distance, pos.x, pos.y, 12)
                                 Raylib.DrawText(wallMap[y][x].wallId, pos.x, pos.y + 14, 12)
                                 --Raylib.DrawText(wallMap[y][x].distanceAlongWall, pos.x, pos.y + 28, 12)
-                                -- if wallMap[y][x].parentDirection == "none" then
-                                --     Raylib.DrawText(wallMap[y][x].parentDirection, pos.x, pos.y + 14, 20)
-                                -- else
-                                --     Raylib.DrawText(wallMap[y][x].parentDirection, pos.x, pos.y + 14, 12)
-                                -- end
-                                -- if wallMap[y][x].locked then
-                                --     Raylib.DrawText("locked", pos.x, pos.y + 28, 12)
-                                -- end
+                                if wallMap[y][x].parentDirection == "none" then
+                                    Raylib.DrawText(wallMap[y][x].parentDirection, pos.x, pos.y + 28, 20)
+                                else
+                                    Raylib.DrawText(wallMap[y][x].parentDirection, pos.x, pos.y + 28, 12)
+                                end
                             end
                         elseif menuBarState.drawTileInfo then
                             Raylib.DrawText(x .. "x" .. y, pos.x, pos.y - 14, 12)
                             Raylib.DrawText(tileMap[y][x].distance, pos.x, pos.y + 0, 12)
                             Raylib.DrawText(tileMap[y][x].distanceToWall, pos.x, pos.y + 14, 12)
+                            if tileMap[y][x].locked then
+                                Raylib.DrawText("locked", pos.x, pos.y + 28, 12)
+                            end
                         end
                     end
                 end

@@ -75,6 +75,7 @@ EntityReflectionStruct(RComponent)
                 {
                     component.assetName = key.c_str(); // Not very safe but fine
                     component.model = value;
+                    component.boundingBox = GetModelBoundingBox(value);
                 }
                 if(selected)
                     ImGui::SetItemDefaultFocus();

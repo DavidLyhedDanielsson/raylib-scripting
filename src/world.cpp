@@ -10,6 +10,7 @@
 #include <array>
 #include <assets.hpp>
 #include <cmath>
+#include <cstdint>
 #include <entity/acceleration.hpp>
 #include <entity/area_tracker.hpp>
 #include <entity/camera.hpp>
@@ -52,64 +53,40 @@ std::mt19937 mt(rd());
 // This range is awctually [-1, 1), but that's fine
 std::uniform_real_distribution<float> randomNumber(-1.0, 1.0f);
 
-const float k = 1.5;
-const float m = 2.0;
-const float t0 = 3;
-std::optional<Vector2> CollisionCoefficient(
+// const float k = 1.5;
+// const float m = 2.0;
+// const float t0 = 3;
+std::optional<float> TimeToCollisionSphere(
     const Vector2 position,
     const Vector2 otherPosition,
     const Vector2 velocity,
     const Vector2 otherVelocity,
-    const float radius,
-    float* outTime = nullptr)
+    const float radius)
 {
-    if(outTime)
-        *outTime = 0.0f;
-
     float totalRadius = radius + radius;
     float radiusSquared = totalRadius * totalRadius;
 
     float distanceSquared = Vector2DistanceSqr(position, otherPosition);
     if(distanceSquared < radiusSquared)
-        radiusSquared = std::pow(totalRadius - std::sqrt(distanceSquared), 2.0f);
+        return 0.0f;
 
     Vector2 relPos = Vector2Subtract(otherPosition, position);
     Vector2 relVel = Vector2Subtract(velocity, otherVelocity);
 
     float a = Vector2DotProduct(relVel, relVel);
-    if(std::abs(a) < 0.0000000001f)
+    float b = Vector2DotProduct(relPos, relVel);
+    float c = Vector2DotProduct(relPos, relPos) - radiusSquared;
+
+    float disc = b * b - a * c;
+    if(disc < 0.0f || a <= 0.0f)
         return std::nullopt;
 
-    float b = 2.0f * Vector2DotProduct(relPos, relVel);
-    float c =
-        Vector2DotProduct(relPos, relPos) - (radiusSquared + 2.0f * radiusSquared + radiusSquared);
+    float t = (b - std::sqrt(disc)) / a;
 
-    float disc = b * b - 4.0f * a * c;
-    if(disc < 0.0f || std::abs(disc) < 0.00000001f)
+    if(t <= 0.0f)
         return std::nullopt;
 
-    float t = (-b - std::sqrt(disc)) / (2.0f * a);
-
-    if(t < 0.0f)
-        return std::nullopt;
-
-    if(outTime)
-    {
-        *outTime = t;
-        return std::nullopt;
-    }
-
-    const float c0 = -k * std::exp(-t / t0);
-    const Vector2 c1 = Vector2Subtract(
-        relVel,
-        Vector2Scale(
-            Vector2Subtract(Vector2Scale(relVel, b), Vector2Scale(relPos, a)),
-            1.0f / disc));
-    const float c2 = a * std::pow(t, m) * (m / t + 1.0f / t0);
-
-    const Vector2 d = Vector2Scale(Vector2Scale(c1, c0), 1.0f / c2);
-
-    return d;
+    return t;
 }
 
 Vector2 linePointDistance(Vector2 p0, Vector2 p1, Vector2 point)
@@ -123,6 +100,189 @@ Vector2 linePointDistance(Vector2 p0, Vector2 p1, Vector2 point)
         return p1;
 
     return Vector2Add(p0, Vector2Scale(Vector2Subtract(p1, p0), a / (a + b)));
+}
+
+// https://ericleong.me/research/circle-line/
+std::optional<Vector2> lineLineIntersection(
+    Vector2 start0,
+    Vector2 end0,
+    Vector2 start1,
+    Vector2 end1,
+    bool& isOn0,
+    bool& isOn1)
+{
+    float a1 = end0.y - start0.y;
+    float b1 = start0.x - end0.x;
+    float c1 = a1 * start0.x + b1 * start0.y;
+
+    float a2 = end1.y - start1.y;
+    float b2 = start1.x - end0.x;
+    float c2 = a2 * start1.x + b2 * start1.y;
+
+    float det = a1 * b2 - a2 * b1;
+    if(std::abs(det) < 0.0000000000001f)
+        return std::nullopt;
+
+    float x = (b2 * c1 - b1 * c2) / det;
+    float y = (a1 * c2 - a2 * c1) / det;
+
+    float d0 = x - std::min(start0.x, end0.x);
+    float d1 = std::max(start0.x, end0.x) - x;
+    float d2 = y - std::min(start0.y, end0.y);
+    float d3 = std::max(start0.y, end0.y) - y;
+
+    const float epsilon = -7.0e-4f;
+    if(d0 >= epsilon && d1 >= epsilon && d2 >= epsilon && d3 >= epsilon)
+        isOn0 = true;
+
+    float d4 = x - std::min(start1.x, end1.x);
+    float d5 = std::max(start1.x, end1.x) - x;
+    float d6 = y - std::min(start1.y, end1.y);
+    float d7 = std::max(start1.y, end1.y) - y;
+
+    if(d4 >= epsilon && d5 >= epsilon && d6 >= epsilon && d7 >= epsilon)
+        isOn1 = true;
+
+    return {{
+        .x = x,
+        .y = y,
+    }};
+}
+
+Vector2 closestPointLine(Vector2 start, Vector2 end, Vector2 p, bool& isOnLine)
+{
+    float a1 = end.y - start.y;
+    float b1 = start.x - end.x;
+    float c1 = a1 * start.x + b1 * start.y;
+    float c2 = -b1 * p.x + a1 * p.y;
+    float det = a1 * a1 + b1 * b1;
+    if(std::abs(det) > 0.0000000000001f)
+    {
+        Vector2 point = {
+            .x = (a1 * c1 - b1 * c2) / det,
+            .y = (a1 * c2 + b1 * c1) / det,
+        };
+
+        float dist = Vector2Distance(start, end) - Vector2Distance(start, point)
+                     - Vector2Distance(point, end);
+
+        isOnLine = std::abs(dist) < 0.00001f;
+
+        return point;
+    }
+    else
+    {
+        isOnLine = true;
+        return {.x = p.x, .y = p.y};
+    }
+}
+
+Vector2 closestPointLine(Vector2 start, Vector2 end, Vector2 p)
+{
+    bool _ = false;
+    return closestPointLine(start, end, p, _);
+}
+
+// TODO: Undo changes to this and just use Eric's formulas?
+std::optional<float> TimeToCollisionCircleLine(
+    const Vector2 circlePosition,
+    const Vector2 velocity,
+    const float radius,
+    const Vector2 lineStart,
+    const Vector2 lineEnd)
+{
+    Vector2 goalPosition = Vector2Add(circlePosition, velocity);
+
+    auto GetLineTTC = [&](Vector2 a) {
+        Vector2 ac = Vector2DirectionTo(a, circlePosition);
+        Vector2 p1c = Vector2DirectionTo(lineEnd, circlePosition);
+        Vector2 p = Vector2Subtract(
+            a,
+            Vector2Scale(
+                Vector2Normalize(velocity),
+                radius * (Vector2Dot(ac, ac) / Vector2Dot(p1c, p1c))));
+
+        float speed = Vector2Length(velocity);
+        return Vector2Distance(circlePosition, p) / speed;
+    };
+
+    auto GetEndpointTTC = [&](Vector2 endpoint) {
+        Vector2 closestPoint = closestPointLine(circlePosition, goalPosition, endpoint);
+
+        float distance = Vector2Distance(endpoint, closestPoint);
+        float intersectionDepth = std::sqrt(radius * radius - distance * distance);
+
+        float distanceToClosestPoint = Vector2Length(Vector2Subtract(closestPoint, circlePosition));
+
+        Vector2 p = Vector2Add(
+            circlePosition,
+            Vector2Scale(
+                Vector2DirectionTo(circlePosition, closestPoint),
+                distanceToClosestPoint - intersectionDepth));
+
+        float speed = Vector2Length(velocity);
+        return Vector2Distance(circlePosition, p) / speed;
+    };
+
+    bool isOnVelocity = false;
+    bool isOnObstacle = false;
+
+    std::optional<Vector2> aOpt = lineLineIntersection(
+        circlePosition,
+        goalPosition,
+        lineStart,
+        lineEnd,
+        isOnVelocity,
+        isOnObstacle);
+
+    if(!aOpt.has_value())
+        return std::nullopt;
+
+    Vector2 a = aOpt.value();
+    if(aOpt.has_value() && isOnObstacle)
+    {
+        // Already colliding
+        if(isOnVelocity)
+            return 0;
+        else
+        {
+            bool isOnLine = false;
+            Vector2 b = closestPointLine(lineStart, lineEnd, goalPosition, isOnLine);
+            if(isOnLine && Vector2Dot(Vector2DirectionTo(circlePosition, b), velocity) > 0.0f)
+            {
+                // Colliding with the obstacle "line"
+                float ttc = GetLineTTC(a);
+                if(ttc > 0.0f)
+                    return ttc;
+            }
+        }
+    }
+
+    if(Vector2Dot(Vector2DirectionTo(circlePosition, lineStart), velocity) > 0.0f)
+    {
+        Vector2 c = closestPointLine(circlePosition, goalPosition, lineStart);
+        if(Vector2Distance(c, lineStart) <= radius)
+        {
+            // Colliding with obstacle end-point
+            float ttc = GetEndpointTTC(lineStart);
+            if(ttc > 0.0f)
+                return ttc;
+        }
+    }
+
+    if(Vector2Dot(Vector2DirectionTo(circlePosition, lineEnd), velocity) > 0.0f)
+    {
+        Vector2 d = closestPointLine(circlePosition, goalPosition, lineEnd);
+        if(Vector2Distance(d, lineEnd) <= radius)
+        {
+            // Colliding with obstacle end-point
+            float ttc = GetEndpointTTC(lineEnd);
+            if(ttc > 0.0f)
+                return ttc;
+        }
+    }
+
+    return std::nullopt;
 }
 
 bool buildNavigation = false;
@@ -166,10 +326,14 @@ namespace World
                     [&](Component::Transform transform) {
                         min = Vector3Min(
                             min,
-                            {.x = transform.position.x, .y = 0.0f, .z = transform.position.z});
+                            {.x = transform.position.x - tileSize,
+                             .y = 0.0f,
+                             .z = transform.position.z - tileSize});
                         max = Vector3Max(
                             max,
-                            {.x = transform.position.x, .y = 0.0f, .z = transform.position.z});
+                            {.x = transform.position.x + tileSize,
+                             .y = 0.0f,
+                             .z = transform.position.z + tileSize});
                     });
 
                 min = Vector3Subtract(min, {1.0f, 0.0f, 1.0f});
@@ -211,6 +375,24 @@ namespace World
                         }
                     });
 
+                world.registry->view<Component::Obstacle, Component::Render, Component::Transform>()
+                    .each([&](entt::entity entity,
+                              Component::Render render,
+                              Component::Transform transform) {
+                        auto bounds = BoundingBoxTransform(
+                            render.boundingBox,
+                            MatrixRotateZYX(transform.rotation));
+                        Vector2 minBounds = {.x = bounds.min.x, .y = bounds.min.z};
+                        Vector2 maxBounds = {.x = bounds.max.x, .y = bounds.max.z};
+
+                        Vector2 min =
+                            Vector2Add({transform.position.x, transform.position.z}, minBounds);
+                        Vector2 max =
+                            Vector2Add({transform.position.x, transform.position.z}, maxBounds);
+
+                        navigation.SetObstacle(min, max);
+                    });
+
                 world.registry
                     ->view<Component::EnemyGoal, Component::Render, Component::Transform>()
                     .each([&](entt::entity entity,
@@ -231,6 +413,26 @@ namespace World
                         navigation.SetGoal(min, max);
                     });
 
+                world.registry
+                    ->view<Component::EnemySpawn, Component::Render, Component::Transform>()
+                    .each([&](entt::entity entity,
+                              Component::EnemySpawn _,
+                              Component::Render render,
+                              Component::Transform transform) {
+                        auto bounds = BoundingBoxTransform(
+                            render.boundingBox,
+                            MatrixRotateZYX(transform.rotation));
+                        Vector2 minBounds = {.x = bounds.min.x, .y = bounds.min.z};
+                        Vector2 maxBounds = {.x = bounds.max.x, .y = bounds.max.z};
+
+                        Vector2 min =
+                            Vector2Add({transform.position.x, transform.position.z}, minBounds);
+                        Vector2 max =
+                            Vector2Add({transform.position.x, transform.position.z}, maxBounds);
+
+                        navigation.SetSpawn(min, max);
+                    });
+
                 lua_getglobal(lua, "Navigation");
                 lua_pushstring(lua, "sizeX");
                 lua_pushinteger(lua, navigation.sizeX);
@@ -246,9 +448,6 @@ namespace World
                 lua_settable(lua, -3);
                 lua_pushstring(lua, "offsetY");
                 lua_pushnumber(lua, navigation.offsetY);
-                lua_settable(lua, -3);
-                lua_pushstring(lua, "ksi");
-                lua_pushnumber(lua, 0.1f);
                 lua_settable(lua, -3);
                 lua_pop(lua, 1);
 
@@ -271,6 +470,27 @@ namespace World
         lua_settable(lua, -3);
         lua_pushstring(lua, "GOAL");
         lua_pushnumber(lua, (int)Navigation::Tile::Type::GOAL);
+        lua_settable(lua, -3);
+
+        lua_settable(lua, -3);
+
+        lua_pushstring(lua, "TileSide");
+        lua_createtable(lua, 0, 0);
+
+        lua_pushstring(lua, "NONE");
+        lua_pushnumber(lua, (int)Navigation::Tile::Side::NONE);
+        lua_settable(lua, -3);
+        lua_pushstring(lua, "TOP");
+        lua_pushnumber(lua, (int)Navigation::Tile::Side::TOP);
+        lua_settable(lua, -3);
+        lua_pushstring(lua, "BOTTOM");
+        lua_pushnumber(lua, (int)Navigation::Tile::Side::BOTTOM);
+        lua_settable(lua, -3);
+        lua_pushstring(lua, "LEFT");
+        lua_pushnumber(lua, (int)Navigation::Tile::Side::LEFT);
+        lua_settable(lua, -3);
+        lua_pushstring(lua, "RIGHT");
+        lua_pushnumber(lua, (int)Navigation::Tile::Side::RIGHT);
         lua_settable(lua, -3);
 
         lua_settable(lua, -3);
@@ -317,6 +537,11 @@ namespace World
 
         LuaRegister::PushRegister(
             lua,
+            "Walkable",
+            +[](lua_State* lua, int x, int y) { return navigation.Walkable(x, y); });
+
+        LuaRegister::PushRegister(
+            lua,
             "SetVectorField",
             +[](lua_State* lua, LuaRegister::Placeholder table) {
                 auto sizeY = luaL_len(lua, table.stackIndex);
@@ -339,6 +564,7 @@ namespace World
                             .x = (float)lua_tonumber(lua, -2),
                             .y = (float)lua_tonumber(lua, -1),
                         };
+
                         lua_pop(lua, 3);
                     }
                     lua_pop(lua, 1);
@@ -347,8 +573,29 @@ namespace World
                 navigation.vectorField = std::move(vectorField);
             });
 
+        LuaRegister::PushRegister(
+            lua,
+            "SetWall",
+            +[](lua_State* lua, int x, int y, int side) {
+                if(x < 0)
+                    return;
+                if(y < 0)
+                    return;
+
+                navigation.SetWall(x, y, (Navigation::Tile::Side)side);
+            });
+
         lua_pushstring(lua, "draw");
         lua_pushboolean(lua, drawNavigation);
+        lua_settable(lua, -3);
+        lua_pushstring(lua, "ksi");
+        lua_pushnumber(lua, 5.0f);
+        lua_settable(lua, -3);
+        lua_pushstring(lua, "avoidanceLookAhead");
+        lua_pushnumber(lua, 3.0f);
+        lua_settable(lua, -3);
+        lua_pushstring(lua, "obstacleLookAhead");
+        lua_pushnumber(lua, 2.0f);
         lua_settable(lua, -3);
 
         lua_setglobal(lua, "Navigation");
@@ -375,7 +622,13 @@ namespace World
 
         lua_getglobal(luaS, "Navigation");
         lua_getfield(luaS, -1, "ksi");
-        const float ksi = lua_tonumber(luaS, -1);
+        const float ksi = (float)lua_tonumber(luaS, -1);
+        lua_pop(luaS, 1);
+        lua_getfield(luaS, -1, "avoidanceLookAhead");
+        const float avoidanceT = (float)lua_tonumber(luaS, -1);
+        lua_pop(luaS, 1);
+        lua_getfield(luaS, -1, "obstacleLookAhead");
+        const float obstacleT = (float)lua_tonumber(luaS, -1);
         lua_pop(luaS, 2);
 
         Profiling::ProfileCall("MoveEntities", [&]() {
@@ -391,7 +644,7 @@ namespace World
                 entityNames.push_back(std::to_string((int)entity));
                 PROFILE_SCOPE(entityNames.back().c_str());
 
-                const float radius = 0.35f;
+                const float radius = 0.30f;
 
                 if(navigation.IsGoal(transform.position))
                 {
@@ -400,11 +653,8 @@ namespace World
                     continue;
                 }
 
-                // auto movementDirection =
-                //     Vector3Normalize(Vector3Subtract(moveTowards.target, transform.position));
-
-                Vector2 force = navigation.GetAverageForce(
-                    {.x = transform.position.x, .y = transform.position.z});
+                Vector2 force =
+                    navigation.GetForce({.x = transform.position.x, .y = transform.position.z});
 
                 Vector3 movementDirection = {force.x, 0.0f, force.y};
 
@@ -412,9 +662,8 @@ namespace World
                 Vector3 goalVelocity = Vector3Scale(movementDirection, speed);
 
                 const Vector2 velocity = {.x = velocityComponent.x, .y = velocityComponent.z};
-                Vector2 forces = Vector2Scale(
-                    Vector2Subtract({goalVelocity.x, goalVelocity.z}, velocity),
-                    1.0f / ksi);
+                Vector2 forces =
+                    Vector2Scale(Vector2Subtract({goalVelocity.x, goalVelocity.z}, velocity), ksi);
 
                 forces =
                     Vector2Add(forces, Vector2Scale({randomNumber(mt), randomNumber(mt)}, 0.5f));
@@ -432,222 +681,108 @@ namespace World
                         if(distance > 3.0f)
                             continue;
 
-                        Vector3 otherVelocity = Vector3Zero();
+                        Vector2 otherVelocity = Vector2Zero();
                         if(Component::Velocity* oVel =
                                world.registry->try_get<Component::Velocity>(otherEntity);
                            oVel)
                         {
-                            otherVelocity = oVel->ToVector3();
+                            otherVelocity = {.x = oVel->ToVector3().x, .y = oVel->ToVector3().z};
                         };
 
-                        std::optional<Vector2> coeff = CollisionCoefficient(
-                            {transform.position.x, transform.position.z},
-                            {otherTransform.position.x, otherTransform.position.z},
+                        Vector2 position = {transform.position.x, transform.position.z};
+                        Vector2 otherPosition = {
+                            otherTransform.position.x,
+                            otherTransform.position.z};
+
+                        std::optional<float> timeToCollision = TimeToCollisionSphere(
+                            position,
+                            otherPosition,
                             velocity,
-                            {otherVelocity.x, otherVelocity.z},
+                            otherVelocity,
                             radius);
 
-                        if(coeff.has_value())
+                        if(!timeToCollision.has_value())
+                            continue;
+
+                        float t = timeToCollision.value();
+
+                        if(t == 0.0f)
                         {
-                            Vector2 avoidForce = coeff.value();
-                            assert(!std::isnan(avoidForce.x));
-                            assert(!std::isnan(avoidForce.y));
-                            forces.x += avoidForce.x;
-                            forces.y += avoidForce.y;
-                            assert(!std::isnan(forces.x));
-                            assert(!std::isnan(forces.y));
+                            Vector2 avoidanceForce = Vector2DirectionTo(otherPosition, position);
+                            float magnitude = Vector2Length(velocity);
+
+                            if(magnitude > 10.0f)
+                                magnitude = 10.0f;
+
+                            forces.x += avoidanceForce.x * magnitude;
+                            forces.y += avoidanceForce.y * magnitude;
                         }
-
-                        if(distance > 0.01f)
+                        else
                         {
-                            assert(!std::isnan(forces.x));
-                            assert(!std::isnan(forces.y));
+                            Vector2 avoidanceForce = Vector2Normalize(Vector2Subtract(
+                                Vector2Add(position, Vector2Scale(velocity, t)),
+                                Vector2Add(otherPosition, Vector2Scale(otherVelocity, t))));
 
-                            Vector3 otherDir =
-                                Vector3DirectionTo(transform.position, otherTransform.position);
-                            forces.x -= otherDir.x / std::pow(distance / 2.0f, 2.0);
-                            forces.y -= otherDir.y / std::pow(distance / 2.0f, 2.0);
+                            float magnitude = 0.0f;
+                            if(t >= 0.0f && t < avoidanceT)
+                                magnitude = (avoidanceT - t) / (t + 0.001f);
 
-                            assert(!std::isnan(forces.x));
-                            assert(!std::isnan(forces.y));
+                            if(magnitude > 20.0f)
+                                magnitude = 20.0f;
+
+                            forces.x += avoidanceForce.x * magnitude;
+                            forces.y += avoidanceForce.y * magnitude;
                         }
                     }
                 });
 
                 Profiling::ProfileCall("ObstacleAvoidance", [&]() {
-                    for(auto [obstacle, oTransform, render] :
-                        world.registry
-                            ->view<Component::Transform, Component::Render, Component::Obstacle>()
-                            .each())
-                    {
-                        auto bbox = BoundingBoxTransform(
-                            render.boundingBox,
-                            oTransform.position,
-                            MatrixRotateZYX(oTransform.rotation));
-
-                        Vector2 bboxMin = {.x = bbox.min.x, .y = bbox.min.z};
-                        Vector2 bboxMax = {.x = bbox.max.x, .y = bbox.max.z};
-                        Vector2 bboxSize = Vector2Subtract(bboxMax, bboxMin);
-                        Vector2 bboxCenter = Vector2Add(bboxMin, Vector2Scale(bboxSize, 0.5f));
-
-                        float bboxWidth = bboxMax.x - bboxMin.x;
-                        float bboxHeight = bboxMax.y - bboxMin.y;
-
-                        Vector2 p0;
-                        Vector2 p1;
-                        Vector2 normal; // It doesn't actually matter which direction this points
-                        if(bboxWidth > bboxHeight)
+                    Vector2 position = {.x = transform.position.x, .y = transform.position.z};
+                    float currentSpeed = Vector2Length(velocity);
+                    navigation.ForArea(
                         {
-                            p0 = {.x = bboxCenter.x - bboxWidth * 0.5f, .y = bboxCenter.y};
-                            p1 = {.x = bboxCenter.x + bboxWidth * 0.5f, .y = bboxCenter.y};
-
-                            float x = p1.x - p0.x;
-                            float y = p1.y - p0.y;
-                            normal = Vector2Normalize({.x = -y, .y = x});
-                        }
-                        else
+                            .x = transform.position.x - currentSpeed * obstacleT,
+                            .y = transform.position.z - currentSpeed * obstacleT,
+                        },
                         {
-                            p0 = {.x = bboxCenter.x, .y = bboxCenter.y - bboxHeight * 0.5f};
-                            p1 = {.x = bboxCenter.x, .y = bboxCenter.y + bboxHeight * 0.5f};
+                            .x = transform.position.x + currentSpeed * obstacleT,
+                            .y = transform.position.z + currentSpeed * obstacleT,
+                        },
+                        [&](Navigation::Tile tile, uint32_t x, uint32_t y) {
+                            tile.forEachWall([&](Navigation::Tile::Side side) {
+                                Navigation::Wall wall = navigation.GetWall(x, y, side);
 
-                            float x = p1.x - p0.x;
-                            float y = p1.y - p0.y;
-                            normal = Vector2Normalize({.x = -y, .y = x});
-                        }
-
-                        Vector2 position = {.x = transform.position.x, .y = transform.position.z};
-
-                        Vector2 nw = Vector2Subtract(linePointDistance(p0, p1, position), position);
-                        float dw = Vector2DotProduct(nw, nw);
-
-                        if(Vector2Dot(velocity, nw) < 0 || std::abs(dw - radius * radius) < 0.00001
-                           || dw > 3.0f * 3.0f)
-                        {
-                            continue;
-                        }
-
-                        enum CollisionType
-                        {
-                            NONE,
-                            DISC,
-                            SEGMENT
-                        };
-
-                        struct
-                        {
-                            float tmin = std::numeric_limits<float>::max();
-                            CollisionType collisionType = NONE;
-                            union
-                            {
-                                struct
-                                {
-                                    float b;
-                                    float c;
-                                    float disc;
-                                    Vector2 w;
-                                } discData;
-                                struct
-                                {
-                                    Vector2 o;
-                                    Vector2 wo;
-                                } segmentData;
-                            };
-                        } hitInfo;
-
-                        const float correctRadius = dw < radius * radius ? std::sqrt(dw) : radius;
-                        const float a = Vector2DotProduct(velocity, velocity);
-
-                        auto DiscCollision = [&](Vector2 point) {
-                            Vector2 w = Vector2Subtract(point, position);
-                            float b = Vector2DotProduct(w, velocity);
-                            float c = Vector2DotProduct(w, w) - correctRadius * correctRadius;
-                            float disc = b * b - a * c;
-                            if(disc > 0.0f && std::abs(a) > 0.0001f)
-                            {
-                                disc = std::sqrt(disc);
-                                float t = (b - disc) / a;
-                                if(t > 0 && t < hitInfo.tmin)
-                                {
-                                    hitInfo = {
-                                        .tmin = t,
-                                        .collisionType = CollisionType::DISC,
-                                        .discData = {
-                                            .b = b,
-                                            .c = c,
-                                            .disc = disc,
-                                            .w = w,
-                                        }};
-                                }
-                            }
-                        };
-
-                        DiscCollision(p0);
-                        DiscCollision(p1);
-
-                        auto SegmentCollision = [&](Vector2 p0, Vector2 p1) {
-                            Vector2 o = Vector2Subtract(p1, p0);
-                            float d = Vector2Det(velocity, o);
-                            if(std::abs(d) > 0.0001f)
-                            {
-                                float invD = 1.0f / d;
-                                float t = Vector2Det(o, Vector2Subtract(position, p0)) * invD;
-                                float s =
-                                    Vector2Det(velocity, Vector2Subtract(position, p0)) * invD;
-                                if(t > 0.0f && s >= 0.0f && s <= 1.0f && t < hitInfo.tmin)
-                                {
-                                    hitInfo = {
-                                        .tmin = t,
-                                        .collisionType = CollisionType::SEGMENT,
-                                        .segmentData = {
-                                            .o = o,
-                                            .wo = Vector2Subtract(position, p0),
-                                        }};
-                                }
-                            }
-                        };
-
-                        SegmentCollision(
-                            Vector2Add(p0, Vector2Scale(normal, correctRadius)),
-                            Vector2Add(p1, Vector2Scale(normal, correctRadius)));
-                        SegmentCollision(
-                            Vector2Subtract(p0, Vector2Scale(normal, correctRadius)),
-                            Vector2Subtract(p1, Vector2Scale(normal, correctRadius)));
-
-                        switch(hitInfo.collisionType)
-                        {
-                            case CollisionType::DISC: {
-                                const float c0 = -k * std::exp(-hitInfo.tmin / t0);
-                                const Vector2 c1 = Vector2Subtract(
+                                std::optional<float> timeToCollisionOpt = TimeToCollisionCircleLine(
+                                    position,
                                     velocity,
-                                    Vector2Scale(
-                                        Vector2Subtract(
-                                            Vector2Scale(velocity, hitInfo.discData.b),
-                                            Vector2Scale(hitInfo.discData.w, a)),
-                                        1.0f / hitInfo.discData.disc));
-                                const float c2 = a * std::pow(hitInfo.tmin, m);
-                                const float c3 = (m / hitInfo.tmin + 1.0f / t0);
-                                const Vector2 d =
-                                    Vector2Scale(Vector2Scale(Vector2Scale(c1, c0), 1.0f / c2), c3);
+                                    radius,
+                                    wall.start,
+                                    wall.end);
+                                if(!timeToCollisionOpt || *timeToCollisionOpt > obstacleT)
+                                    return;
 
-                                forces = Vector2Add(forces, d);
-                                break;
-                            }
-                            case CollisionType::SEGMENT: {
-                                const float c0 = k * std::exp(-hitInfo.tmin / t0);
-                                const float c1 = std::pow(hitInfo.tmin, m)
-                                                 * Vector2Det(velocity, hitInfo.segmentData.o);
-                                const float c2 = (m / hitInfo.tmin + 1.0f / t0);
+                                float timeToCollision = timeToCollisionOpt.value();
 
-                                const Vector2 d = Vector2Scale(
-                                    {.x = -hitInfo.segmentData.o.y, .y = hitInfo.segmentData.o.x},
-                                    c0 / c1 * c2);
-                                forces = Vector2Add(forces, d);
-                                break;
-                            }
-                            case CollisionType::NONE: // Do nothing
-                                break;
-                        }
-                    }
+                                Vector2 avoidanceForce = Vector2Scale(
+                                    wall.normal,
+                                    Vector2Dot(forces, wall.normal)
+                                        / Vector2Dot(wall.normal, wall.normal));
+
+                                if(Vector2Dot(avoidanceForce, wall.normal) < 0.0f)
+                                    avoidanceForce = Vector2Negate(avoidanceForce);
+
+                                float magnitude = 0.0f;
+                                if(timeToCollision >= 0.0f && timeToCollision < obstacleT)
+                                    magnitude =
+                                        (obstacleT - timeToCollision) / (timeToCollision + 0.001f);
+
+                                if(magnitude > 40.0f)
+                                    magnitude = 40.0f;
+
+                                forces.x += avoidanceForce.x * magnitude;
+                                forces.y += avoidanceForce.y * magnitude;
+                            });
+                        });
                 });
 
                 acceleration.acceleration.x += forces.x * time;
@@ -665,6 +800,10 @@ namespace World
                     acceleration.acceleration =
                         Vector3Scale(Vector3Normalize(acceleration.acceleration), 20.0f * time);
                 }
+
+                assert(!std::isnan(acceleration.acceleration.x));
+                assert(!std::isnan(acceleration.acceleration.y));
+                assert(!std::isnan(acceleration.acceleration.z));
 
                 velocity.x += acceleration.acceleration.x;
                 velocity.y += acceleration.acceleration.y;
@@ -758,7 +897,6 @@ namespace World
 
                 auto trackerHitBox = tracker.GetBoundingBox(trackerTransform);
 
-                // TODO: Add BoundingBox component
                 for(auto [entity, entityRender, entityTransform, entityHealth] :
                     world.registry
                         ->view<Component::Render, Component::Transform, Component::Health>()
