@@ -316,8 +316,11 @@ local function Build()
         return
     end
 
-    local iter = 2
-    while iter < 100 do
+    local walkedDistance = 1
+    local anyAddedLastIter = false
+    -- 9999 set to avoid an infinite loop, but this should be exited when no
+    -- more tiles are available to exporse
+    while walkedDistance < 9999 do
         -- Dijkstras
         while #openList > 0 do
             local cTile, cWalker = GetNextTile(openList)
@@ -378,13 +381,13 @@ local function Build()
         local spawnMap = {}
         for y = 1, Navigation.sizeY do
             for x = 1, Navigation.sizeX do
-                if tileMap[y][x].distanceToWall == iter - 1 and not tileMap[y][x].spawn then
+                if tileMap[y][x].distanceToWall == walkedDistance and not tileMap[y][x].spawn then
                     local cId = walkerMap[y][x].id
 
                     if cId ~= UNSET then
                         local valid = false
                         ForEachWalkableNeighbour(x, y, function(n)
-                            if tileMap[n.y][n.x].distanceToWall == iter and walkerMap[n.y][n.x].id == UNSET then
+                            if tileMap[n.y][n.x].distanceToWall == walkedDistance + 1 and walkerMap[n.y][n.x].id == UNSET then
                                 valid = true
                                 return
                             end
@@ -406,7 +409,7 @@ local function Build()
         for wallId, spawnData in pairs(spawnMap) do
             anyAdded = true
             ForEachWalkableNeighbour(spawnData.x, spawnData.y, function(n)
-                if tileMap[n.y][n.x].distanceToWall == iter and walkerMap[n.y][n.x].id == UNSET then
+                if tileMap[n.y][n.x].distanceToWall == walkedDistance + 1 and walkerMap[n.y][n.x].id == UNSET then
                     table.insert(openList, { x = n.x, y = n.y, wallId = wallId, id = GetId() })
                     walkerMap[n.y][n.x].wallId = wallId
                     walkerMap[n.y][n.x].distance = 0
@@ -416,9 +419,14 @@ local function Build()
         end
 
         if not anyAdded then
-            iter = iter + 1
-            -- TODO: exit loop eventually
+            walkedDistance = walkedDistance + 1
+
+            if not anyAddedLastIter then
+                break
+            end
         end
+
+        anyAddedLastIter = anyAdded
     end
 
     -- "raw" vector field without any smoothing
