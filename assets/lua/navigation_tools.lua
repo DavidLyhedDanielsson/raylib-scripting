@@ -315,7 +315,7 @@ local function DirectionToVector(direction)
 end
 
 local function Build()
-    StopAllThreads()
+    --StopAllThreads()
     Navigation.Build(navigationState.tileSize)
 
     --RegisterThread(function()
@@ -425,10 +425,8 @@ local function Build()
             end
         end
 
-        -- If any tile that has the same distanceToWall as the currently
-        -- processed distance, but it hasn't yet been stepped by a walker, it
-        -- needs to be processed. However, a walker should only spawn one new
-        -- walker at a time - as close to its spawn as possible
+        -- For each walker, find the closest place where a new walker can be
+        -- spawned during the next loop iteration
         ---@type {[integer]: {x: integer, y: integer, distance: integer}}
         local spawnMap = {}
         Navigation.ForEachTile(function(x, y, _) -- Is this faster than a simple nested for loop? Who knows
@@ -436,23 +434,16 @@ local function Build()
             y = y + 1
 
             if tileMap[y][x].distanceToWall == processedDistance and not tileMap[y][x].spawn and walkerMap[y][x].id ~= UNSET then
-                local cId = walkerMap[y][x].id
+                local cWalker = walkerMap[y][x]
 
-                local valid = false
                 ForEachWalkableNeighbour(x, y, function(n)
                     if tileMap[n.y][n.x].distanceToWall == processedDistance + 1 and walkerMap[n.y][n.x].id == UNSET then
-                        valid = true
+                        if not spawnMap[cWalker.id] or spawnMap[cWalker.id].distance > cWalker.distance then
+                            spawnMap[cWalker.id] = { distance = cWalker.distance, x = x, y = y }
+                        end
                         return
                     end
                 end)
-
-                if valid then
-                    if not spawnMap[cId] then
-                        spawnMap[cId] = { distance = walkerMap[y][x].distance, x = x, y = y }
-                    elseif spawnMap[cId].distance > walkerMap[y][x].distance then
-                        spawnMap[cId] = { distance = walkerMap[y][x].distance, x = x, y = y }
-                    end
-                end
             end
         end)
 
@@ -460,7 +451,10 @@ local function Build()
         for wallId, spawnData in pairs(spawnMap) do
             anyAdded = true
             ForEachWalkableNeighbour(spawnData.x, spawnData.y, function(n)
-                if tileMap[n.y][n.x].distanceToWall == processedDistance + 1 and walkerMap[n.y][n.x].id == UNSET then
+                -- Check id here as well just in case it is modified in a
+                -- previous iteration. It probably wouldn't matter if it was,
+                -- though...
+                if walkerMap[n.y][n.x].id == UNSET then
                     table.insert(openList, { x = n.x, y = n.y, wallId = wallId, id = GetId() })
                     walkerMap[n.y][n.x].wallId = wallId
                     walkerMap[n.y][n.x].distance = 0
@@ -469,6 +463,9 @@ local function Build()
             end)
         end
 
+        -- It is possible that it takes multiple runs of the loop to step on all
+        -- tiles with a distanceToWall of processedDistance + 1. In that case
+        -- the same distance will be processed again
         if not anyAdded then
             processedDistance = processedDistance + 1
 
@@ -486,6 +483,9 @@ local function Build()
         vectorField[y] = {}
         for x = 1, Navigation.sizeX do
             if tileMap[y][x].distanceToWall == 0 then
+                -- Make all unwalkable tiles that are adjacent to walkable tiles
+                -- push entities towards the walkable tile. This is in case
+                -- someone feels like wandering off the map
                 local toMap = { x = 0, y = 0 }
                 ForEachAdjacentWalkable(x, y, function(n)
                     toMap.x = toMap.x + n.x - x
@@ -493,11 +493,11 @@ local function Build()
                 end)
 
                 local len = math.sqrt(toMap.x * toMap.x + toMap.y * toMap.y)
-                if len == 0.0 then
-                    len = 1
+                -- Let's not track down nan issues again
+                if len ~= 0.0 then
+                    toMap.x = toMap.x / len
+                    toMap.y = toMap.y / len
                 end
-                toMap.x = toMap.x / len
-                toMap.y = toMap.y / len
 
                 vectorField[y][x] = toMap
             else
@@ -506,7 +506,7 @@ local function Build()
         end
     end
 
-    -- Build vector field
+    -- Build vector field and place walls around walkable tiles
     Navigation.ForEachTile(function(x, y, _)
         if not Navigation.Walkable(x, y) then
             return
@@ -524,9 +524,9 @@ local function Build()
         end)
     end)
 
-    -- Vector field with some smoothing
-    local finalVectorField = {}
     if navigationState.smoothField then
+        -- The only reason to not smooth the field is for troubleshooting
+        local finalVectorField = {}
         for y = 1, Navigation.sizeY do
             finalVectorField[y] = {}
             for x = 1, Navigation.sizeX do
@@ -534,7 +534,8 @@ local function Build()
             end
         end
 
-        -- Average over a 3x3 area
+        -- Average over a 5x5 area
+        -- TODO: Base area on tileSize instead of hard-coding it
         for y = 1, Navigation.sizeY do
             for x = 1, Navigation.sizeX do
                 if Navigation.Walkable(x - 1, y - 1) then
@@ -550,11 +551,10 @@ local function Build()
                     end
 
                     local len = math.sqrt(average.x * average.x + average.y * average.y)
-                    if len == 0.0 then
-                        len = 1
+                    if len ~= 0.0 then
+                        average.x = average.x / len
+                        average.y = average.y / len
                     end
-                    average.x = average.x / len
-                    average.y = average.y / len
 
                     finalVectorField[y][x] = average
                 end
@@ -567,7 +567,6 @@ local function Build()
     end
 
     print("Navigation built")
-    --end)
 end
 
 return {
