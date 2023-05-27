@@ -1,7 +1,7 @@
 ---@class Neighbour
 ---@field x integer
 ---@field y integer
----@field direction string
+---@field direction Direction
 ---@field opposite string
 
 ---@class OpenListTile
@@ -18,7 +18,7 @@
 
 ---@class Walker
 ---@field distance integer distance walked
----@field parentDirection string direction to the previous tile of this walker
+---@field parentDirection Direction direction to the previous tile of this walker
 ---@field id integer this walker's id
 ---@field wallId integer the wall that this walker is following
 
@@ -121,16 +121,26 @@ local function HasSharedWall(x, y, ox, oy, searchRadius)
     return false
 end
 
+-- Resuse TileSide so we can cast between them
+---@enum Direction
+local Direction <const> = {
+    NONE = Navigation.TileSide.NONE,
+    UP = Navigation.TileSide.TOP,
+    DOWN = Navigation.TileSide.BOTTOM,
+    LEFT = Navigation.TileSide.LEFT,
+    RIGHT = Navigation.TileSide.RIGHT,
+}
+
 ---For the given tile, get neighbours
 ---@param x integer
 ---@param y integer
 ---@return Neighbour[]
 local function GetNeighbours(x, y)
     return {
-        { x = x,     y = y - 1, direction = "up",    opposite = "down" },
-        { x = x,     y = y + 1, direction = "down",  opposite = "up" },
-        { x = x - 1, y = y,     direction = "left",  opposite = "right" },
-        { x = x + 1, y = y,     direction = "right", opposite = "left" },
+        { x = x,     y = y - 1, direction = Direction.UP,    opposite = Direction.DOWN },
+        { x = x,     y = y + 1, direction = Direction.DOWN,  opposite = Direction.UP },
+        { x = x - 1, y = y,     direction = Direction.LEFT,  opposite = Direction.RIGHT },
+        { x = x + 1, y = y,     direction = Direction.RIGHT, opposite = Direction.LEFT },
     }
 end
 
@@ -141,6 +151,18 @@ end
 local function ForEachNeighbour(x, y, func)
     for _, n in ipairs(GetNeighbours(x, y)) do
         func(n)
+    end
+end
+
+---Runs the given callback for each unwalkable neighbour
+---@param x integer
+---@param y integer
+---@param func fun(n: Neighbour)
+local function ForEachUnwalkableNeighbour(x, y, func)
+    for _, n in ipairs(GetNeighbours(x, y)) do
+        if not Navigation.Walkable(n.x - 1, n.y - 1) then
+            func(n)
+        end
     end
 end
 
@@ -215,7 +237,7 @@ end
 ---@param walker Walker
 ---@param x integer
 ---@param y integer
----@param parentDirection string
+---@param parentDirection Direction
 local function SetNextWalkerStep(walker, x, y, parentDirection)
     local temp = walkerMap[y][x]
     temp.id = walker.id
@@ -225,7 +247,7 @@ local function SetNextWalkerStep(walker, x, y, parentDirection)
 end
 
 ---Pops and returns the next tile from the given list, updating the walker map if required
----@param OpenListTile[] openList
+---@param openList OpenListTile[]
 ---@return Tile|{ x: integer, y: integer }
 ---@return Walker
 local function GetNextTile(openList)
@@ -253,6 +275,43 @@ local function GetNextTile(openList)
         locked = tile.locked,
     }
     return cTile, cWalker
+end
+
+---Steps the given position in the given direction
+---@param x integer
+---@param y integer
+---@param direction Direction
+---@return integer x new x position
+---@return integer y new y position
+local function StepInDirection(x, y, direction)
+    if direction == Direction.UP then
+        y = y + 1
+    elseif direction == Direction.DOWN then
+        y = y - 1
+    elseif direction == Direction.LEFT then
+        x = x + 1
+    elseif direction == Direction.RIGHT then
+        x = x - 1
+    end
+
+    return x, y
+end
+
+---Converts a direction to a vector
+---@param direction Direction
+---@return {x: integer, y: integer}
+local function DirectionToVector(direction)
+    if direction == Direction.UP then
+        return { x = 0, y = -1 }
+    elseif direction == Direction.DOWN then
+        return { x = 0, y = 1 }
+    elseif direction == Direction.LEFT then
+        return { x = -1, y = 0 }
+    elseif direction == Direction.RIGHT then
+        return { x = 1, y = 0 }
+    else
+        return { x = 0, y = 0 }
+    end
 end
 
 local function Build()
@@ -286,7 +345,7 @@ local function Build()
             }
             walkerMap[y][x] = {
                 distance = MAX_DISTANCE,
-                parentDirection = "none",
+                parentDirection = Direction.NONE,
                 id = id,
                 wallId = UNSET,
             }
@@ -350,30 +409,18 @@ local function Build()
                         end
                     end
                 end)
-
-                --coroutine.yield(10)
             else
                 tileMap[cTile.y][cTile.x].locked = true
 
                 local parentDirection = cWalker.parentDirection
-                SetNextWalkerStep(cWalker, cTile.x, cTile.y, cWalker.parentDirection)
+                SetNextWalkerStep(cWalker, cTile.x, cTile.y, parentDirection)
 
-                local next = { x = cTile.x, y = cTile.y }
-                if parentDirection == "up" then
-                    next.y = next.y + 1
-                elseif parentDirection == "down" then
-                    next.y = next.y - 1
-                elseif parentDirection == "left" then
-                    next.x = next.x + 1
-                elseif parentDirection == "right" then
-                    next.x = next.x - 1
-                end
+                local nextX, nextY = StepInDirection(cTile.x, cTile.y, parentDirection)
+                if Navigation.Walkable(nextX - 1, nextY - 1) and walkerMap[nextY][nextX].id == UNSET then
+                    tileMap[nextY][nextX].locked = true
 
-                if Navigation.Walkable(next.x - 1, next.y - 1) and walkerMap[next.y][next.x].id == UNSET then
-                    tileMap[next.y][next.x].locked = true
-
-                    table.insert(openList, { x = next.x, y = next.y })
-                    SetNextWalkerStep(cWalker, next.x, next.y, parentDirection)
+                    table.insert(openList, { x = nextX, y = nextY })
+                    SetNextWalkerStep(cWalker, nextX, nextY, parentDirection)
                 end
             end
         end
@@ -461,30 +508,14 @@ local function Build()
             return
         end
 
-        local current = { x = x + 1, y = y + 1 }
+        x = x + 1
+        y = y + 1
 
-        local parentDirection = walkerMap[current.y][current.x].parentDirection
-        if parentDirection == "up" then
-            vectorField[current.y][current.x] = { x = 0, y = -1 }
-        elseif parentDirection == "down" then
-            vectorField[current.y][current.x] = { x = 0, y = 1 }
-        elseif parentDirection == "left" then
-            vectorField[current.y][current.x] = { x = -1, y = 0 }
-        elseif parentDirection == "right" then
-            vectorField[current.y][current.x] = { x = 1, y = 0 }
-        end
+        vectorField[y][x] = DirectionToVector(walkerMap[y][x].parentDirection)
 
-        ForEachNeighbour(current.x, current.y, function(n)
-            if not Navigation.Walkable(n.x - 1, n.y - 1) then
-                if n.direction == "up" then
-                    Navigation.SetWall(current.x - 1, current.y - 1, Navigation.TileSide.TOP)
-                elseif n.direction == "down" then
-                    Navigation.SetWall(current.x - 1, current.y - 1, Navigation.TileSide.BOTTOM)
-                elseif n.direction == "left" then
-                    Navigation.SetWall(current.x - 1, current.y - 1, Navigation.TileSide.LEFT)
-                elseif n.direction == "right" then
-                    Navigation.SetWall(current.x - 1, current.y - 1, Navigation.TileSide.RIGHT)
-                end
+        ForEachUnwalkableNeighbour(x, y, function(n)
+            if n.direction ~= Direction.NONE then
+                Navigation.SetWall(x - 1, y - 1, n.direction)
             end
         end)
     end)
