@@ -375,11 +375,11 @@ local function Build()
         return
     end
 
-    local walkedDistance = 1
+    local processedDistance = 1
     local anyAddedLastIter = false
     -- 9999 set to avoid an infinite loop, but this should be exited when no
     -- more tiles are available to exporse
-    while walkedDistance < 9999 do
+    while processedDistance < 9999 do
         -- Dijkstras
         while #openList > 0 do
             local cTile, cWalker = GetNextTile(openList)
@@ -425,38 +425,42 @@ local function Build()
             end
         end
 
+        -- If any tile that has the same distanceToWall as the currently
+        -- processed distance, but it hasn't yet been stepped by a walker, it
+        -- needs to be processed. However, a walker should only spawn one new
+        -- walker at a time - as close to its spawn as possible
+        ---@type {[integer]: {x: integer, y: integer, distance: integer}}
         local spawnMap = {}
-        for y = 1, Navigation.sizeY do
-            for x = 1, Navigation.sizeX do
-                if tileMap[y][x].distanceToWall == walkedDistance and not tileMap[y][x].spawn then
-                    local cId = walkerMap[y][x].id
+        Navigation.ForEachTile(function(x, y, _) -- Is this faster than a simple nested for loop? Who knows
+            x = x + 1
+            y = y + 1
 
-                    if cId ~= UNSET then
-                        local valid = false
-                        ForEachWalkableNeighbour(x, y, function(n)
-                            if tileMap[n.y][n.x].distanceToWall == walkedDistance + 1 and walkerMap[n.y][n.x].id == UNSET then
-                                valid = true
-                                return
-                            end
-                        end)
+            if tileMap[y][x].distanceToWall == processedDistance and not tileMap[y][x].spawn and walkerMap[y][x].id ~= UNSET then
+                local cId = walkerMap[y][x].id
 
-                        if valid then
-                            if not spawnMap[cId] then
-                                spawnMap[cId] = { distance = walkerMap[y][x].distance, x = x, y = y }
-                            elseif spawnMap[cId].distance > walkerMap[y][x].distance then
-                                spawnMap[cId] = { distance = walkerMap[y][x].distance, x = x, y = y }
-                            end
-                        end
+                local valid = false
+                ForEachWalkableNeighbour(x, y, function(n)
+                    if tileMap[n.y][n.x].distanceToWall == processedDistance + 1 and walkerMap[n.y][n.x].id == UNSET then
+                        valid = true
+                        return
+                    end
+                end)
+
+                if valid then
+                    if not spawnMap[cId] then
+                        spawnMap[cId] = { distance = walkerMap[y][x].distance, x = x, y = y }
+                    elseif spawnMap[cId].distance > walkerMap[y][x].distance then
+                        spawnMap[cId] = { distance = walkerMap[y][x].distance, x = x, y = y }
                     end
                 end
             end
-        end
+        end)
 
         local anyAdded = false
         for wallId, spawnData in pairs(spawnMap) do
             anyAdded = true
             ForEachWalkableNeighbour(spawnData.x, spawnData.y, function(n)
-                if tileMap[n.y][n.x].distanceToWall == walkedDistance + 1 and walkerMap[n.y][n.x].id == UNSET then
+                if tileMap[n.y][n.x].distanceToWall == processedDistance + 1 and walkerMap[n.y][n.x].id == UNSET then
                     table.insert(openList, { x = n.x, y = n.y, wallId = wallId, id = GetId() })
                     walkerMap[n.y][n.x].wallId = wallId
                     walkerMap[n.y][n.x].distance = 0
@@ -466,7 +470,7 @@ local function Build()
         end
 
         if not anyAdded then
-            walkedDistance = walkedDistance + 1
+            processedDistance = processedDistance + 1
 
             if not anyAddedLastIter then
                 break
