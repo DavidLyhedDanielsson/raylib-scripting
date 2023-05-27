@@ -193,6 +193,19 @@ local function GetId()
     return idCounter - 1
 end
 
+---Given a walker, sets the given position as this walker's next step
+---@param walker Walker
+---@param x integer
+---@param y integer
+---@param parentDirection string
+local function SetNextWalkerStep(walker, x, y, parentDirection)
+    local temp = walkerMap[y][x]
+    temp.id = walker.id
+    temp.distance = walker.distance + 1
+    temp.wallId = walker.wallId
+    temp.parentDirection = parentDirection
+end
+
 local function Build()
     StopAllThreads()
     Navigation.Build(navigationState.tileSize)
@@ -284,16 +297,18 @@ local function Build()
             walkerMap[current.y][current.x].wallId = current.wallId
         end
 
+        local tile = tileMap[current.y][current.x]
+
+        ---@type Tile | {x: integer, y: integer}
         local cTile = {
             x = current.x,
             y = current.y,
-            distanceToWall = tileMap[current.y][current.x].distanceToWall
+            distanceToWall = tile.distanceToWall,
+            distance = tile.distance,
+            spawn = tile.spawn,
+            locked = tile.locked,
         }
-        local cWalker = {
-            id = walkerMap[current.y][current.x].id,
-            wallId = walkerMap[current.y][current.x].wallId,
-            distance = walkerMap[current.y][current.x].distance
-        }
+        local cWalker = walkerMap[current.y][current.x]
         return cTile, cWalker
     end
 
@@ -323,10 +338,7 @@ local function Build()
 
                             if valid then
                                 table.insert(openList, { x = n.x, y = n.y })
-                                walkerMap[n.y][n.x].id = cWalker.id
-                                walkerMap[n.y][n.x].distance = cWalker.distance + 1
-                                walkerMap[n.y][n.x].wallId = cWalker.wallId
-                                walkerMap[n.y][n.x].parentDirection = n.opposite
+                                SetNextWalkerStep(cWalker, n.x, n.y, n.opposite)
                             end
                         end
                     end
@@ -334,14 +346,10 @@ local function Build()
 
                 --coroutine.yield(10)
             else
-                local parentDirection = walkerMap[cTile.y][cTile.x].parentDirection
-
                 tileMap[cTile.y][cTile.x].locked = true
 
-                walkerMap[cTile.y][cTile.x].id = cWalker.id
-                walkerMap[cTile.y][cTile.x].distance = cWalker.distance + 1
-                walkerMap[cTile.y][cTile.x].wallId = cWalker.wallId
-                walkerMap[cTile.y][cTile.x].parentDirection = parentDirection
+                local parentDirection = cWalker.parentDirection
+                SetNextWalkerStep(cWalker, cTile.x, cTile.y, cWalker.parentDirection)
 
                 local next = { x = cTile.x, y = cTile.y }
                 if parentDirection == "up" then
@@ -355,13 +363,10 @@ local function Build()
                 end
 
                 if Navigation.Walkable(next.x - 1, next.y - 1) and walkerMap[next.y][next.x].id == -1 then
-                    table.insert(openList, { x = next.x, y = next.y })
-                    walkerMap[next.y][next.x].id = cWalker.id
-                    walkerMap[next.y][next.x].distance = cWalker.distance + 1
-                    walkerMap[next.y][next.x].wallId = cWalker.wallId
-                    walkerMap[next.y][next.x].parentDirection = parentDirection
-
                     tileMap[next.y][next.x].locked = true
+
+                    table.insert(openList, { x = next.x, y = next.y })
+                    SetNextWalkerStep(cWalker, next.x, next.y, parentDirection)
                 end
             end
         end
