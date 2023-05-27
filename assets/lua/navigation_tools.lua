@@ -272,42 +272,49 @@ local function Build()
         return
     end
 
+    local function GetNextTile()
+        ---@type OpenListTile
+        local current = table.remove(openList, 1)
+
+        if current.id ~= nil then
+            walkerMap[current.y][current.x].id = current.id
+        end
+
+        if current.wallId ~= nil then
+            walkerMap[current.y][current.x].wallId = current.wallId
+        end
+
+        local cTile = {
+            x = current.x,
+            y = current.y,
+            distanceToWall = tileMap[current.y][current.x].distanceToWall
+        }
+        local cWalker = {
+            id = walkerMap[current.y][current.x].id,
+            wallId = walkerMap[current.y][current.x].wallId,
+            distance = walkerMap[current.y][current.x].distance
+        }
+        return cTile, cWalker
+    end
+
     local iter = 2
     while iter < 100 do
         -- Dijkstras
         while #openList > 0 do
-            local current = table.remove(openList, 1)
+            local cTile, cWalker = GetNextTile()
 
-            local cDistance = walkerMap[current.y][current.x].distance
-            local cId
-            if current.id ~= nil then
-                cId = current.id
-                walkerMap[current.y][current.x].id = cId
-            else
-                cId = walkerMap[current.y][current.x].id
-            end
-            local cWallId
-            if current.wallId ~= nil then
-                cWallId = current.wallId
-                walkerMap[current.y][current.x].wallId = cWallId
-            else
-                cWallId = walkerMap[current.y][current.x].wallId
-            end
-            local cDistanceToWall = tileMap[current.y][current.x].distanceToWall
-
-
-            if not tileMap[current.y][current.x].spawn and not tileMap[current.y][current.x].locked then
-                ForEachWalkableNeighbour(current.x, current.y, function(n)
+            if not tileMap[cTile.y][cTile.x].spawn and not tileMap[cTile.y][cTile.x].locked then
+                ForEachWalkableNeighbour(cTile.x, cTile.y, function(n)
                     if walkerMap[n.y][n.x].id == -1 then
-                        if IsAdjacentToWalker(n.x, n.y, cWallId) then
+                        if IsAdjacentToWalker(n.x, n.y, cWalker.wallId) then
                             local valid = true
-                            if cWallId == 0 then
-                                if not HasSharedWall(current.x, current.y, n.x, n.y, cDistanceToWall) then
+                            if cWalker.wallId == 0 then
+                                if not HasSharedWall(cTile.x, cTile.y, n.x, n.y, cTile.distanceToWall) then
                                     valid = false
                                 end
                             else
                                 ForEachWalkableNeighbour(n.x, n.y, function(nn)
-                                    if walkerMap[nn.y][nn.x].id ~= walkerMap[current.y][current.x].wallId and tileMap[nn.y][nn.x].distanceToWall == tileMap[n.y][n.x].distanceToWall - 1 then
+                                    if walkerMap[nn.y][nn.x].id ~= walkerMap[cTile.y][cTile.x].wallId and tileMap[nn.y][nn.x].distanceToWall == tileMap[n.y][n.x].distanceToWall - 1 then
                                         valid = false
                                         return
                                     end
@@ -316,9 +323,9 @@ local function Build()
 
                             if valid then
                                 table.insert(openList, { x = n.x, y = n.y })
-                                walkerMap[n.y][n.x].id = cId
-                                walkerMap[n.y][n.x].distance = cDistance + 1
-                                walkerMap[n.y][n.x].wallId = cWallId
+                                walkerMap[n.y][n.x].id = cWalker.id
+                                walkerMap[n.y][n.x].distance = cWalker.distance + 1
+                                walkerMap[n.y][n.x].wallId = cWalker.wallId
                                 walkerMap[n.y][n.x].parentDirection = n.opposite
                             end
                         end
@@ -327,16 +334,16 @@ local function Build()
 
                 --coroutine.yield(10)
             else
-                local parentDirection = walkerMap[current.y][current.x].parentDirection
+                local parentDirection = walkerMap[cTile.y][cTile.x].parentDirection
 
-                tileMap[current.y][current.x].locked = true
+                tileMap[cTile.y][cTile.x].locked = true
 
-                walkerMap[current.y][current.x].id = cId
-                walkerMap[current.y][current.x].distance = cDistance + 1
-                walkerMap[current.y][current.x].wallId = cWallId
-                walkerMap[current.y][current.x].parentDirection = parentDirection
+                walkerMap[cTile.y][cTile.x].id = cWalker.id
+                walkerMap[cTile.y][cTile.x].distance = cWalker.distance + 1
+                walkerMap[cTile.y][cTile.x].wallId = cWalker.wallId
+                walkerMap[cTile.y][cTile.x].parentDirection = parentDirection
 
-                local next = { x = current.x, y = current.y }
+                local next = { x = cTile.x, y = cTile.y }
                 if parentDirection == "up" then
                     next.y = next.y + 1
                 elseif parentDirection == "down" then
@@ -349,9 +356,9 @@ local function Build()
 
                 if Navigation.Walkable(next.x - 1, next.y - 1) and walkerMap[next.y][next.x].id == -1 then
                     table.insert(openList, { x = next.x, y = next.y })
-                    walkerMap[next.y][next.x].id = cId
-                    walkerMap[next.y][next.x].distance = cDistance + 1
-                    walkerMap[next.y][next.x].wallId = cWallId
+                    walkerMap[next.y][next.x].id = cWalker.id
+                    walkerMap[next.y][next.x].distance = cWalker.distance + 1
+                    walkerMap[next.y][next.x].wallId = cWalker.wallId
                     walkerMap[next.y][next.x].parentDirection = parentDirection
 
                     tileMap[next.y][next.x].locked = true
