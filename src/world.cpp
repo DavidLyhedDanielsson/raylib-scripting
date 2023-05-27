@@ -322,8 +322,10 @@ namespace World
                 Vector3 min{maxVal, 0.0f, maxVal};
                 Vector3 max{minVal, 0.0f, minVal};
 
+                bool anythingAdded = false;
                 world.registry->view<Component::Walkable, Component::Transform>().each(
                     [&](Component::Transform transform) {
+                        anythingAdded = true;
                         min = Vector3Min(
                             min,
                             {.x = transform.position.x - tileSize,
@@ -335,6 +337,9 @@ namespace World
                              .y = 0.0f,
                              .z = transform.position.z + tileSize});
                     });
+
+                if(!anythingAdded)
+                    return;
 
                 min = Vector3Subtract(min, {1.0f, 0.0f, 1.0f});
                 max = Vector3Add(max, {1.0f, 0.0f, 1.0f});
