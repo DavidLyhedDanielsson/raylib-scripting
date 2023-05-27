@@ -1,3 +1,9 @@
+---@class Neighbour
+---@field x integer
+---@field y integer
+---@field direction string
+---@field opposite string
+
 if navigationState == nil then
     navigationState = {
         smoothField = true,
@@ -6,23 +12,24 @@ if navigationState == nil then
     }
 end
 
-local function DistanceToWall(tileX, tileY)
-    if not Navigation.Reachable(tileX - 1, tileY - 1) then
+---For the given tile, find the tile-distance to the nearest unreachable tile
+---@param x integer
+---@param y integer
+---@return integer
+local function DistanceToWall(x, y)
+    if not Navigation.Reachable(x - 1, y - 1) then
         return 0
     end
 
+    -- The radius of 100 is excessive, but a result is expected to be found a lot sooner
     for radius = 1, 100 do
+        -- Expand search radius every iteration. Slow but is fast enough so far
         for ry = -radius, radius do
             for rx = -radius, radius do
-                local x = tileX + rx
-                local y = tileY + ry
+                local x = x + rx
+                local y = y + ry
 
                 if not Navigation.Reachable(x - 1, y - 1) then
-                    -- Manhattan value
-                    -- if math.abs(rx) + math.abs(ry) <= radius then
-                    --     return radius
-                    -- end
-
                     return radius
                 end
             end
@@ -32,122 +39,110 @@ local function DistanceToWall(tileX, tileY)
     return -1
 end
 
-local function IsSameWall(x, y, ox, oy, distanceToWall)
+---Given two adjacent tiles, check if they share a wall in any of the tiles around them
+---@param x integer x position of first tile
+---@param y integer y position of first tile
+---@param ox integer x position of second tile
+---@param oy integer y position of second tile
+---@param searchRadius integer
+---@return boolean
+local function HasSharedWall(x, y, ox, oy, searchRadius)
+    -- Build a grid that is centered on the two tiles (X and Y in the example
+    -- below), step around the tiles and add `1` if there is a wall in that
+    -- position. After stepping around both points, check if there is a `2` in
+    -- this grid. If so, they share a wall.
+    -- Example:
+    -- ┌─┬─┬─┬─┐
+    -- │1│ │ │ │
+    -- ├─┼─┼─┼─┤
+    -- │1│X│ │ │
+    -- ├─┼─┼─┼─┤
+    -- │1│2│Y│ │
+    -- ├─┼─┼─┼─┤
+    -- │ │1│1│1│
+    -- └─┴─┴─┴─┘
+
     local map = {}
-    for y = 0, distanceToWall * 2 + 1 + 1 do
+    for y = 0, searchRadius * 2 + 1 + 1 do
         map[y] = {}
-        for x = 0, distanceToWall * 2 + 1 + 1 do
+        for x = 0, searchRadius * 2 + 1 + 1 do
             map[y][x] = 0
         end
     end
 
+    -- Place X
     local offsetX = x > ox and 1 or 0
     local offsetY = y > oy and 1 or 0
 
-    for yy = -distanceToWall, distanceToWall do
-        for xx = -distanceToWall, distanceToWall do
+    for yy = -searchRadius, searchRadius do
+        for xx = -searchRadius, searchRadius do
             if not Navigation.Walkable(x + xx - 1, y + yy - 1) then
-                local val = map[yy + distanceToWall + offsetY][xx + distanceToWall + offsetX]
-                map[yy + distanceToWall + offsetY][xx + distanceToWall + offsetX] = val + 1
+                -- Map from [-sR; sR] to [0; 2*sR]
+                local val = map[yy + searchRadius + offsetY][xx + searchRadius + offsetX]
+                map[yy + searchRadius + offsetY][xx + searchRadius + offsetX] = val + 1
             end
         end
     end
 
+    -- Place Y
     local offsetX = ox > x and 1 or 0
     local offsetY = oy > y and 1 or 0
 
-    local maxValue = 0
-
-    for yy = -distanceToWall, distanceToWall do
-        for xx = -distanceToWall, distanceToWall do
+    for yy = -searchRadius, searchRadius do
+        for xx = -searchRadius, searchRadius do
             if not Navigation.Walkable(ox + xx - 1, oy + yy - 1) then
-                local val = map[yy + distanceToWall + offsetY][xx + distanceToWall + offsetX]
-                --map[yy + distanceToWall + offsetY][xx + distanceToWall + offsetX] = val + 1
-                maxValue = math.max(maxValue, val + 1)
+                local val = map[yy + searchRadius + offsetY][xx + searchRadius + offsetX]
+
+                if val == 1 then
+                    return true
+                end
             end
         end
     end
 
-    return maxValue == 2
+    return false
 end
 
-function DirectionToWall(x, y, distanceToWall)
-    local dirToCurrentWall = { x = 0, y = 0 }
-    local sum = 0
-    if not Navigation.Walkable(x - 1, y - 1 - distanceToWall) then
-        dirToCurrentWall.y = dirToCurrentWall.y - 1
-        sum = sum + 1
-    end
-    if not Navigation.Walkable(x - 1, y - 1 + distanceToWall) then
-        dirToCurrentWall.y = dirToCurrentWall.y + 1
-        sum = sum + 1
-    end
-    if not Navigation.Walkable(x - 1 - distanceToWall, y - 1) then
-        dirToCurrentWall.x = dirToCurrentWall.x - 1
-        sum = sum + 1
-    end
-    if not Navigation.Walkable(x - 1 + distanceToWall, y - 1) then
-        dirToCurrentWall.x = dirToCurrentWall.x + 1
-        sum = sum + 1
-    end
-
-    if not Navigation.Walkable(x - 1 - distanceToWall, y - 1 - distanceToWall) then
-        dirToCurrentWall.x = dirToCurrentWall.x - 1
-        dirToCurrentWall.y = dirToCurrentWall.y - 1
-        sum = sum + 1
-    end
-    if not Navigation.Walkable(x - 1 + distanceToWall, y - 1 - distanceToWall) then
-        dirToCurrentWall.x = dirToCurrentWall.x + 1
-        dirToCurrentWall.y = dirToCurrentWall.y - 1
-        sum = sum + 1
-    end
-    if not Navigation.Walkable(x - 1 - distanceToWall, y - 1 + distanceToWall) then
-        dirToCurrentWall.x = dirToCurrentWall.x - 1
-        dirToCurrentWall.y = dirToCurrentWall.y + 1
-        sum = sum + 1
-    end
-    if not Navigation.Walkable(x - 1 + distanceToWall, y - 1 + distanceToWall) then
-        dirToCurrentWall.x = dirToCurrentWall.x + 1
-        dirToCurrentWall.y = dirToCurrentWall.y + 1
-        sum = sum + 1
-    end
-
-    if sum == 0 then
-        return { x = 0, y = 0 }
-    end
-
-    dirToCurrentWall.x = dirToCurrentWall.x / sum
-    dirToCurrentWall.y = dirToCurrentWall.y / sum
-    return dirToCurrentWall
-end
-
-local function ForEachNeighbour(x, y, func)
-    local neighbours = {
+---For the given tile, get neighbours
+---@param x integer
+---@param y integer
+---@return Neighbour[]
+local function GetNeighbours(x, y)
+    return {
         { x = x,     y = y - 1, direction = "up",    opposite = "down" },
         { x = x,     y = y + 1, direction = "down",  opposite = "up" },
         { x = x - 1, y = y,     direction = "left",  opposite = "right" },
         { x = x + 1, y = y,     direction = "right", opposite = "left" },
     }
-    for _, n in ipairs(neighbours) do
+end
+
+---Runs the given callback for each neighbour
+---@param x integer
+---@param y integer
+---@param func fun(n: Neighbour)
+local function ForEachNeighbour(x, y, func)
+    for _, n in ipairs(GetNeighbours(x, y)) do
         func(n)
     end
 end
 
+---Runs the given function for each cardinally adjacent neighbour that is walkable
+---@param x integer
+---@param y integer
+---@param func fun(n: Neighbour)
 local function ForEachWalkableNeighbour(x, y, func)
-    local neighbours = {
-        { x = x,     y = y - 1, direction = "up",    opposite = "down" },
-        { x = x,     y = y + 1, direction = "down",  opposite = "up" },
-        { x = x - 1, y = y,     direction = "left",  opposite = "right" },
-        { x = x + 1, y = y,     direction = "right", opposite = "left" },
-    }
-    for _, n in ipairs(neighbours) do
+    for _, n in ipairs(GetNeighbours(x, y)) do
         if Navigation.Walkable(n.x - 1, n.y - 1) then
             func(n)
         end
     end
 end
 
-local function ForEachAdjacent(x, y, func)
+---Runs the given function for _all adjacent_ neighbours that are walkable
+---@param x integer
+---@param y integer
+---@param func fun(n: {x: integer, y: integer})
+local function ForEachAdjacentWalkable(x, y, func)
     local neighbours = {
         { x = x - 1, y = y - 1, },
         { x = x - 1, y = y, },
@@ -167,18 +162,23 @@ local function ForEachAdjacent(x, y, func)
     end
 end
 
-function IsAdjacent(cx, cy, wallId)
+---Given a tile, checks whether or not it is adjacent to the walker with the given wall id
+---@param x integer
+---@param y integer
+---@param walkerWallId integer
+---@return boolean
+function IsAdjacentToWalker(x, y, walkerWallId)
     for ry = -1, 1, 1 do
         for rx = -1, 1, 1 do
-            local x = cx + rx
-            local y = cy + ry
+            local x = x + rx
+            local y = y + ry
 
             if Navigation.Walkable(x - 1, y - 1) then
-                if wallMap[y][x].id == wallId then
+                if wallMap[y][x].id == walkerWallId then
                     return true
                 end
-            elseif wallId == 0 then
-                return true -- Special case
+            elseif walkerWallId == 0 then -- wallId 0 is reserved
+                return true
             end
         end
     end
@@ -272,10 +272,10 @@ local function Build()
             if not tileMap[current.y][current.x].spawn and not tileMap[current.y][current.x].locked then
                 ForEachWalkableNeighbour(current.x, current.y, function(n)
                     if wallMap[n.y][n.x].id == -1 then
-                        if IsAdjacent(n.x, n.y, cWallId) then
+                        if IsAdjacentToWalker(n.x, n.y, cWallId) then
                             local valid = true
                             if cWallId == 0 then
-                                if not IsSameWall(current.x, current.y, n.x, n.y, cDistanceToWall) then
+                                if not HasSharedWall(current.x, current.y, n.x, n.y, cDistanceToWall) then
                                     valid = false
                                 end
                             else
@@ -391,7 +391,7 @@ local function Build()
         for x = 1, Navigation.sizeX do
             if tileMap[y][x].distanceToWall == 0 then
                 local toMap = { x = 0, y = 0 }
-                ForEachAdjacent(x, y, function(n)
+                ForEachAdjacentWalkable(x, y, function(n)
                     toMap.x = toMap.x + n.x - x
                     toMap.y = toMap.y + n.y - y
                 end)
