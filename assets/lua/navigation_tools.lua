@@ -174,7 +174,7 @@ function IsAdjacentToWalker(x, y, walkerWallId)
             local y = y + ry
 
             if Navigation.Walkable(x - 1, y - 1) then
-                if wallMap[y][x].id == walkerWallId then
+                if walkerMap[y][x].id == walkerWallId then
                     return true
                 end
             elseif walkerWallId == 0 then -- wallId 0 is reserved
@@ -186,54 +186,81 @@ function IsAdjacentToWalker(x, y, walkerWallId)
     return false
 end
 
+-- 0 is reserved for unreachable tiles!
+local idCounter = 1
+local function GetId()
+    idCounter = idCounter + 1
+    return idCounter - 1
+end
+
 local function Build()
     StopAllThreads()
     Navigation.Build(navigationState.tileSize)
 
     --RegisterThread(function()
-    local idCounter = 1
+    local MAX_DISTANCE <const> = 999999
+    local UNSET <const> = -1
 
-    wallMap = {} -- Map for walking along walls
+    ---@class Tile
+    ---@field distance integer shortest distance from spawn
+    ---@field distanceToWall integer distance from this tile to the closest wall
+    ---@field spawn boolean whether or not this tile is an enemy spawn tile
+    ---@field locked boolean if a walker crosses a spawn tile, it and all subsequent tiles will be locked
+
+    ---@class Walker
+    ---@field distance integer distance walked
+    ---@field parentDirection string direction to the previous tile of this walker
+    ---@field id integer this walker's id
+    ---@field wallId integer the wall that this walker is following
+
+    ---@type Tile[][]
     tileMap = {} -- Map for simple shorest distance from goal, in tiles
+
+    ---@type Walker[][]
+    walkerMap = {} -- Map for walking along walls
 
     -- Initialize
     for y = 1, Navigation.sizeY do
-        wallMap[y] = {}
+        walkerMap[y] = {}
         tileMap[y] = {}
         for x = 1, Navigation.sizeX do
             local distanceToWall = DistanceToWall(x, y)
-
-            local id = distanceToWall > 0 and -1 or 0
+            -- All unreachable tiles are given the special id 0
+            local id = distanceToWall > 0 and UNSET or 0
 
             tileMap[y][x] = {
-                distance = 9999,
+                distance = MAX_DISTANCE,
                 distanceToWall = distanceToWall,
                 spawn = false,
                 locked = false,
             }
-            wallMap[y][x] = {
-                distance = 9999,
+            walkerMap[y][x] = {
+                distance = MAX_DISTANCE,
                 parentDirection = "none",
                 id = id,
-                wallId = -1,
+                wallId = UNSET,
             }
         end
     end
 
+    ---@class OpenListTile
+    ---@field x integer
+    ---@field y integer
+    ---@field wallId integer
+    ---@field id integer
 
-    -- Add all goals to openList to start calculating distance using Dijkstras
-    -- with constant cost
+    ---@type OpenListTile[]
     local openList = {}
 
+    -- Starting condition
     Navigation.ForEachTile(function(x, y, tile)
         x = x + 1
         y = y + 1
 
         if tile.type == Navigation.TileType.GOAL and tileMap[y][x].distanceToWall == 1 then
-            wallMap[y][x].wallId = 0
-            wallMap[y][x].distance = 0
-            wallMap[y][x].id = idCounter
-            idCounter = idCounter + 1
+            walkerMap[y][x].wallId = 0
+            walkerMap[y][x].distance = 0
+            walkerMap[y][x].id = GetId()
             table.insert(openList, { x = x, y = y })
         elseif tile.type == Navigation.TileType.SPAWN then
             tileMap[y][x].spawn = true
@@ -251,27 +278,27 @@ local function Build()
         while #openList > 0 do
             local current = table.remove(openList, 1)
 
-            local cDistance = wallMap[current.y][current.x].distance
+            local cDistance = walkerMap[current.y][current.x].distance
             local cId
             if current.id ~= nil then
                 cId = current.id
-                wallMap[current.y][current.x].id = cId
+                walkerMap[current.y][current.x].id = cId
             else
-                cId = wallMap[current.y][current.x].id
+                cId = walkerMap[current.y][current.x].id
             end
             local cWallId
             if current.wallId ~= nil then
                 cWallId = current.wallId
-                wallMap[current.y][current.x].wallId = cWallId
+                walkerMap[current.y][current.x].wallId = cWallId
             else
-                cWallId = wallMap[current.y][current.x].wallId
+                cWallId = walkerMap[current.y][current.x].wallId
             end
             local cDistanceToWall = tileMap[current.y][current.x].distanceToWall
 
 
             if not tileMap[current.y][current.x].spawn and not tileMap[current.y][current.x].locked then
                 ForEachWalkableNeighbour(current.x, current.y, function(n)
-                    if wallMap[n.y][n.x].id == -1 then
+                    if walkerMap[n.y][n.x].id == -1 then
                         if IsAdjacentToWalker(n.x, n.y, cWallId) then
                             local valid = true
                             if cWallId == 0 then
@@ -280,7 +307,7 @@ local function Build()
                                 end
                             else
                                 ForEachWalkableNeighbour(n.x, n.y, function(nn)
-                                    if wallMap[nn.y][nn.x].id ~= wallMap[current.y][current.x].wallId and tileMap[nn.y][nn.x].distanceToWall == tileMap[n.y][n.x].distanceToWall - 1 then
+                                    if walkerMap[nn.y][nn.x].id ~= walkerMap[current.y][current.x].wallId and tileMap[nn.y][nn.x].distanceToWall == tileMap[n.y][n.x].distanceToWall - 1 then
                                         valid = false
                                         return
                                     end
@@ -289,10 +316,10 @@ local function Build()
 
                             if valid then
                                 table.insert(openList, { x = n.x, y = n.y })
-                                wallMap[n.y][n.x].id = cId
-                                wallMap[n.y][n.x].distance = cDistance + 1
-                                wallMap[n.y][n.x].wallId = cWallId
-                                wallMap[n.y][n.x].parentDirection = n.opposite
+                                walkerMap[n.y][n.x].id = cId
+                                walkerMap[n.y][n.x].distance = cDistance + 1
+                                walkerMap[n.y][n.x].wallId = cWallId
+                                walkerMap[n.y][n.x].parentDirection = n.opposite
                             end
                         end
                     end
@@ -300,14 +327,14 @@ local function Build()
 
                 --coroutine.yield(10)
             else
-                local parentDirection = wallMap[current.y][current.x].parentDirection
+                local parentDirection = walkerMap[current.y][current.x].parentDirection
 
                 tileMap[current.y][current.x].locked = true
 
-                wallMap[current.y][current.x].id = cId
-                wallMap[current.y][current.x].distance = cDistance + 1
-                wallMap[current.y][current.x].wallId = cWallId
-                wallMap[current.y][current.x].parentDirection = parentDirection
+                walkerMap[current.y][current.x].id = cId
+                walkerMap[current.y][current.x].distance = cDistance + 1
+                walkerMap[current.y][current.x].wallId = cWallId
+                walkerMap[current.y][current.x].parentDirection = parentDirection
 
                 local next = { x = current.x, y = current.y }
                 if parentDirection == "up" then
@@ -320,12 +347,12 @@ local function Build()
                     next.x = next.x - 1
                 end
 
-                if Navigation.Walkable(next.x - 1, next.y - 1) and wallMap[next.y][next.x].id == -1 then
+                if Navigation.Walkable(next.x - 1, next.y - 1) and walkerMap[next.y][next.x].id == -1 then
                     table.insert(openList, { x = next.x, y = next.y })
-                    wallMap[next.y][next.x].id = cId
-                    wallMap[next.y][next.x].distance = cDistance + 1
-                    wallMap[next.y][next.x].wallId = cWallId
-                    wallMap[next.y][next.x].parentDirection = parentDirection
+                    walkerMap[next.y][next.x].id = cId
+                    walkerMap[next.y][next.x].distance = cDistance + 1
+                    walkerMap[next.y][next.x].wallId = cWallId
+                    walkerMap[next.y][next.x].parentDirection = parentDirection
 
                     tileMap[next.y][next.x].locked = true
                 end
@@ -336,12 +363,12 @@ local function Build()
         for y = 1, Navigation.sizeY do
             for x = 1, Navigation.sizeX do
                 if tileMap[y][x].distanceToWall == iter - 1 and not tileMap[y][x].spawn then
-                    local cId = wallMap[y][x].id
+                    local cId = walkerMap[y][x].id
 
                     if cId ~= -1 then
                         local valid = false
                         ForEachWalkableNeighbour(x, y, function(n)
-                            if tileMap[n.y][n.x].distanceToWall == iter and wallMap[n.y][n.x].id == -1 then
+                            if tileMap[n.y][n.x].distanceToWall == iter and walkerMap[n.y][n.x].id == -1 then
                                 valid = true
                                 return
                             end
@@ -349,9 +376,9 @@ local function Build()
 
                         if valid then
                             if not spawnMap[cId] then
-                                spawnMap[cId] = { distance = wallMap[y][x].distance, x = x, y = y }
-                            elseif spawnMap[cId].distance > wallMap[y][x].distance then
-                                spawnMap[cId] = { distance = wallMap[y][x].distance, x = x, y = y }
+                                spawnMap[cId] = { distance = walkerMap[y][x].distance, x = x, y = y }
+                            elseif spawnMap[cId].distance > walkerMap[y][x].distance then
+                                spawnMap[cId] = { distance = walkerMap[y][x].distance, x = x, y = y }
                             end
                         end
                     end
@@ -364,15 +391,14 @@ local function Build()
             -- print("Spawning iter ", iter)
             anyAdded = true
             ForEachWalkableNeighbour(spawnData.x, spawnData.y, function(n)
-                if tileMap[n.y][n.x].distanceToWall == iter and wallMap[n.y][n.x].id == -1 then
+                if tileMap[n.y][n.x].distanceToWall == iter and walkerMap[n.y][n.x].id == -1 then
                     -- print("   ", n.x, "x", n.y)
                     -- print("   ", idCounter)
                     -- print("   ", wallId)
-                    table.insert(openList, { x = n.x, y = n.y, wallId = wallId, id = idCounter })
-                    wallMap[n.y][n.x].wallId = wallId
-                    wallMap[n.y][n.x].distance = 0
-                    wallMap[n.y][n.x].parentDirection = n.opposite
-                    idCounter = idCounter + 1
+                    table.insert(openList, { x = n.x, y = n.y, wallId = wallId, id = GetId() })
+                    walkerMap[n.y][n.x].wallId = wallId
+                    walkerMap[n.y][n.x].distance = 0
+                    walkerMap[n.y][n.x].parentDirection = n.opposite
                 end
             end)
         end
@@ -418,7 +444,7 @@ local function Build()
 
         local current = { x = x + 1, y = y + 1 }
 
-        local parentDirection = wallMap[current.y][current.x].parentDirection
+        local parentDirection = walkerMap[current.y][current.x].parentDirection
         if parentDirection == "up" then
             vectorField[current.y][current.x] = { x = 0, y = -1 }
         elseif parentDirection == "down" then

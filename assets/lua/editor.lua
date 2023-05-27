@@ -216,9 +216,9 @@ function imgui()
     end
 
     if menuBarState.drawTileInfo or menuBarState.drawWallInfo then
-        if wallMap then
-            for y = 1, #wallMap do
-                for x = 1, #wallMap[y] do
+        if walkerMap then
+            for y = 1, #walkerMap do
+                for x = 1, #walkerMap[y] do
                     local pos = Raylib.GetWorldToScreen({
                         x = x * Navigation.tileSize + Navigation.offsetX - Navigation.tileSize / 2,
                         y = 0.25,
@@ -226,15 +226,15 @@ function imgui()
                     })
                     if pos.x > 0 and pos.y > 0 then
                         if menuBarState.drawWallInfo then
-                            if wallMap[y][x].id ~= -1 then
-                                Raylib.DrawText(wallMap[y][x].id, pos.x, pos.y - 14, 12)
-                                Raylib.DrawText(wallMap[y][x].distance, pos.x, pos.y, 12)
-                                Raylib.DrawText(wallMap[y][x].wallId, pos.x, pos.y + 14, 12)
+                            if walkerMap[y][x].id ~= -1 then
+                                Raylib.DrawText(walkerMap[y][x].id, pos.x, pos.y - 14, 12)
+                                Raylib.DrawText(walkerMap[y][x].distance, pos.x, pos.y, 12)
+                                Raylib.DrawText(walkerMap[y][x].wallId, pos.x, pos.y + 14, 12)
                                 --Raylib.DrawText(wallMap[y][x].distanceAlongWall, pos.x, pos.y + 28, 12)
-                                if wallMap[y][x].parentDirection == "none" then
-                                    Raylib.DrawText(wallMap[y][x].parentDirection, pos.x, pos.y + 28, 20)
+                                if walkerMap[y][x].parentDirection == "none" then
+                                    Raylib.DrawText(walkerMap[y][x].parentDirection, pos.x, pos.y + 28, 20)
                                 else
-                                    Raylib.DrawText(wallMap[y][x].parentDirection, pos.x, pos.y + 28, 12)
+                                    Raylib.DrawText(walkerMap[y][x].parentDirection, pos.x, pos.y + 28, 12)
                                 end
                             end
                         elseif menuBarState.drawTileInfo then
