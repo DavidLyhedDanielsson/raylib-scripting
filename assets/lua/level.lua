@@ -14,10 +14,11 @@ local function WriteFile(file, tab)
     end
 end
 
-local function SaveLevel()
-    local file = io.open("../assets/default_level.lua", "w+")
+---@param name string name of level without any file types
+local function SaveLevel(name)
+    local file = io.open("../assets/levels/" .. name .. ".lua", "w+")
     if not file then
-        print("Couldn't open default_level.lua for writing")
+        print("Couldn't open " .. name .. ".lua for writing")
         return
     end
     file:write("return{")
@@ -33,8 +34,9 @@ local function SaveLevel()
     print("Save completed")
 end
 
-local function LoadLevel()
-    local level = dofile("../assets/default_level.lua")
+---@param name string name of level without any file types
+local function LoadLevel(name)
+    local level = dofile("../assets/levels/" .. name .. ".lua")
     if level ~= nil then
         Entity.ClearRegistry()
 
@@ -46,7 +48,7 @@ local function LoadLevel()
             end
         end
     else
-        print("Couldn't load ../assets/default_level.lua or it didn't contain a table")
+        print("Couldn't load ../assets/ " .. name .. ".lua or it didn't contain a table")
     end
 end
 

@@ -20,7 +20,6 @@ if setup == nil then
 
     selectedEntities = {}
     newSelectedEntity = nil
-    searchText = ""
     usingGizmo = false
 
     enemySpawns = {}
@@ -30,7 +29,7 @@ if setup == nil then
     placeTrapMode = false
     placeFloorMode = false
 
-    Level.LoadLevel()
+    Level.LoadLevel("level1")
     NavigationTools.Build()
 end
 

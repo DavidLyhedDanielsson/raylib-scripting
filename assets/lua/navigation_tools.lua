@@ -26,7 +26,6 @@ if navigationState == nil then
     navigationState = {
         smoothField = true,
         tileSize = 0.5,
-        fixDisconnected = false,
     }
 end
 
