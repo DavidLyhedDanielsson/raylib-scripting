@@ -14,7 +14,6 @@ local Gui = {
     Menu = require("gui.main_menu_bar"),
 }
 
-
 if setup == nil then
     setup = true
 
@@ -28,6 +27,14 @@ if setup == nil then
     cooldown = 0
     placeTrapMode = false
     placeFloorMode = false
+
+    PlaceFloorType = {
+        NORMAL = 0,
+        SPAWN = 1,
+        GOAL = 2,
+        UNWALKABLE = 3,
+    }
+    placeFloorType = PlaceFloorType.NORMAL
 
     Level.LoadLevel("level1")
     NavigationTools.Build()
@@ -45,7 +52,11 @@ function raylib()
     end
 
     if placeFloorMode then
-        Raylib.DrawGrid(500, 1)
+        if Raylib.IsKeyDown(Raylib.Key.LEFT_SHIFT) then
+            Raylib.DrawGrid(500, 1)
+        else
+            Raylib.DrawGrid(500, 2)
+        end
     end
 end
 
@@ -142,28 +153,55 @@ function imgui()
         end
     elseif placeFloorMode then
         if not ImGui.WantCaptureMouse() then
-            if Raylib.IsMouseButtonPressed(0) then
+            if Raylib.IsMouseButtonDown(0) then
                 local ray = Raylib.GetMouseRay(Raylib.GetMousePosition())
-                -- Should be big enough
-                local min = -500
-                local max = 500
-                local p1 = { x = min, y = 0, z = min }
-                local p2 = { x = max, y = 0, z = min }
-                local p3 = { x = max, y = 0, z = max }
-                local p4 = { x = min, y = 0, z = max }
-                local hitPosition = Raylib.GetRayCollisionQuad(ray, p1, p2, p3, p4)
-                if hitPosition ~= nil then
-                    local entity = Entity.Create()
-                    EntityTools.AddComponentOrPrintError("Render", entity, { assetName = "Floor_Standard" })
-                    EntityTools.AddComponentOrPrintError("Transform", entity,
-                        {
-                            position = { x = math.floor(hitPosition.x), y = 0, z = math.floor(hitPosition.z) },
-                            rotation = { x = 0, y = 0, z = 0 }
-                        })
-                    EntityTools.AddComponentOrPrintError("Tile", entity)
-                    EntityTools.AddComponentOrPrintError("Walkable", entity)
+                if not Raylib.GetRayCollision(ray) then
+                    -- Should be big enough
+                    local min = -500
+                    local max = 500
+                    local p1 = { x = min, y = 0, z = min }
+                    local p2 = { x = max, y = 0, z = min }
+                    local p3 = { x = max, y = 0, z = max }
+                    local p4 = { x = min, y = 0, z = max }
+                    local hitPosition = Raylib.GetRayCollisionQuad(ray, p1, p2, p3, p4)
+                    if hitPosition ~= nil then
+                        local entity = Entity.Create()
+                        EntityTools.AddComponentOrPrintError("Render", entity, { assetName = "Floor_Standard" })
+                        local position
+                        if Raylib.IsKeyDown(Raylib.Key.LEFT_SHIFT) then
+                            position = {
+                                x = math.floor(hitPosition.x + 0.5),
+                                y = 0,
+                                z = math.floor(hitPosition.z + 0.5),
+                            }
+                        else
+                            position = {
+                                x = math.floor(hitPosition.x / 2) * 2 + 1,
+                                y = 0,
+                                z = math.floor(hitPosition.z / 2) * 2 + 1,
+                            }
+                        end
+
+                        EntityTools.AddComponentOrPrintError("Transform", entity,
+                            {
+                                position = position,
+                                rotation = { x = 0, y = 0, z = 0 }
+                            })
+
+                        EntityTools.AddComponentOrPrintError("Tile", entity)
+
+                        if placeFloorType == PlaceFloorType.NORMAL or placeFloorType == PlaceFloorType.SPAWN or placeFloorType == PlaceFloorType.GOAL then
+                            EntityTools.AddComponentOrPrintError("Walkable", entity)
+                        end
+                        if placeFloorType == PlaceFloorType.SPAWN then
+                            EntityTools.AddComponentOrPrintError("EnemySpawn", entity, { targetGoal = 0 })
+                        end
+                        if placeFloorType == PlaceFloorType.GOAL then
+                            EntityTools.AddComponentOrPrintError("EnemyGoal", entity, { id = 0 })
+                        end
+                    end
                 end
-            elseif Raylib.IsMouseButtonPressed(1) then
+            elseif Raylib.IsMouseButtonDown(1) then
                 local ray = Raylib.GetMouseRay(Raylib.GetMousePosition())
                 local hitEntity = Raylib.GetRayCollision(ray)
                 if hitEntity ~= nil then
@@ -214,35 +252,33 @@ function imgui()
         end
     end
 
-    if menuBarState.drawTileInfo or menuBarState.drawWallInfo then
-        if walkerMap then
-            for y = 1, #walkerMap do
-                for x = 1, #walkerMap[y] do
-                    local pos = Raylib.GetWorldToScreen({
-                        x = x * Navigation.tileSize + Navigation.offsetX - Navigation.tileSize / 2,
-                        y = 0.25,
-                        z = y * Navigation.tileSize + Navigation.offsetY - Navigation.tileSize / 2
-                    })
-                    if pos.x > 0 and pos.y > 0 then
-                        if menuBarState.drawWallInfo then
-                            if walkerMap[y][x].id ~= -1 then
-                                Raylib.DrawText(walkerMap[y][x].id, pos.x, pos.y - 14, 12)
-                                Raylib.DrawText(walkerMap[y][x].distance, pos.x, pos.y, 12)
-                                Raylib.DrawText(walkerMap[y][x].wallId, pos.x, pos.y + 14, 12)
-                                --Raylib.DrawText(wallMap[y][x].distanceAlongWall, pos.x, pos.y + 28, 12)
-                                if walkerMap[y][x].parentDirection == "none" then
-                                    Raylib.DrawText(walkerMap[y][x].parentDirection, pos.x, pos.y + 28, 20)
-                                else
-                                    Raylib.DrawText(walkerMap[y][x].parentDirection, pos.x, pos.y + 28, 12)
-                                end
+    if menuBarState.drawTileInfo or menuBarState.drawWalkerInfo then
+        for y = 1, #walkerMap do
+            for x = 1, #walkerMap[y] do
+                local pos = Raylib.GetWorldToScreen({
+                    x = x * Navigation.tileSize + Navigation.offsetX - Navigation.tileSize / 2,
+                    y = 0.25,
+                    z = y * Navigation.tileSize + Navigation.offsetY - Navigation.tileSize / 2
+                })
+                if pos.x > 0 and pos.y > 0 then
+                    if menuBarState.drawWalkerInfo then
+                        if walkerMap[y][x].id ~= -1 then
+                            Raylib.DrawText(walkerMap[y][x].id, pos.x, pos.y - 14, 12)
+                            Raylib.DrawText(walkerMap[y][x].distance, pos.x, pos.y, 12)
+                            Raylib.DrawText(walkerMap[y][x].wallId, pos.x, pos.y + 14, 12)
+                            --Raylib.DrawText(wallMap[y][x].distanceAlongWall, pos.x, pos.y + 28, 12)
+                            if walkerMap[y][x].parentDirection == "none" then
+                                Raylib.DrawText(walkerMap[y][x].parentDirection, pos.x, pos.y + 28, 20)
+                            else
+                                Raylib.DrawText(walkerMap[y][x].parentDirection, pos.x, pos.y + 28, 12)
                             end
-                        elseif menuBarState.drawTileInfo then
-                            Raylib.DrawText(x .. "x" .. y, pos.x, pos.y - 14, 12)
-                            Raylib.DrawText(tileMap[y][x].distance, pos.x, pos.y + 0, 12)
-                            Raylib.DrawText(tileMap[y][x].distanceToWall, pos.x, pos.y + 14, 12)
-                            if tileMap[y][x].locked then
-                                Raylib.DrawText("locked", pos.x, pos.y + 28, 12)
-                            end
+                        end
+                    elseif menuBarState.drawTileInfo then
+                        Raylib.DrawText(x .. "x" .. y, pos.x, pos.y - 14, 12)
+                        Raylib.DrawText(tileMap[y][x].distance, pos.x, pos.y + 0, 12)
+                        Raylib.DrawText(tileMap[y][x].distanceToWall, pos.x, pos.y + 14, 12)
+                        if tileMap[y][x].locked then
+                            Raylib.DrawText("locked", pos.x, pos.y + 28, 12)
                         end
                     end
                 end

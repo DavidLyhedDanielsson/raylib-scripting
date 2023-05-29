@@ -109,9 +109,9 @@ local function Window()
                         end
                     end
 
-                    local shortest = 300
+                    local shortest = 400
 
-                    for i = 0, 70 do
+                    for i = 0, 50 do
                         Spawn()
                         coroutine.yield(shortest)
                     end
@@ -207,6 +207,32 @@ local function Window()
 
         _, placeTrapMode = ImGui.Checkbox("Place trap", placeTrapMode)
         _, placeFloorMode = ImGui.Checkbox("Place floor", placeFloorMode)
+
+        if placeFloorMode then
+            ImGui.SetNextWindowPos({ x = 0, y = 38 })
+            ImGui.SetNextWindowSize({ x = 1200, y = 38 })
+            ImGui.Begin("More", true,
+                ImGui.WindowFlags.NoDecoration | ImGui.WindowFlags.MenuBar | ImGui.WindowFlags.NoBackground)
+
+            if ImGui.BeginMenuBar() then
+                ImGui.Text("Place:")
+                if ImGui.RadioButton("Normal", placeFloorType == PlaceFloorType.NORMAL) then
+                    placeFloorType = PlaceFloorType.NORMAL
+                end
+                if ImGui.RadioButton("Spawn", placeFloorType == PlaceFloorType.SPAWN) then
+                    placeFloorType = PlaceFloorType.SPAWN
+                end
+                if ImGui.RadioButton("Goal", placeFloorType == PlaceFloorType.GOAL) then
+                    placeFloorType = PlaceFloorType.GOAL
+                end
+                if ImGui.RadioButton("Unwalkable", placeFloorType == PlaceFloorType.UNWALKABLE) then
+                    placeFloorType = PlaceFloorType.UNWALKABLE
+                end
+                ImGui.EndMenuBar()
+            end
+
+            ImGui.End()
+        end
 
         ImGui.EndMainMenuBar()
     end

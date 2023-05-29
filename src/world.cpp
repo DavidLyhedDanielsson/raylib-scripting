@@ -594,7 +594,7 @@ namespace World
         lua_pushboolean(lua, drawNavigation);
         lua_settable(lua, -3);
         lua_pushstring(lua, "ksi");
-        lua_pushnumber(lua, 5.0f);
+        lua_pushnumber(lua, 25.0f);
         lua_settable(lua, -3);
         lua_pushstring(lua, "avoidanceLookAhead");
         lua_pushnumber(lua, 3.0f);
