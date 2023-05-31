@@ -68,7 +68,7 @@ local function DrawLevelList()
         levelList.scroll,
         levelList.view)
 
-    for i = 1, levelCount do
+    for i, levelName in ipairs(Levels) do
         if Raygui.Button(
                 {
                     x = minX + levelButtonLPadding,
@@ -76,10 +76,10 @@ local function DrawLevelList()
                     width = width - (levelButtonLPadding + levelButtonRPadding),
                     height = 20
                 },
-                "Level " .. i) == 1 then
+                levelName) == 1 then
             local mousePos = Raylib.GetMousePosition()
             if mousePos.x >= minX and mousePos.x <= minX + width and mousePos.y >= minY and mousePos.y <= minY + height then
-                clickedLevel = "level" .. i
+                clickedLevel = levelName
             end
         end
     end

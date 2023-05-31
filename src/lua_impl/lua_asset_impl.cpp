@@ -39,7 +39,9 @@ namespace LuaAsset
                         continue;
 
                     lua_pushinteger(lua, levelNumber++);
-                    lua_pushstring(lua, entry.path().filename().string().c_str());
+                    std::string pathStr = entry.path().filename().string();
+                    pathStr.erase(pathStr.rfind('.'));
+                    lua_pushstring(lua, pathStr.c_str());
                     lua_settable(lua, -3);
                 }
 
