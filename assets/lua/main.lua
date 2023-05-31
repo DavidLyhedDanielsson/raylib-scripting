@@ -13,6 +13,8 @@ function init()
         width = 0.5,
         height = 0.5,
     }
+
+    StartLevel = ""
 end
 
 local function DrawTextCenter(text, posX, posY, size)
@@ -123,7 +125,11 @@ function raylib2D()
             Exit()
         end
     elseif MainState.current == "play" then
-        DrawLevelList()
+        local clickedLevel = DrawLevelList()
+        if clickedLevel then
+            StartLevel = clickedLevel
+            SetLuaFile("play.lua")
+        end
         HandleBackButton()
     elseif MainState.current == "editor" then
         local clickedLevel = DrawLevelList()
