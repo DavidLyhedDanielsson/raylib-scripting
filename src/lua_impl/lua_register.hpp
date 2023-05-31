@@ -79,22 +79,24 @@ namespace LuaRegister
     // Because some lua_toX are macros, they cannot be used in the LuaGetFunc
     // specialization. These are wrappers for the macros, but also for functions
     // like `to_toboolean` for consistency
-    inline lua_Integer luaToInteger(lua_State* lua, int i) { return lua_tointeger(lua, i); }
-    inline lua_Number luaToNumber(lua_State* lua, int i) { return lua_tonumber(lua, i); }
-    inline int luaToBoolean(lua_State* lua, int i) { return lua_toboolean(lua, i); }
+    template<typename T>
+    T luaToIntegerType(lua_State* lua, int i) { return static_cast<T>(lua_tointeger(lua, i));}
+    template<typename T>
+    T luaToNumberType(lua_State* lua, int i) { return static_cast<T>(lua_tonumber(lua, i));}
+    inline bool luaToBoolean(lua_State* lua, int i) { return (bool)lua_toboolean(lua, i); }
     inline const char* luaToString(lua_State* lua, int i) { return lua_tostring(lua, i); }
 
     // To be able to pass arguments of type T from lua to C++, this function and
     // GetDefault must be specified for the type T
     template<typename T>
     constexpr auto LuaGetFunc = nullptr;
-    template<> inline constexpr auto LuaGetFunc<int> = luaToInteger;
-    template<> inline constexpr auto LuaGetFunc<unsigned int> = luaToInteger;
-    template<> inline constexpr auto LuaGetFunc<long> = luaToInteger;
-    template<> inline constexpr auto LuaGetFunc<unsigned long> = luaToInteger;
-    template<> inline constexpr auto LuaGetFunc<long long> = luaToInteger;
-    template<> inline constexpr auto LuaGetFunc<float> = luaToNumber;
-    template<> inline constexpr auto LuaGetFunc<double> = luaToNumber;
+    template<> inline constexpr auto LuaGetFunc<int> = luaToIntegerType<int>;
+    template<> inline constexpr auto LuaGetFunc<unsigned int> = luaToIntegerType<unsigned int>;
+    template<> inline constexpr auto LuaGetFunc<long> = luaToIntegerType<long>;
+    template<> inline constexpr auto LuaGetFunc<unsigned long> = luaToIntegerType<unsigned long>;
+    template<> inline constexpr auto LuaGetFunc<long long> = luaToIntegerType<long long>;
+    template<> inline constexpr auto LuaGetFunc<float> = luaToNumberType<float>;
+    template<> inline constexpr auto LuaGetFunc<double> = luaToNumberType<double>;
     template<> inline constexpr auto LuaGetFunc<bool> = luaToBoolean;
     template<> inline constexpr auto LuaGetFunc<const char*> = luaToString;
 
@@ -121,7 +123,7 @@ namespace LuaRegister
     template<> inline constexpr auto LuaSetFunc<long long> = lua_pushinteger;
     template<> inline constexpr auto LuaSetFunc<float> = lua_pushnumber;
     template<> inline constexpr auto LuaSetFunc<double> = lua_pushnumber;
-    template<> inline constexpr auto LuaSetFunc<bool> = lua_pushboolean;
+    template<> inline constexpr auto LuaSetFunc<bool> = [](lua_State* lua, bool val) {lua_pushboolean(lua, (int)val);};
     template<> inline constexpr auto LuaSetFunc<const char*> = lua_pushstring;
     template<> inline constexpr auto LuaSetFunc<Placeholder> = [](auto, auto){};
     // clang-format on
@@ -184,9 +186,9 @@ namespace LuaRegister
             if(stackIndex > lua_gettop(lua))
                 return arr;
 
-            if(lua_istable(lua, stackIndex))
+            if(lua_istable(lua, stackIndex) && luaL_len(lua, stackIndex) > 0)
             {
-                int count = luaL_len(lua, stackIndex);
+                int count = (int)luaL_len(lua, stackIndex);
                 if(count > 4)
                 {
                     // Error message at some point
@@ -229,9 +231,10 @@ namespace LuaRegister
         else
         {
             using U = std::remove_pointer_t<std::remove_reference_t<ReturnType>>;
-            if(lua_istable(lua, stackIndex)) // +1 ?
+            if(lua_istable(lua, stackIndex) && luaL_len(lua, stackIndex) > 0) // +1 ?
             {
-                int len = luaL_len(lua, stackIndex);
+                // TODO: Assert that this is valid?
+                auto len = static_cast<int>(luaL_len(lua, stackIndex));
                 lua_createtable(lua, len, 0);
                 for(int i = 0; i < len; ++i)
                 {
