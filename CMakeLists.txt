@@ -39,7 +39,7 @@ set(SRC
     profiling.cpp profiling.hpp
     raylib_imgui.cpp raylib_imgui.hpp
     world.cpp world.hpp
-    external/raylib.hpp
+    external/raygui.cpp
     entity/camera.hpp
     entity/enemy_goal.hpp
     entity/enemy_spawn.hpp
