@@ -19,6 +19,12 @@ std::array<char, MAX_PATH_LENGTH> AssetPath(const char* assetName)
     return pathBuffer;
 }
 
+std::array<char, MAX_PATH_LENGTH> LuaFilePath(const char* name)
+{
+    snprintf(pathBuffer.data(), MAX_PATH_LENGTH, "%s/%s/%s", DASSET_ROOT, "lua", name);
+    return pathBuffer;
+}
+
 std::optional<Shader> shader;
 
 void LoadAssets()

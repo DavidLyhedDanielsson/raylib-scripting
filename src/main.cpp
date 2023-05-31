@@ -53,6 +53,8 @@ bool scrollDown = false;
 bool addCommandToHistory = false;
 std::vector<std::string> history;
 
+std::string currentLuaFile = "main.lua";
+
 void main_loop()
 {
     Profiling::NewFrame();
@@ -109,29 +111,9 @@ void main_loop()
 
     ClearBackground(DARKGRAY);
 
-    char buf[128];
-    sprintf(buf, "Frame time: %f", deltaMs.count());
-    DrawText(buf, 0, 64, 20, LIGHTGRAY);
-
-    Profiling::Start("Load editor.lua");
-    auto res = luaL_loadfile(luaState, AssetPath("lua/editor.lua").data());
-    bool guiError = false;
-    if(res != LUA_OK)
-    {
-        std::cerr << "Couldn't load editor.lua or error occurred" << std::endl;
-        std::cerr << lua_tostring(luaState, -1) << std::endl;
-        guiError = true;
-    }
-    Profiling::End();
-
-    Profiling::ProfileCall("Execute editor.lua", [&]() {
-        if(!guiError && lua_pcall(luaState, 0, 0, 0) != LUA_OK)
-        {
-            std::cerr << "Error when executing editor.lua" << std::endl;
-            std::cerr << lua_tostring(luaState, -1) << std::endl;
-            guiError = true;
-        }
-    });
+    // char buf[128];
+    // sprintf(buf, "Frame time: %f", deltaMs.count());
+    // DrawText(buf, 0, 64, 20, LIGHTGRAY);
 
     Camera camera;
     for(auto [entity, transform, cameraComponent] :
@@ -146,23 +128,68 @@ void main_loop()
         };
     }
 
-    PROFILE_CALL(BeginMode3D, camera);
-    PROFILE_CALL(World::Draw);
-
-    Profiling::ProfileCall("Execute editor.lua::raylib", [&]() {
-        if(!guiError)
+    bool luaError = false;
+    Profiling::ProfileCall("Load currentLuaFile", [&]() {
+        auto res = luaL_dofile(luaState, LuaFilePath(currentLuaFile.c_str()).data());
+        if(res != LUA_OK)
         {
-            lua_getglobal(luaState, "raylib");
-            if(lua_pcall(luaState, 0, 0, 0) != LUA_OK)
-            {
-                std::cerr << "Error when executing editor.lua:raylib" << std::endl;
-                std::cerr << lua_tostring(luaState, -1) << std::endl;
-                guiError = true;
-            }
+            std::cerr << "Couldn't load " << currentLuaFile << " or error occurred" << std::endl;
+            std::cerr << lua_tostring(luaState, -1) << std::endl;
+            luaError = true;
         }
     });
 
+    PROFILE_CALL(BeginMode3D, camera);
+    PROFILE_CALL(World::Draw);
+
+    // Profiling::ProfileCall("Execute editor.lua::raylib", [&]() {
+    //     if(!guiError)
+    //     {
+    //         lua_getglobal(luaState, "raylib");
+    //         if(lua_pcall(luaState, 0, 0, 0) != LUA_OK)
+    //         {
+    //             std::cerr << "Error when executing editor.lua:raylib" << std::endl;
+    //             std::cerr << lua_tostring(luaState, -1) << std::endl;
+    //             guiError = true;
+    //         }
+    //     }
+    // });
+
+    if(!luaError)
+    {
+        lua_getglobal(luaState, "raylib3D");
+        if(lua_isfunction(luaState, -1))
+        {
+            Profiling::ProfileCall("Execute currentLuaFile::raylib3D", [&]() {
+                if(lua_pcall(luaState, 0, 0, 0) != LUA_OK)
+                {
+                    std::cerr << "Error when executing " << currentLuaFile << std::endl;
+                    std::cerr << lua_tostring(luaState, -1) << std::endl;
+                }
+            });
+        }
+        else
+            lua_pop(luaState, 1);
+    }
+
     PROFILE_CALL(EndMode3D);
+
+    if(!luaError)
+    {
+        lua_getglobal(luaState, "raylib2D");
+        if(lua_isfunction(luaState, -1))
+        {
+            Profiling::ProfileCall("Execute currentLuaFile::raylib2D", [&]() {
+                if(lua_pcall(luaState, 0, 0, 0) != LUA_OK)
+                {
+                    std::cerr << "Error when executing " << currentLuaFile << std::endl;
+                    std::cerr << lua_tostring(luaState, -1) << std::endl;
+                }
+            });
+        }
+        else
+            lua_pop(luaState, 1);
+    }
 
     PROFILE_CALL(RaylibImGui::Begin);
 
@@ -217,15 +244,20 @@ void main_loop()
     ImGui::EndChild();
     ImGui::End();
 
-    Profiling::ProfileCall("Execute editor.lua::imgui", [&]() {
-        lua_getglobal(luaState, "imgui");
-        if(lua_pcall(luaState, 0, 0, 0) != LUA_OK)
-        {
-            std::cerr << lua_tostring(luaState, -1) << std::endl;
-            lua_pop(luaState, 1);
-            ErrorCheckEndWindowRecover();
-        }
-    });
+    lua_getglobal(luaState, "imgui");
+    if(lua_isfunction(luaState, -1))
+    {
+        Profiling::ProfileCall("Execute editor.lua::imgui", [&]() {
+            if(lua_pcall(luaState, 0, 0, 0) != LUA_OK)
+            {
+                std::cerr << lua_tostring(luaState, -1) << std::endl;
+                lua_pop(luaState, 1);
+                ErrorCheckEndWindowRecover();
+            }
+        });
+    }
+    else
+        lua_pop(luaState, 1);
 
     // Camera might be modified by lua
     for(auto [entity, transform, cameraComponent] :
@@ -388,10 +420,10 @@ int main()
     LuaImGuizmo::Register(luaState, &registry);
     LuaRaylib::Register(luaState, &registry);
 
-    auto res = luaL_loadfile(luaState, AssetPath("lua/main.lua").data());
+    auto res = luaL_loadfile(luaState, LuaFilePath(currentLuaFile.c_str()).data());
     if(res != LUA_OK)
     {
-        std::cerr << "Couldn't load main.lua or error occurred";
+        std::cerr << "Couldn't load " << currentLuaFile << " or error occurred ";
         return 1;
     }
     lua_pcall(luaState, 0, 0, 0);
@@ -399,12 +431,55 @@ int main()
     lua_getglobal(luaState, "init");
     lua_pcall(luaState, 0, 0, 0);
 
+    static bool keepRunning = true;
+    lua_pushcclosure(
+        luaState,
+        +[](lua_State* lua) {
+            keepRunning = false;
+            return 0;
+        },
+        0);
+    lua_setglobal(luaState, "Exit");
+
+    lua_pushcclosure(
+        luaState,
+        +[](lua_State* lua) {
+            lua_pushnil(lua);
+            lua_setglobal(lua, "raylib2D");
+            lua_pushnil(lua);
+            lua_setglobal(lua, "raylib3D");
+            lua_pushnil(lua);
+            lua_setglobal(lua, "imgui");
+
+            const char* newFile = lua_tostring(lua, -1);
+            auto res = luaL_dofile(luaState, LuaFilePath(newFile).data());
+            if(res != LUA_OK)
+            {
+                std::cerr << "Couldn't load " << newFile << " or error occurred ";
+                res = luaL_dofile(luaState, LuaFilePath(currentLuaFile.c_str()).data());
+                assert(res == LUA_OK);
+                return 0;
+            }
+
+            lua_getglobal(lua, "init");
+            if(lua_isfunction(lua, -1))
+                lua_pcall(lua, 0, 0, 0);
+            else
+                lua_pop(lua, 1);
+
+            currentLuaFile = newFile;
+
+            return 0;
+        },
+        0);
+    lua_setglobal(luaState, "SetLuaFile");
+
 #ifdef PLATFORM_WEB
     emscripten_set_main_loop(main_loop, 0, 1);
 #else
     SetTargetFPS(60);
 
-    while(!WindowShouldClose())
+    while(!WindowShouldClose() && keepRunning)
     {
         main_loop();
     }

@@ -79,6 +79,9 @@ namespace LuaRaylib
         QuickRegister(GetRenderHeight);
         QuickRegister(GetMousePosition);
 
+        QuickRegister(BeginScissorMode);
+        QuickRegister(EndScissorMode);
+
         LuaRegister::PushRegisterMember(
             lua,
             "GetWorldToScreen",
@@ -162,6 +165,13 @@ namespace LuaRaylib
         QuickRegister(IsKeyDown);
         QuickRegister(IsKeyReleased);
         QuickRegister(IsKeyUp);
+
+        LuaRegister::PushRegister(
+            lua,
+            "MeasureTextSize",
+            +[](const char* text, int fontSize) {
+                return MeasureTextEx(GetFontDefault(), text, fontSize, fontSize / 10.0f);
+            });
 
         LuaRegister::PushRegisterMember(
             lua,
@@ -455,5 +465,177 @@ namespace LuaRaylib
         lua_settable(lua, -3);
 
         lua_setglobal(lua, "Raylib");
+
+#define QuickRegisterGui(Func) LuaRegister::PushRegister(lua, #Func, Gui##Func);
+        lua_createtable(lua, 0, 0);
+
+        QuickRegisterGui(Enable);
+        QuickRegisterGui(Disable);
+        QuickRegisterGui(Lock);
+        QuickRegisterGui(Unlock);
+        QuickRegisterGui(IsLocked);
+        QuickRegisterGui(Fade);
+        QuickRegisterGui(SetState);
+        QuickRegisterGui(GetState);
+        QuickRegisterGui(SetStyle);
+        QuickRegisterGui(GetStyle);
+        QuickRegisterGui(LoadStyle);
+        QuickRegisterGui(LoadStyleDefault);
+        QuickRegisterGui(EnableTooltip);
+        QuickRegisterGui(DisableTooltip);
+        QuickRegisterGui(SetTooltip);
+
+        QuickRegisterGui(Panel);
+        LuaRegister::PushRegister(
+            lua,
+            "ScrollPanel",
+            +[](lua_State* lua,
+                Rectangle bounds,
+                const char* text,
+                Rectangle content,
+                Vector2* scroll,
+                Rectangle* view) {
+                int retVal = GuiScrollPanel(bounds, text, content, scroll, view);
+                return retVal;
+            });
+
+        // QuickRegisterGui(ScrollPanel);
+
+        QuickRegisterGui(Label);
+        QuickRegisterGui(Button);
+        QuickRegisterGui(LabelButton);
+        QuickRegisterGui(Toggle);
+        QuickRegisterGui(ToggleGroup);
+        QuickRegisterGui(CheckBox);
+        QuickRegisterGui(ComboBox);
+
+        QuickRegisterGui(DropdownBox);
+        QuickRegisterGui(Spinner);
+        QuickRegisterGui(ValueBox);
+        // char* not supported, only const char*
+        // QuickRegisterGui(TextBox);
+
+        QuickRegisterGui(Slider);
+        QuickRegisterGui(SliderBar);
+        QuickRegisterGui(ProgressBar);
+        QuickRegisterGui(StatusBar);
+        QuickRegisterGui(DummyRec);
+        QuickRegisterGui(Grid);
+
+        QuickRegisterGui(ListView);
+        QuickRegisterGui(ListViewEx);
+        QuickRegisterGui(MessageBox);
+        // QuickRegisterGui(TextInputBox);
+
+#define RegisterEnum(name, func) \
+    lua_pushstring(lua, name);   \
+    lua_createtable(lua, 0, 0);  \
+    [&]() {                      \
+        func                     \
+    }();                         \
+    lua_settable(lua, -3);
+
+#define ENUM_VARIANT(name, variant)             \
+    lua_pushinteger(lua, (lua_Integer)variant); \
+    lua_setfield(lua, -2, name);
+#define ENUM_VARIANT_(variant)                  \
+    lua_pushinteger(lua, (lua_Integer)variant); \
+    lua_setfield(lua, -2, #variant);
+
+        RegisterEnum("DefaultProperty", {
+            ENUM_VARIANT_(TEXT_SIZE);
+            ENUM_VARIANT_(TEXT_SPACING);
+            ENUM_VARIANT_(LINE_COLOR);
+            ENUM_VARIANT_(BACKGROUND_COLOR);
+        });
+        RegisterEnum("State", {
+            ENUM_VARIANT("NORMAL", STATE_NORMAL);
+            ENUM_VARIANT("FOCUSED", STATE_FOCUSED);
+            ENUM_VARIANT("PRESSED", STATE_PRESSED);
+            ENUM_VARIANT("DISABLED", STATE_DISABLED);
+        });
+        RegisterEnum("TextAlignment", {
+            ENUM_VARIANT("LEFT", TEXT_ALIGN_LEFT);
+            ENUM_VARIANT("CENTER", TEXT_ALIGN_CENTER);
+            ENUM_VARIANT("RIGHT", TEXT_ALIGN_RIGHT);
+        });
+        RegisterEnum("Control", {
+            ENUM_VARIANT_(DEFAULT);
+            ENUM_VARIANT_(LABEL);
+            ENUM_VARIANT_(BUTTON);
+            ENUM_VARIANT_(TOGGLE);
+            ENUM_VARIANT_(SLIDER);
+            ENUM_VARIANT_(PROGRESSBAR);
+            ENUM_VARIANT_(CHECKBOX);
+            ENUM_VARIANT_(COMBOBOX);
+            ENUM_VARIANT_(DROPDOWNBOX);
+            ENUM_VARIANT_(TEXTBOX);
+            ENUM_VARIANT_(VALUEBOX);
+            ENUM_VARIANT_(SPINNER);
+            ENUM_VARIANT_(LISTVIEW);
+            ENUM_VARIANT_(COLORPICKER);
+            ENUM_VARIANT_(SCROLLBAR);
+            ENUM_VARIANT_(STATUSBAR);
+        });
+        RegisterEnum("ControlProperty", {
+            ENUM_VARIANT_(BORDER_COLOR_NORMAL);
+            ENUM_VARIANT_(BASE_COLOR_NORMAL);
+            ENUM_VARIANT_(TEXT_COLOR_NORMAL);
+            ENUM_VARIANT_(BORDER_COLOR_FOCUSED);
+            ENUM_VARIANT_(BASE_COLOR_FOCUSED);
+            ENUM_VARIANT_(TEXT_COLOR_FOCUSED);
+            ENUM_VARIANT_(BORDER_COLOR_PRESSED);
+            ENUM_VARIANT_(BASE_COLOR_PRESSED);
+            ENUM_VARIANT_(TEXT_COLOR_PRESSED);
+            ENUM_VARIANT_(BORDER_COLOR_DISABLED);
+            ENUM_VARIANT_(BASE_COLOR_DISABLED);
+            ENUM_VARIANT_(TEXT_COLOR_DISABLED);
+            ENUM_VARIANT_(BORDER_WIDTH);
+            ENUM_VARIANT_(TEXT_PADDING);
+            ENUM_VARIANT_(TEXT_ALIGNMENT);
+            ENUM_VARIANT_(RESERVED);
+        });
+        RegisterEnum("ToggleProperty", { ENUM_VARIANT_(GROUP_PADDING); });
+        RegisterEnum("SliderProperty", {
+            ENUM_VARIANT("WIDTH", SLIDER_WIDTH);
+            ENUM_VARIANT("PADDING", SLIDER_PADDING);
+        });
+        RegisterEnum("ProgressBarProperty", { ENUM_VARIANT("PADDING", PROGRESS_PADDING); });
+        RegisterEnum("ScrollBarProperty", {
+            ENUM_VARIANT_(ARROWS_SIZE);
+            ENUM_VARIANT_(ARROWS_VISIBLE);
+            ENUM_VARIANT("SLIDER_PADDING", SCROLL_SLIDER_PADDING);
+            ENUM_VARIANT("SLIDER_SIZE", SCROLL_SLIDER_SIZE);
+            ENUM_VARIANT("PADDING", SCROLL_PADDING);
+            ENUM_VARIANT("SPEED", SCROLL_SPEED);
+        });
+        RegisterEnum("CheckBoxProperty", { ENUM_VARIANT("PADDING", CHECK_PADDING); });
+        RegisterEnum("ComboBoxProperty", {
+            ENUM_VARIANT("BUTTON_WIDTH", COMBO_BUTTON_WIDTH);
+            ENUM_VARIANT("BUTTON_SPACING", COMBO_BUTTON_SPACING);
+        });
+        RegisterEnum("DropdownBoxProperty", {
+            ENUM_VARIANT_(ARROW_PADDING);
+            ENUM_VARIANT("ITEMS_SPACING", DROPDOWN_ITEMS_SPACING);
+        });
+        RegisterEnum("TextBoxProperty", {
+            ENUM_VARIANT("INNER_PADDING", TEXT_INNER_PADDING);
+            ENUM_VARIANT("LINES_SPACING", TEXT_LINES_SPACING);
+            ENUM_VARIANT("ALIGNMENT_VERTICAL", TEXT_ALIGNMENT_VERTICAL);
+            ENUM_VARIANT("MULTILINE", TEXT_MULTILINE);
+            ENUM_VARIANT("WRAP_MODE", TEXT_WRAP_MODE);
+        });
+        RegisterEnum("SpinnerProperty", {
+            ENUM_VARIANT("BUTTON_WIDTH", SPIN_BUTTON_WIDTH);
+            ENUM_VARIANT("BUTTON_SPACING", SPIN_BUTTON_SPACING);
+        });
+        RegisterEnum("ListViewProperty", {
+            ENUM_VARIANT("ITEMS_HEIGHT", LIST_ITEMS_HEIGHT);
+            ENUM_VARIANT("ITEMS_SPACING", LIST_ITEMS_SPACING);
+            ENUM_VARIANT_(SCROLLBAR_WIDTH);
+            ENUM_VARIANT_(SCROLLBAR_SIDE);
+        });
+
+        lua_setglobal(lua, "Raygui");
     }
 }

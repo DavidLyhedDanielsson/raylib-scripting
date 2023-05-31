@@ -37,6 +37,10 @@ local function Window()
                 loadLevelName = ImGui.InputText("##loadLevelName", loadLevelName)
                 ImGui.EndMenu()
             end
+            if ImGui.MenuItem("Exit editor", "", false, true) then
+                SetLuaFile("main.lua")
+                Entity.ClearRegistry()
+            end
             ImGui.EndMenu()
         end
 
@@ -132,7 +136,7 @@ local function Window()
 
             ImGui.BeginChild("EntityList", { x = 0, y = 200 })
             if #searchText > 0 then
-                for key, value in ipairs(Assets) do
+                for key, value in ipairs(Assets.Meshes) do
                     if string.match(string.lower(value), searchText) then
                         if ImGui.SmallButton(value) then
                             local entity = Entity.Create()
@@ -144,7 +148,7 @@ local function Window()
                     end
                 end
             else
-                for key, value in ipairs(Assets) do
+                for key, value in ipairs(Assets.Meshes) do
                     if ImGui.SmallButton(value) then
                         local entity = Entity.Create()
                         EntityTools.AddComponentOrPrintError("Render", entity, { assetName = value })

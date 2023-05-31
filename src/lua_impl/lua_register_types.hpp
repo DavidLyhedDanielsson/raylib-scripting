@@ -16,6 +16,8 @@ namespace LuaRegister
     inline constexpr auto GetDefault<Ray> = Ray{{0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}};
     template<>
     inline constexpr auto GetDefault<Color> = Color{1, 1, 1, 1};
+    template<>
+    inline constexpr auto GetDefault<Rectangle> = Rectangle{0.0f, 0.0f, 0.0f, 0.0f};
 
     template<>
     constexpr auto LuaSetFunc<Vector2> = [](lua_State* lua, Vector2 v) {
@@ -56,6 +58,18 @@ namespace LuaRegister
         lua_pushstring(lua, "direction");
         LuaSetFunc<Vector3>(lua, v.direction);
         lua_settable(lua, -3);
+    };
+    template<>
+    constexpr auto LuaSetFunc<Rectangle> = [](lua_State* lua, Rectangle rec) {
+        lua_createtable(lua, 0, 4);
+        lua_pushnumber(lua, rec.x);
+        lua_setfield(lua, -2, "x");
+        lua_pushnumber(lua, rec.y);
+        lua_setfield(lua, -2, "y");
+        lua_pushnumber(lua, rec.width);
+        lua_setfield(lua, -2, "width");
+        lua_pushnumber(lua, rec.height);
+        lua_setfield(lua, -2, "height");
     };
 
     template<>
@@ -107,6 +121,20 @@ namespace LuaRegister
         lua_pop(lua, 2);
 
         return Ray{position, direction};
+    };
+    template<>
+    constexpr auto LuaGetFunc<Rectangle> = [](lua_State* lua, int i) {
+        assert(i >= 1); // Can't use relative since stack is modified
+        lua_getfield(lua, i, "x");
+        float x = lua_tonumber(lua, -1);
+        lua_getfield(lua, i, "y");
+        float y = lua_tonumber(lua, -1);
+        lua_getfield(lua, i, "width");
+        float width = lua_tonumber(lua, -1);
+        lua_getfield(lua, i, "height");
+        float height = lua_tonumber(lua, -1);
+        lua_pop(lua, 4);
+        return Rectangle{x, y, width, height};
     };
     template<>
     constexpr auto LuaGetFunc<Color> = [](lua_State* lua, int i) {

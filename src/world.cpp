@@ -243,7 +243,7 @@ std::optional<float> TimeToCollisionCircleLine(
     {
         // Already colliding
         if(isOnVelocity)
-            return 0;
+            return 0.0f;
         else
         {
             bool isOnLine = false;

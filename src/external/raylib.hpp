@@ -10,12 +10,10 @@
 #include "../../libs/raylib/src/raylib.h"
 #include "../../libs/raylib/src/raymath.h"
 
-#include <cmath>
+// Also raygui
+#include "../../libs/raygui-custom/raygui.h"
 
-#if defined(__GNUC__)
-#elif defined(_MSC_VER)
-    #pragma warning(pop)
-#endif
+#include <cmath>
 
 inline BoundingBox BoundingBoxTransform(BoundingBox box, Vector3 translation)
 {

@@ -12,5 +12,6 @@ extern std::map<std::string, Model> loadedAssets;
 constexpr int MAX_PATH_LENGTH = 256;
 // This function is required since the file paths are different on the web and locally
 std::array<char, MAX_PATH_LENGTH> AssetPath(const char* assetName);
+std::array<char, MAX_PATH_LENGTH> LuaFilePath(const char* name);
 
 void LoadAssets();

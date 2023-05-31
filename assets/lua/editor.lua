@@ -14,7 +14,7 @@ local Gui = {
     Menu = require("gui.main_menu_bar"),
 }
 
-if setup == nil then
+function init()
     setup = true
 
     selectedEntities = {}
@@ -36,11 +36,13 @@ if setup == nil then
     }
     placeFloorType = PlaceFloorType.NORMAL
 
-    Level.LoadLevel("level1")
-    NavigationTools.Build()
+    if StartLevel then
+        Level.LoadLevel(StartLevel or "level1")
+        NavigationTools.Build()
+    end
 end
 
-function raylib()
+function raylib3D()
     for entity in pairs(selectedEntities) do
         if not Entity.IsValid(entity) then
             selectedEntities[entity] = nil
