@@ -2,6 +2,7 @@
 // instances can be created and registered
 #include "reflection_acceleration.hpp"
 #include "reflection_area_tracker.hpp"
+#include "reflection_behaviour.hpp"
 #include "reflection_camera.hpp"
 #include "reflection_enemy_goal.hpp"
 #include "reflection_enemy_spawn.hpp"

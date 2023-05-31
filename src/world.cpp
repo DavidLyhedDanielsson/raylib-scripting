@@ -13,6 +13,7 @@
 #include <cstdint>
 #include <entity/acceleration.hpp>
 #include <entity/area_tracker.hpp>
+#include <entity/behaviour.hpp>
 #include <entity/camera.hpp>
 #include <entity/health.hpp>
 #include <entity/max_range.hpp>
@@ -27,6 +28,7 @@
 #include <external/imgui.hpp>
 #include <external/imguizmo.hpp>
 #include <external/raylib.hpp>
+#include <fstream>
 #include <iostream>
 #include <limits>
 #include <lua_impl/lua_register.hpp>
@@ -621,6 +623,57 @@ namespace World
         lua = luaS;
 
         float time = 1.0f / 60.0f;
+
+        bool ran = false;
+        static std::optional<std::string> lastErrorFile;
+        for(auto [entity, behaviour] : world.registry->view<Component::Behaviour>().each())
+        {
+            if(ran)
+            {
+                std::cerr << "Trying to use multiple behaviours, which is not supported yet"
+                          << std::endl;
+                break;
+            }
+            ran = true;
+
+            if(behaviour.script == "")
+                break;
+
+            auto filePath = BehaviourFilePath(behaviour.script.c_str());
+            {
+                std::ifstream in(filePath.data());
+                if(!in.is_open())
+                {
+                    if(lastErrorFile != behaviour.script)
+                    {
+                        std::cerr << "Behaviour file " << behaviour.script << " doesn't exist"
+                                  << std::endl;
+                        lastErrorFile = behaviour.script;
+                    }
+                    break;
+                }
+                else
+                    lastErrorFile = std::nullopt;
+            }
+
+            Profiling::ProfileCall("Load behaviour", [&]() {
+                auto res = luaL_dofile(lua, filePath.data());
+                if(res != LUA_OK)
+                {
+                    std::cerr << "Couldn't load " << filePath.data() << " or error occurred"
+                              << std::endl;
+                    std::cerr << lua_tostring(lua, -1) << std::endl;
+                }
+                else
+                {
+                    lua_getglobal(lua, "behaviour");
+                    if(lua_isfunction(lua, -1))
+                        lua_pcall(lua, 0, 0, 0);
+                    else
+                        lua_pop(lua, 1);
+                }
+            });
+        }
 
         static std::vector<std::string> entityNames;
         entityNames.clear();

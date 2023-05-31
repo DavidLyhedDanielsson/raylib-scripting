@@ -67,6 +67,7 @@ local function Single(entity)
         },
         Walkable = { hasComponent = Entity.HasComponent("Walkable", entity) },
         Obstacle = { hasComponent = Entity.HasComponent("Obstacle", entity) },
+        Behaviour = { hasComponent = Entity.HasComponent("Behaviour", entity), default = { script = "" } },
     }
 
     -- Debugging code that is unlikely to be useful again
