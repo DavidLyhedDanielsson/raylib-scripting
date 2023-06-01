@@ -38,7 +38,7 @@ local function Window()
                 ImGui.EndMenu()
             end
             if ImGui.MenuItem("Exit editor", "", false, true) then
-                SetLuaFile("main.lua")
+                SetLuaFile("menu.lua")
                 Entity.ClearRegistry()
             end
             ImGui.EndMenu()

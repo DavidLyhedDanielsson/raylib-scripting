@@ -53,7 +53,7 @@ bool scrollDown = false;
 bool addCommandToHistory = false;
 std::vector<std::string> history;
 
-std::string currentLuaFile = "main.lua";
+std::string currentLuaFile = "menu.lua";
 
 void main_loop()
 {

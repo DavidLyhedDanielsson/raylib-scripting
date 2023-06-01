@@ -1,5 +1,6 @@
 local Level = require("level")
 local NavigationTools = require("navigation_tools")
+local common = require("play.common")
 
 local function DrawTextCenter(text, posX, posY, size)
     local width = Raylib.MeasureTextSize(text, size).x
@@ -21,40 +22,30 @@ local function DrawButtonCenter(text, posX, posY, size, width)
         text)
 end
 
-WaveState = {
-    NOT_STARTED = 0,
-    RUNNING = 1,
-    FINISHED = 3,
-}
-
 function init()
     Level.LoadLevel(StartLevel or "level1")
     NavigationTools.Build()
 
-    local enemySpawns = {}
+    common.playState.enemySpawns = {}
+    common.playState.enemyGoals = {}
+
     Entity.ForEachWithComponent("EnemySpawn", function(entity)
-        table.insert(enemySpawns, entity)
+        table.insert(common.playState.enemySpawns, entity)
     end)
 
-    local enemyGoals = {}
     Entity.ForEachWithComponent("EnemyGoal", function(entity)
-        table.insert(enemyGoals, entity)
+        table.insert(common.playState.enemyGoals, entity)
     end)
 
-    PlayState = {
-        waveState = WaveState.NOT_STARTED,
-
-        enemySpawns = enemySpawns,
-        enemyGoals = enemyGoals,
-    }
+    common.playState.waveState = common.waveStates.NOT_STARTED
 end
 
 function raylib2D()
     local width = Raylib.GetScreenWidth()
 
-    if PlayState.waveState == WaveState.NOT_STARTED then
+    if common.playState.waveState == common.waveStates.NOT_STARTED then
         if DrawButtonCenter("Start", math.floor(width / 2), 32, 32) == 1 then
-            PlayState.waveState = WaveState.RUNNING
+            common.playState.waveState = common.waveStates.WAVE_RUNNING
         end
     end
 end

@@ -1,13 +1,14 @@
 local EntityTools = require("entity_tools")
+local common = require("play.common")
 
 local function SpawnWave()
     RegisterThread(function()
         local function Spawn()
-            for _, spawnEntity in ipairs(PlayState.enemySpawns) do
+            for _, spawnEntity in ipairs(common.playState.enemySpawns) do
                 local targetGoal = Entity.Get(spawnEntity).EnemySpawn.targetGoal
 
                 local goalPosition
-                for _, goalEntity in ipairs(PlayState.enemyGoals) do
+                for _, goalEntity in ipairs(common.playState.enemyGoals) do
                     local components = Entity.Get(goalEntity)
                     if components.EnemyGoal.id == targetGoal then
                         goalPosition = components.Transform.position
@@ -45,12 +46,12 @@ local function SpawnWave()
 end
 
 local state = {
-    lastState = WaveState.NOT_STARTED
+    lastState = common.waveStates.NOT_STARTED
 }
 
 return function()
-    if state.lastState == WaveState.NOT_STARTED and PlayState.waveState == WaveState.RUNNING then
+    if state.lastState == common.waveStates.NOT_STARTED and common.playState.waveState == common.waveStates.WAVE_RUNNING then
         SpawnWave()
-        state.lastState = WaveState.RUNNING
+        state.lastState = common.waveStates.WAVE_RUNNING
     end
 end

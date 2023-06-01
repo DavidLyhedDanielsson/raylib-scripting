@@ -21,13 +21,13 @@ std::array<char, MAX_PATH_LENGTH> AssetPath(const char* assetName)
 
 std::array<char, MAX_PATH_LENGTH> LuaFilePath(const char* name)
 {
-    snprintf(pathBuffer.data(), MAX_PATH_LENGTH, "%s/%s/%s", DASSET_ROOT, "lua", name);
+    snprintf(pathBuffer.data(), MAX_PATH_LENGTH, "%s/lua/%s", DASSET_ROOT, name);
     return pathBuffer;
 }
 
 std::array<char, MAX_PATH_LENGTH> BehaviourFilePath(const char* name)
 {
-    snprintf(pathBuffer.data(), MAX_PATH_LENGTH, "%s/%s/%s", DASSET_ROOT, "lua/behaviour", name);
+    snprintf(pathBuffer.data(), MAX_PATH_LENGTH, "%s/lua/play/behaviour/%s", DASSET_ROOT, name);
     return pathBuffer;
 }
 

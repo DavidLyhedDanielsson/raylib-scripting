@@ -3,15 +3,15 @@
 package.loaded["level"] = nil
 package.loaded["navigation_tools"] = nil
 package.loaded["entity_tools"] = nil
-package.loaded["gui.entity_window"] = nil
-package.loaded["gui.main_menu_bar"] = nil
+package.loaded["editor.entity_window"] = nil
+package.loaded["editor.main_menu_bar"] = nil
 
 local Level = require("level")
 local NavigationTools = require("navigation_tools")
 local EntityTools = require("entity_tools")
 local Gui = {
-    Entity = require("gui.entity_window"),
-    Menu = require("gui.main_menu_bar"),
+    Entity = require("editor.entity_window"),
+    Menu = require("editor.main_menu_bar"),
 }
 
 function init()

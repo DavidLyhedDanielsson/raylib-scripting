@@ -1,6 +1,6 @@
 function init()
     MainState = {
-        current = "main"
+        current = "menu"
     }
 
     scrollIndex = 0
@@ -99,7 +99,7 @@ local function HandleBackButton()
                 height = 30,
             },
             "Back to menu") == 1 then
-        MainState.current = "main"
+        MainState.current = "menu"
     end
 end
 
@@ -112,7 +112,7 @@ function raylib2D()
 
     DrawTextCenter("MassTD", midX, 0.1 * screenHeight, 64)
 
-    if MainState.current == "main" then
+    if MainState.current == "menu" then
         if DrawButtonCenter("Play", midX, 200, 32) == 1 then
             MainState.current = "play"
             Levels = Assets.GetLevels()
@@ -128,23 +128,23 @@ function raylib2D()
         local clickedLevel = DrawLevelList()
         if clickedLevel then
             StartLevel = clickedLevel
-            SetLuaFile("play.lua")
+            SetLuaFile("play/play.lua")
         end
         HandleBackButton()
     elseif MainState.current == "editor" then
         local clickedLevel = DrawLevelList()
         if clickedLevel then
             StartLevel = clickedLevel
-            SetLuaFile("editor.lua")
+            SetLuaFile("editor/editor.lua")
         end
 
         if DrawButtonCenter("New level", midX, (levelList.minY + levelList.height) * screenHeight + 30, 32, 0.2 * screenWidth) == 1 then
             StartLevel = ""
-            SetLuaFile("editor.lua")
+            SetLuaFile("editor/editor.lua")
         end
 
         HandleBackButton()
     else
-        MainState.current = "main"
+        MainState.current = "menu"
     end
 end
