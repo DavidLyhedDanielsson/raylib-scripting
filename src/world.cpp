@@ -39,6 +39,8 @@
 struct WorldData
 {
     entt::registry* registry;
+    lua_State* lua;
+    int behaviourTable;
 } world;
 
 float RoundToMultiple(float number, float multiple)
@@ -608,86 +610,100 @@ namespace World
         lua_setglobal(lua, "Navigation");
     }
 
-    void Init(entt::registry* registry)
+    void Init(entt::registry* registry, lua_State* lua)
     {
-        world.registry = registry;
-    }
+        registry->on_construct<Component::Behaviour>()
+            .connect<[](entt::registry& registry, entt::entity entity) {
+                Component::Behaviour behaviour = registry.get<Component::Behaviour>(entity);
 
-    // Don't look at this
-    lua_State* lua;
+                if(behaviour.script == "")
+                    return;
 
-    // TODO: `lua` should probably be in WorldData
-    void Update(lua_State* luaS)
-    {
-        // Don't look at this
-        lua = luaS;
-
-        float time = 1.0f / 60.0f;
-
-        bool ran = false;
-        static std::optional<std::string> lastErrorFile;
-        for(auto [entity, behaviour] : world.registry->view<Component::Behaviour>().each())
-        {
-            if(ran)
-            {
-                std::cerr << "Trying to use multiple behaviours, which is not supported yet"
-                          << std::endl;
-                break;
-            }
-            ran = true;
-
-            if(behaviour.script == "")
-                break;
-
-            auto filePath = BehaviourFilePath(behaviour.script.c_str());
-            {
-                std::ifstream in(filePath.data());
-                if(!in.is_open())
+                auto filePath = BehaviourFilePath(behaviour.script.c_str());
                 {
-                    if(lastErrorFile != behaviour.script)
+                    std::ifstream in(filePath.data());
+                    if(!in.is_open())
                     {
                         std::cerr << "Behaviour file " << behaviour.script << " doesn't exist"
                                   << std::endl;
-                        lastErrorFile = behaviour.script;
+                        return;
                     }
-                    break;
                 }
-                else
-                    lastErrorFile = std::nullopt;
-            }
 
-            Profiling::ProfileCall("Load behaviour", [&]() {
-                auto res = luaL_dofile(lua, filePath.data());
-                if(res != LUA_OK)
-                {
-                    std::cerr << "Couldn't load " << filePath.data() << " or error occurred"
-                              << std::endl;
-                    std::cerr << lua_tostring(lua, -1) << std::endl;
-                }
-                else
-                {
-                    lua_getglobal(lua, "behaviour");
-                    if(lua_isfunction(lua, -1))
-                        lua_pcall(lua, 0, 0, 0);
+                Profiling::ProfileCall("Load behaviour", [&]() {
+                    auto res = luaL_dofile(world.lua, filePath.data());
+                    if(res != LUA_OK)
+                    {
+                        std::cerr << "Couldn't load " << filePath.data() << " or error occurred"
+                                  << std::endl;
+                        std::cerr << lua_tostring(world.lua, -1) << std::endl;
+                    }
                     else
-                        lua_pop(lua, 1);
-                }
-            });
+                    {
+                        if(!lua_isfunction(world.lua, -1))
+                        {
+                            std::cerr << "Behaviour file does not return a function";
+                            return;
+                        }
+
+                        lua_rawgeti(world.lua, LUA_REGISTRYINDEX, world.behaviourTable);
+                        lua_rotate(world.lua, -2, 1);
+                        lua_setfield(world.lua, -2, filePath.data());
+                        lua_pop(world.lua, 1);
+                    }
+                });
+            }>();
+        registry->on_destroy<Component::Behaviour>()
+            .connect<[](entt::registry& registry, entt::entity entity) {
+                Component::Behaviour behaviour = registry.get<Component::Behaviour>(entity);
+
+                if(behaviour.script == "")
+                    return;
+
+                auto filePath = BehaviourFilePath(behaviour.script.c_str());
+                lua_rawgeti(world.lua, LUA_REGISTRYINDEX, world.behaviourTable);
+                lua_pushnil(world.lua);
+                lua_setfield(world.lua, -2, filePath.data());
+                lua_pop(world.lua, 1);
+            }>();
+        world.registry = registry;
+        world.lua = lua;
+
+        lua_createtable(lua, 0, 0);
+        world.behaviourTable = luaL_ref(lua, LUA_REGISTRYINDEX);
+    }
+
+    void Update()
+    {
+        float time = 1.0f / 60.0f;
+        auto lua = world.lua;
+
+        lua_rawgeti(lua, LUA_REGISTRYINDEX, world.behaviourTable);
+        auto table = lua_gettop(lua);
+
+        lua_pushnil(lua);
+        while(lua_next(lua, table) != 0)
+        {
+            if(lua_pcall(lua, 0, 0, 0) != LUA_OK)
+            {
+                std::cerr << "Error executing behaviour script: " << lua_tostring(lua, -1)
+                          << std::endl;
+            }
         }
 
         static std::vector<std::string> entityNames;
         entityNames.clear();
 
-        lua_getglobal(luaS, "Navigation");
-        lua_getfield(luaS, -1, "ksi");
-        const float ksi = (float)lua_tonumber(luaS, -1);
-        lua_pop(luaS, 1);
-        lua_getfield(luaS, -1, "avoidanceLookAhead");
-        const float avoidanceT = (float)lua_tonumber(luaS, -1);
-        lua_pop(luaS, 1);
-        lua_getfield(luaS, -1, "obstacleLookAhead");
-        const float obstacleT = (float)lua_tonumber(luaS, -1);
-        lua_pop(luaS, 2);
+        lua_getglobal(lua, "Navigation");
+        lua_getfield(lua, -1, "ksi");
+        const float ksi = (float)lua_tonumber(lua, -1);
+        lua_pop(lua, 1);
+        lua_getfield(lua, -1, "avoidanceLookAhead");
+        const float avoidanceT = (float)lua_tonumber(lua, -1);
+        lua_pop(lua, 1);
+        lua_getfield(lua, -1, "obstacleLookAhead");
+        const float obstacleT = (float)lua_tonumber(lua, -1);
+        lua_pop(lua, 2);
 
         Profiling::ProfileCall("MoveEntities", [&]() {
             for(auto [entity, transform, moveTowards, velocityComponent, acceleration] :
@@ -972,6 +988,8 @@ namespace World
 
     void Draw()
     {
+        auto lua = world.lua;
+
         auto group = world.registry->group<Component::Render, Component::Transform>();
         for(auto entity : group)
         {

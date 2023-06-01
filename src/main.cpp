@@ -88,19 +88,20 @@ void main_loop()
         }
         else
         {
-            std::cerr << "Error when executing coroutine" << std::endl;
-            for(int j = 0; j < ret; ++j)
-                std::cerr << lua_tostring(luaThread, -(j + 1)) << std::endl;
-            luaL_where(luaThread, 0);
-            std::cerr << "at " << lua_tostring(luaThread, -1) << std::endl;
+            std::cerr << "Error when executing coroutine: " << lua_tostring(luaThread, -1)
+                      << std::endl;
+            luaL_traceback(luaState, luaThread, nullptr, 0);
+            if(lua_isstring(luaState, -1))
+            {
+                std::cerr << lua_tostring(luaState, -1) << std::endl;
+            }
 
             luaL_unref(luaState, LUA_REGISTRYINDEX, thread.refIndex);
             luaThreads.erase(luaThreads.begin() + i);
             --i;
         }
     }
-    // Not sure about this syntax but let's see
-    PROFILE_CALL(World::Update, luaState);
+    PROFILE_CALL(World::Update);
 
     // Calculate time delta
     auto now = std::chrono::steady_clock::now();
@@ -396,7 +397,7 @@ int main()
 
     LoadAssets();
 
-    World::Init(&registry);
+    World::Init(&registry, luaState);
 
     auto cameraComponent = Component::Camera{
         .target = {0.0f, 0.0f, 0.0f},
