@@ -43,9 +43,16 @@ end
 function raylib2D()
     local width = Raylib.GetScreenWidth()
 
-    if common.playState.waveState == common.waveStates.NOT_STARTED then
+    if common.playState.waveState == common.waveStates.NOT_STARTED or common.playState.waveState == common.waveStates.WAVE_FINISHED then
         if DrawButtonCenter("Start", math.floor(width / 2), 32, 32) == 1 then
             common.playState.waveState = common.waveStates.WAVE_RUNNING
+        end
+    end
+
+    if common.playState.waveState == common.waveStates.FINISHED then
+        if DrawButtonCenter("Yay you win", math.floor(width / 2), 32, 32) == 1 then
+            Entity.ClearRegistry()
+            SetLuaFile("menu.lua")
         end
     end
 end

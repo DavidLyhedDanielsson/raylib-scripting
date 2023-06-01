@@ -265,6 +265,14 @@ namespace LuaEntt
 
         LuaRegister::PushRegisterMember(
             lua,
+            "ComponentCount",
+            registry,
+            +[](entt::registry* registry, lua_State* lua, const char* componentName) {
+                return EntityReflection::GetComponentCount(componentName, *registry);
+            });
+
+        LuaRegister::PushRegisterMember(
+            lua,
             "ImGuiModify",
             registry,
             +[](entt::registry* registry,

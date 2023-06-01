@@ -20,6 +20,7 @@ struct EntityReflection
         bool (*tryViewOne)(entt::registry&, entt::entity);
         bool (*tryModifyOne)(entt::registry&, entt::entity);
         void (*tryDuplicate)(entt::registry&, entt::entity, entt::entity);
+        int (*count)(entt::registry&);
 #ifndef ENTITY_REFLECTION_SKIP_LUA
         // TODO: Error handling
         bool (*createFromLua)(lua_State*, entt::registry&, entt::entity);
@@ -48,6 +49,7 @@ struct EntityReflection
                 .tryViewOne = Component::TryViewOne,
                 .tryModifyOne = Component::TryModifyOne,
                 .tryDuplicate = Component::TryDuplicate,
+                .count = Component::Count,
 #ifndef ENTITY_REFLECTION_SKIP_LUA
                 .createFromLua = Component::CreateFromLua,
                 .pushToLua = Component::PushToLua,
@@ -171,6 +173,22 @@ struct EntityReflection
     static void RemoveComponent(entt::registry* registry, entt::entity entity)
     {
         RemoveComponent(Component::NAME, registry, entity);
+    }
+
+    static int GetComponentCount(const char* componentName, entt::registry& registry)
+    {
+        auto entityMap = ComponentMap();
+
+        auto iter = entityMap.find(componentName);
+        assert(iter != entityMap.end());
+
+        return iter->second.count(registry);
+    }
+
+    template<typename Component>
+    static int HasComponent(entt::registry& registry)
+    {
+        return HasComponent(Component::NAME, registry);
     }
 
 #ifndef ENTITY_REFLECTION_SKIP_LUA

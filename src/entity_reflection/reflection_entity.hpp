@@ -120,6 +120,11 @@ class ReflectionComponent
         }
     }
 
+    static int Count(entt::registry& registry)
+    {
+        return registry.view<ComponentType>().size();
+    }
+
     [[nodiscard]] static bool CreateFromLua(
         lua_State* lua,
         entt::registry& registry,
