@@ -49,7 +49,8 @@ float RoundToMultiple(float number, float multiple)
 }
 
 // Move these
-bool drawNavigation = false;
+bool drawNavigationTiles = false;
+std::optional<int32_t> drawNavigationField;
 Navigation navigation;
 
 std::random_device rd;
@@ -301,9 +302,24 @@ namespace LuaRegister
     template<>
     constexpr auto LuaSetFunc<Navigation::Tile> = [](lua_State* lua, Navigation::Tile tile) {
         lua_createtable(lua, 0, 0);
-        lua_pushstring(lua, "type");
         lua_pushinteger(lua, (int)tile.type);
-        lua_settable(lua, -3);
+        lua_setfield(lua, -2, "type");
+        switch(tile.type)
+        {
+            case Navigation::Tile::NONE: break;
+            case Navigation::Tile::WALKABLE: break;
+            case Navigation::Tile::SPAWN:
+                lua_pushinteger(lua, tile.spawn.id);
+                lua_setfield(lua, -2, "id");
+                lua_pushinteger(lua, tile.spawn.goalId);
+                lua_setfield(lua, -2, "goalId");
+                break;
+            case Navigation::Tile::GOAL:
+                lua_pushinteger(lua, tile.goal.id);
+                lua_setfield(lua, -2, "id");
+                break;
+            case Navigation::Tile::OBSTACLE: break;
+        }
     };
 
     template<>
@@ -370,13 +386,14 @@ namespace World
                         Vector2 max =
                             Vector2Add({transform.position.x, transform.position.z}, maxBounds);
 
-                        if(world.registry->try_get<Component::EnemyGoal>(entity))
+                        if(auto goal = world.registry->try_get<Component::EnemyGoal>(entity); goal)
                         {
-                            navigation.SetGoal(min, max);
+                            navigation.SetGoal(goal->id, min, max);
                         }
-                        else if(world.registry->try_get<Component::EnemySpawn>(entity))
+                        else if(auto spawn = world.registry->try_get<Component::EnemySpawn>(entity);
+                                spawn)
                         {
-                            navigation.SetSpawn(min, max);
+                            navigation.SetSpawn(spawn->id, spawn->goalId, min, max);
                         }
                         else
                         {
@@ -405,7 +422,7 @@ namespace World
                 world.registry
                     ->view<Component::EnemyGoal, Component::Render, Component::Transform>()
                     .each([&](entt::entity entity,
-                              Component::EnemyGoal _,
+                              Component::EnemyGoal goal,
                               Component::Render render,
                               Component::Transform transform) {
                         auto bounds = BoundingBoxTransform(
@@ -419,13 +436,13 @@ namespace World
                         Vector2 max =
                             Vector2Add({transform.position.x, transform.position.z}, maxBounds);
 
-                        navigation.SetGoal(min, max);
+                        navigation.SetGoal(goal.id, min, max);
                     });
 
                 world.registry
                     ->view<Component::EnemySpawn, Component::Render, Component::Transform>()
                     .each([&](entt::entity entity,
-                              Component::EnemySpawn _,
+                              Component::EnemySpawn spawn,
                               Component::Render render,
                               Component::Transform transform) {
                         auto bounds = BoundingBoxTransform(
@@ -439,7 +456,7 @@ namespace World
                         Vector2 max =
                             Vector2Add({transform.position.x, transform.position.z}, maxBounds);
 
-                        navigation.SetSpawn(min, max);
+                        navigation.SetSpawn(spawn.id, spawn.goalId, min, max);
                     });
 
                 lua_getglobal(lua, "Navigation");
@@ -514,7 +531,7 @@ namespace World
                     if(error)
                         return;
 
-                    lua_pushvalue(lua, -1);
+                    lua_pushvalue(lua, callback.stackIndex);
 
                     lua_pushinteger(lua, x);
                     lua_pushinteger(lua, y);
@@ -552,7 +569,7 @@ namespace World
         LuaRegister::PushRegister(
             lua,
             "SetVectorField",
-            +[](lua_State* lua, LuaRegister::Placeholder table) {
+            +[](lua_State* lua, int32_t fieldId, LuaRegister::Placeholder table) {
                 auto sizeY = luaL_len(lua, table.stackIndex);
                 lua_geti(lua, table.stackIndex, 1);
                 auto sizeX = luaL_len(lua, -1);
@@ -579,7 +596,7 @@ namespace World
                     lua_pop(lua, 1);
                 }
 
-                navigation.SetVectorField(0, std::move(vectorField));
+                navigation.SetVectorField(fieldId, std::move(vectorField));
             });
 
         LuaRegister::PushRegister(
@@ -594,8 +611,14 @@ namespace World
                 navigation.SetWall(x, y, (Navigation::Tile::Side)side);
             });
 
-        lua_pushstring(lua, "draw");
-        lua_pushboolean(lua, drawNavigation);
+        lua_pushstring(lua, "drawTiles");
+        lua_pushboolean(lua, drawNavigationTiles);
+        lua_settable(lua, -3);
+        lua_pushstring(lua, "drawField");
+        if(drawNavigationField)
+            lua_pushinteger(lua, drawNavigationField.value());
+        else
+            lua_pushnil(lua);
         lua_settable(lua, -3);
         lua_pushstring(lua, "ksi");
         lua_pushnumber(lua, 10.0f);
@@ -1016,14 +1039,20 @@ namespace World
             });
 
         lua_getglobal(lua, "Navigation");
-        lua_getfield(lua, -1, "draw");
-        drawNavigation = lua_toboolean(lua, -1);
+        lua_getfield(lua, -1, "drawTiles");
+        drawNavigationTiles = lua_toboolean(lua, -1);
         lua_pop(lua, 2);
-        if(drawNavigation)
-        {
-            navigation.DrawField(0);
+        if(drawNavigationTiles)
             navigation.DrawTiles();
-        }
+
+        lua_getglobal(lua, "Navigation");
+        if(lua_getfield(lua, -1, "drawField") == LUA_TNUMBER)
+            drawNavigationField = lua_tointeger(lua, -1);
+        else
+            drawNavigationField = std::nullopt;
+        lua_pop(lua, 2);
+        if(drawNavigationField)
+            navigation.DrawField(drawNavigationField.value());
     }
 
     void DrawImgui()

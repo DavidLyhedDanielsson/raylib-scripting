@@ -15,12 +15,12 @@ local state = {
 
 local function Spawn()
     for _, spawnEntity in ipairs(common.playState.enemySpawns) do
-        local targetGoal = Entity.Get(spawnEntity).EnemySpawn.targetGoal
+        local goalId = Entity.Get(spawnEntity).EnemySpawn.goalId
 
         local goalPosition
         for _, goalEntity in ipairs(common.playState.enemyGoals) do
             local components = Entity.Get(goalEntity)
-            if components.EnemyGoal.id == targetGoal then
+            if components.EnemyGoal.id == goalId then
                 goalPosition = components.Transform.position
             end
         end

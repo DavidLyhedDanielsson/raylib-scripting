@@ -196,7 +196,7 @@ function imgui()
                             EntityTools.AddComponentOrPrintError("Walkable", entity)
                         end
                         if placeFloorType == PlaceFloorType.SPAWN then
-                            EntityTools.AddComponentOrPrintError("EnemySpawn", entity, { targetGoal = 0 })
+                            EntityTools.AddComponentOrPrintError("EnemySpawn", entity, { id = 0, goalId = 0 })
                         end
                         if placeFloorType == PlaceFloorType.GOAL then
                             EntityTools.AddComponentOrPrintError("EnemyGoal", entity, { id = 0 })

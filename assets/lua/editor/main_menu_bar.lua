@@ -11,6 +11,9 @@ if menuBarState == nil then
     searchText = ""
     saveLevelName = ""
     loadLevelName = ""
+
+    drawFieldId = 0
+    drawFieldGoalId = 0
 end
 
 local function Window()
@@ -47,12 +50,12 @@ local function Window()
         if ImGui.BeginMenu("Spawn", "", false, true) then
             if ImGui.MenuItem("Enemy", "", false, true) then
                 for _, spawnEntity in ipairs(enemySpawns) do
-                    local targetGoal = Entity.Get(spawnEntity).EnemySpawn.targetGoal
+                    local goalId = Entity.Get(spawnEntity).EnemySpawn.goalId
 
                     local goalPosition
                     for _, goalEntity in ipairs(enemyGoals) do
                         local components = Entity.Get(goalEntity)
-                        if components.EnemyGoal.id == targetGoal then
+                        if components.EnemyGoal.id == goalId then
                             goalPosition = components.Transform.position
                         end
                     end
@@ -82,12 +85,12 @@ local function Window()
                 RegisterThread(function()
                     function Spawn()
                         for _, spawnEntity in ipairs(enemySpawns) do
-                            local targetGoal = Entity.Get(spawnEntity).EnemySpawn.targetGoal
+                            local goalId = Entity.Get(spawnEntity).EnemySpawn.goalId
 
                             local goalPosition
                             for _, goalEntity in ipairs(enemyGoals) do
                                 local components = Entity.Get(goalEntity)
-                                if components.EnemyGoal.id == targetGoal then
+                                if components.EnemyGoal.id == goalId then
                                     goalPosition = components.Transform.position
                                 end
                             end
@@ -167,8 +170,20 @@ local function Window()
             if ImGui.MenuItem("Build", "", false, true) then
                 NavigationTools.Build()
             end
-            if ImGui.MenuItem("Toggle field rendering", "", Navigation.draw, true) then
-                Navigation.draw = not Navigation.draw
+            if ImGui.MenuItem("Toggle tile rendering", "", Navigation.drawTiles, true) then
+                Navigation.drawTiles = not Navigation.drawTiles
+            end
+            if ImGui.MenuItem("Toggle field rendering", "", Navigation.drawField, true) then
+                if Navigation.drawField then
+                    Navigation.drawField = nil
+                else
+                    Navigation.drawField = 0
+                end
+            end
+            _, drawFieldId = ImGui.InputInt("Spawn ID", drawFieldId, 1)
+            _, drawFieldGoalId = ImGui.InputInt("Goal ID", drawFieldGoalId, 1)
+            if (Navigation.drawField) then
+                Navigation.drawField = (drawFieldGoalId << 16) | drawFieldId
             end
             ImGui.Separator()
             if ImGui.MenuItem("Smooth field", "", navigationState.smoothField, true) then

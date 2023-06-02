@@ -13,12 +13,14 @@ EntityReflectionStruct(RComponent)
       // outweigh the weirdness
     static void Create(entt::registry & registry, entt::entity entity)
     {
-        registry.emplace<Component::RComponent>(entity, Component::RComponent{.targetGoal = 0});
+        registry.emplace<Component::RComponent>(
+            entity,
+            Component::RComponent{.id = 0, .goalId = 0});
     }
 
     static LuaValidator::LuaValidator GetLuaValidator(lua_State * lua)
     {
-        return LuaValidator::LuaValidator(lua).FieldIs<int>("targetGoal");
+        return LuaValidator::LuaValidator(lua).FieldIs<int>("id").FieldIs<int>("goalId");
     }
 
     static void CreateFromLuaInternal(
@@ -26,25 +28,30 @@ EntityReflectionStruct(RComponent)
         entt::registry & registry,
         entt::entity entity)
     {
-        lua_getfield(lua, -1, "targetGoal");
+        lua_getfield(lua, -1, "id");
+        int id = lua_tonumber(lua, -1);
+        lua_getfield(lua, -2, "goalId");
+        int goalId = lua_tonumber(lua, -1);
 
         registry.emplace<Component::RComponent>(
             entity,
-            Component::RComponent{.targetGoal = (int)lua_tointeger(lua, -1)});
+            Component::RComponent{.id = id, .goalId = goalId});
 
-        lua_pop(lua, 1);
+        lua_pop(lua, 2);
     }
 
     static void PushToLuaInternal(lua_State * lua, const Component::RComponent& component)
     {
-        lua_pushstring(lua, "targetGoal");
-        lua_pushinteger(lua, component.targetGoal);
-        lua_settable(lua, -3);
+        lua_pushinteger(lua, component.id);
+        lua_setfield(lua, -2, "id");
+        lua_pushinteger(lua, component.goalId);
+        lua_setfield(lua, -2, "goalId");
     }
 
     static void View(Component::RComponent component)
     {
-        ImGui::Text("Target goal: %i", component.targetGoal);
+        ImGui::Text("ID: %i", component.id);
+        ImGui::Text("Target goal: %i", component.goalId);
     }
 
     static void Modify(
@@ -52,7 +59,8 @@ EntityReflectionStruct(RComponent)
         entt::entity entity,
         Component::RComponent & component)
     {
-        ImGui::InputInt("Target goal", &component.targetGoal);
+        ImGui::InputInt("ID", &component.id);
+        ImGui::InputInt("Target goal", &component.goalId);
     }
 
     static void Duplicate(
@@ -62,7 +70,7 @@ EntityReflectionStruct(RComponent)
     {
         registry.emplace<Component::RComponent>(
             target,
-            Component::RComponent{.targetGoal = component.targetGoal});
+            Component::RComponent{.id = component.id, .goalId = component.goalId});
     }
 };
 EntityReflectionStructTail(RComponent)

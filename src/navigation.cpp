@@ -28,13 +28,13 @@ Navigation::Navigation(Vector2 min, Vector2 max, float offsetX, float offsetY, f
             Tile{.type = Tile::NONE, .wallSides = (int32_t)Tile::Side::NONE}));
 }
 
-Vector2 Navigation::GetForce(int32_t goal, Vector2 position) const
+Vector2 Navigation::GetForce(int32_t fieldId, Vector2 position) const
 {
     auto [x, y] = GetTileSpace(position);
 
     if(IsValid((int64_t)x, (int64_t)y))
     {
-        auto iter = tileData.vectorFields.find(goal);
+        auto iter = tileData.vectorFields.find(fieldId);
         if(iter != tileData.vectorFields.end())
             return iter->second.GetForce((int32_t)x, (int32_t)y);
     }
@@ -109,14 +109,21 @@ void Navigation::SetWalkable(Vector2 min, Vector2 max)
     ForArea(min, max, [](Tile& tile) { tile.type = Tile::WALKABLE; });
 }
 
-void Navigation::SetGoal(Vector2 min, Vector2 max)
+void Navigation::SetGoal(uint32_t id, Vector2 min, Vector2 max)
 {
-    ForArea(min, max, [](Tile& tile) { tile.type = Tile::GOAL; });
+    ForArea(min, max, [&](Tile& tile) {
+        tile.type = Tile::GOAL;
+        tile.goal.id = id;
+    });
 }
 
-void Navigation::SetSpawn(Vector2 min, Vector2 max)
+void Navigation::SetSpawn(uint32_t id, uint32_t goalId, Vector2 min, Vector2 max)
 {
-    ForArea(min, max, [](Tile& tile) { tile.type = Tile::SPAWN; });
+    ForArea(min, max, [&](Tile& tile) {
+        tile.type = Tile::SPAWN;
+        tile.spawn.id = id;
+        tile.spawn.goalId = goalId;
+    });
 }
 
 void Navigation::SetObstacle(Vector2 min, Vector2 max)
@@ -130,14 +137,14 @@ void Navigation::SetWall(uint64_t x, uint64_t y, Tile::Side side)
         tileData.tiles[y][x].wallSides |= (int32_t)side;
 }
 
-void Navigation::SetVectorField(uint32_t goal, const std::vector<std::vector<Vector2>>& field)
+void Navigation::SetVectorField(uint32_t fieldId, const std::vector<std::vector<Vector2>>& field)
 {
-    tileData.vectorFields[goal] = VectorField{.vectors = field};
+    tileData.vectorFields[fieldId] = VectorField{.vectors = field};
 }
 
-void Navigation::SetVectorField(uint32_t goal, std::vector<std::vector<Vector2>>&& field)
+void Navigation::SetVectorField(uint32_t fieldId, std::vector<std::vector<Vector2>>&& field)
 {
-    tileData.vectorFields[goal] = VectorField{.vectors = std::move(field)};
+    tileData.vectorFields[fieldId] = VectorField{.vectors = std::move(field)};
 }
 
 bool Navigation::IsValid(int64_t x, int64_t y) const
@@ -212,9 +219,9 @@ void Navigation::DrawTiles() const
     });
 }
 
-void Navigation::DrawField(int32_t goal) const
+void Navigation::DrawField(int32_t fieldId) const
 {
-    auto iter = tileData.vectorFields.find(goal);
+    auto iter = tileData.vectorFields.find(fieldId);
     if(iter == tileData.vectorFields.end())
         return;
 

@@ -248,9 +248,10 @@ void main_loop()
     lua_getglobal(luaState, "imgui");
     if(lua_isfunction(luaState, -1))
     {
-        Profiling::ProfileCall("Execute editor.lua::imgui", [&]() {
+        Profiling::ProfileCall("Execute lua::imgui", [&]() {
             if(lua_pcall(luaState, 0, 0, 0) != LUA_OK)
             {
+                std::cerr << "Error when executing lua::imgui:" << std::endl;
                 std::cerr << lua_tostring(luaState, -1) << std::endl;
                 lua_pop(luaState, 1);
                 ErrorCheckEndWindowRecover();

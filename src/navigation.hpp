@@ -47,11 +47,12 @@ class Navigation
             } walkable;
             struct
             {
-                int32_t goalId;
+                uint32_t id;
+                uint32_t goalId;
             } spawn;
             struct
             {
-                int32_t id;
+                uint32_t id;
             } goal;
             struct
             {
@@ -181,18 +182,18 @@ class Navigation
         }
     }
 
-    Vector2 GetForce(int32_t goal, Vector2 position) const;
+    Vector2 GetForce(int32_t fieldId, Vector2 position) const;
     Wall GetWall(uint32_t tileX, uint32_t tileY, Tile::Side wallSide) const;
     uint32_t GetSizeX() const;
     uint32_t GetSizeY() const;
 
     void SetWalkable(Vector2 min, Vector2 max);
-    void SetGoal(Vector2 min, Vector2 max);
-    void SetSpawn(Vector2 min, Vector2 max);
+    void SetGoal(uint32_t id, Vector2 min, Vector2 max);
+    void SetSpawn(uint32_t id, uint32_t goalId, Vector2 min, Vector2 max);
     void SetObstacle(Vector2 min, Vector2 max);
     void SetWall(uint64_t x, uint64_t y, Tile::Side side);
-    void SetVectorField(uint32_t goal, const std::vector<std::vector<Vector2>>& field);
-    void SetVectorField(uint32_t goal, std::vector<std::vector<Vector2>>&& field);
+    void SetVectorField(uint32_t fieldId, const std::vector<std::vector<Vector2>>& field);
+    void SetVectorField(uint32_t fieldId, std::vector<std::vector<Vector2>>&& field);
 
     bool IsValid(int64_t x, int64_t y) const;
     bool IsReachable(int64_t x, int64_t y) const;
@@ -204,5 +205,5 @@ class Navigation
     void ConvertToTileSpace(Vector2& min, Vector2& max) const;
 
     void DrawTiles() const;
-    void DrawField(int32_t goal) const;
+    void DrawField(int32_t fieldId) const;
 };

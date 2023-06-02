@@ -314,6 +314,25 @@ local function DirectionToVector(direction)
 end
 
 local function Build()
+    -- This isn't structly related to navigation and probably shouldn't be here,
+    -- but it makes the calling code a lot simpler
+    ---@type { spawnId: integer, goalId: integer }
+    local configs = {}
+
+    Entity.ForEachWithComponent("EnemySpawn", function(entity)
+        local esComponent = Entity.Get(entity).EnemySpawn
+        ---@type integer
+        local spawnId = esComponent.id
+        ---@type integer
+        local goalId = esComponent.goalId
+
+        if configs[spawnId] ~= nil and configs[spawnId] ~= goalId then
+            print("Spawn id ", spawnId, " targets both ", goalId, " and ", configs[spawnId])
+        else
+            configs[spawnId] = goalId
+        end
+    end)
+
     --StopAllThreads()
     Navigation.Build(navigationState.tileSize)
 
@@ -321,251 +340,257 @@ local function Build()
     local MAX_DISTANCE <const> = 999999
     local UNSET <const> = -1
 
-    ---@type Tile[][]
-    tileMap = {} -- Map for simple shorest distance from goal, in tiles
+    for spawnId, goalId in pairs(configs) do
+        print("Building navigation for spawn ", spawnId, " and goal ", goalId)
 
-    ---@type Walker[][]
-    walkerMap = {} -- Map for walking along walls
+        ---@type Tile[][]
+        tileMap = {} -- Map for simple shorest distance from goal, in tiles
 
-    -- Initialize
-    for y = 1, Navigation.sizeY do
-        walkerMap[y] = {}
-        tileMap[y] = {}
-        for x = 1, Navigation.sizeX do
-            local distanceToWall = DistanceToWall(x, y)
-            -- All unreachable tiles are given the special id 0
-            local id = distanceToWall > 0 and UNSET or 0
+        ---@type Walker[][]
+        walkerMap = {} -- Map for walking along walls
 
-            tileMap[y][x] = {
-                distance = MAX_DISTANCE,
-                distanceToWall = distanceToWall,
-                spawn = false,
-                locked = false,
-            }
-            walkerMap[y][x] = {
-                distance = MAX_DISTANCE,
-                parentDirection = Direction.NONE,
-                id = id,
-                wallId = UNSET,
-            }
-        end
-    end
+        -- Initialize
+        for y = 1, Navigation.sizeY do
+            walkerMap[y] = {}
+            tileMap[y] = {}
+            for x = 1, Navigation.sizeX do
+                local distanceToWall = DistanceToWall(x, y)
+                -- All unreachable tiles are given the special id 0
+                local id = distanceToWall > 0 and UNSET or 0
 
-    ---@type OpenListTile[]
-    local openList = {}
-
-    -- Starting condition
-    Navigation.ForEachTile(function(x, y, tile)
-        x = x + 1
-        y = y + 1
-
-        if tile.type == Navigation.TileType.GOAL and tileMap[y][x].distanceToWall == 1 then
-            walkerMap[y][x].wallId = 0
-            walkerMap[y][x].distance = 0
-            walkerMap[y][x].id = GetId()
-            table.insert(openList, { x = x, y = y })
-        elseif tile.type == Navigation.TileType.SPAWN then
-            tileMap[y][x].spawn = true
-        end
-    end)
-
-    if #openList == 0 then
-        print("ERROR: No goal that is touching a wall found, navigation will not be built")
-        return
-    end
-
-    local processedDistance = 1
-    local anyAddedLastIter = false
-    -- 9999 set to avoid an infinite loop, but this should be exited when no
-    -- more tiles are available to exporse
-    while processedDistance < 9999 do
-        -- Dijkstras
-        while #openList > 0 do
-            local cTile, cWalker = GetNextTile(openList)
-
-            if not cTile.spawn and not cTile.locked then
-                ForEachWalkableNeighbour(cTile.x, cTile.y, function(n)
-                    if walkerMap[n.y][n.x].id == UNSET then
-                        if IsAdjacentToWalker(n.x, n.y, cWalker.wallId) then
-                            local valid = true
-                            if cWalker.wallId == 0 then
-                                if not HasSharedWall(cTile.x, cTile.y, n.x, n.y, cTile.distanceToWall) then
-                                    valid = false
-                                end
-                            else
-                                ForEachWalkableNeighbour(n.x, n.y, function(nn)
-                                    if walkerMap[nn.y][nn.x].id ~= cWalker.wallId and tileMap[nn.y][nn.x].distanceToWall == cTile.distanceToWall - 1 then
-                                        valid = false
-                                        return
-                                    end
-                                end)
-                            end
-
-                            if valid then
-                                table.insert(openList, { x = n.x, y = n.y })
-                                SetNextWalkerStep(cWalker, n.x, n.y, n.opposite)
-                            end
-                        end
-                    end
-                end)
-            else
-                tileMap[cTile.y][cTile.x].locked = true
-
-                local parentDirection = cWalker.parentDirection
-                SetNextWalkerStep(cWalker, cTile.x, cTile.y, parentDirection)
-
-                local nextX, nextY = StepInDirection(cTile.x, cTile.y, parentDirection)
-                if Navigation.IsWalkable(nextX - 1, nextY - 1) and walkerMap[nextY][nextX].id == UNSET then
-                    tileMap[nextY][nextX].locked = true
-
-                    table.insert(openList, { x = nextX, y = nextY })
-                    SetNextWalkerStep(cWalker, nextX, nextY, parentDirection)
-                end
+                tileMap[y][x] = {
+                    distance = MAX_DISTANCE,
+                    distanceToWall = distanceToWall,
+                    spawn = false,
+                    locked = false,
+                }
+                walkerMap[y][x] = {
+                    distance = MAX_DISTANCE,
+                    parentDirection = Direction.NONE,
+                    id = id,
+                    wallId = UNSET,
+                }
             end
         end
 
-        -- For each walker, find the closest place where a new walker can be
-        -- spawned during the next loop iteration
-        ---@type {[integer]: {x: integer, y: integer, distance: integer}}
-        local spawnMap = {}
-        Navigation.ForEachTile(function(x, y, _) -- Is this faster than a simple nested for loop? Who knows
+        ---@type OpenListTile[]
+        local openList = {}
+
+        -- Starting condition
+        Navigation.ForEachTile(function(x, y, tile)
             x = x + 1
             y = y + 1
 
-            if tileMap[y][x].distanceToWall == processedDistance and not tileMap[y][x].spawn and walkerMap[y][x].id ~= UNSET then
-                local cWalker = walkerMap[y][x]
-
-                ForEachWalkableNeighbour(x, y, function(n)
-                    if tileMap[n.y][n.x].distanceToWall == processedDistance + 1 and walkerMap[n.y][n.x].id == UNSET then
-                        if not spawnMap[cWalker.id] or spawnMap[cWalker.id].distance > cWalker.distance then
-                            spawnMap[cWalker.id] = { distance = cWalker.distance, x = x, y = y }
-                        end
-                        return
-                    end
-                end)
+            if tile.type == Navigation.TileType.GOAL and tile.id == goalId and tileMap[y][x].distanceToWall == 1 then
+                walkerMap[y][x].wallId = 0
+                walkerMap[y][x].distance = 0
+                walkerMap[y][x].id = GetId()
+                table.insert(openList, { x = x, y = y })
+            elseif tile.type == Navigation.TileType.SPAWN and tile.id == spawnId then
+                tileMap[y][x].spawn = true
             end
         end)
 
-        local anyAdded = false
-        for wallId, spawnData in pairs(spawnMap) do
-            anyAdded = true
-            ForEachWalkableNeighbour(spawnData.x, spawnData.y, function(n)
-                -- Check id here as well just in case it is modified in a
-                -- previous iteration. It probably wouldn't matter if it was,
-                -- though...
-                if walkerMap[n.y][n.x].id == UNSET then
-                    table.insert(openList, { x = n.x, y = n.y, wallId = wallId, id = GetId() })
-                    walkerMap[n.y][n.x].wallId = wallId
-                    walkerMap[n.y][n.x].distance = 0
-                    walkerMap[n.y][n.x].parentDirection = n.opposite
-                end
-            end)
-        end
-
-        -- It is possible that it takes multiple runs of the loop to step on all
-        -- tiles with a distanceToWall of processedDistance + 1. In that case
-        -- the same distance will be processed again
-        if not anyAdded then
-            processedDistance = processedDistance + 1
-
-            if not anyAddedLastIter then
-                break
-            end
-        end
-
-        anyAddedLastIter = anyAdded
-    end
-
-    -- "raw" vector field without any smoothing
-    local vectorField = {}
-    for y = 1, Navigation.sizeY do
-        vectorField[y] = {}
-        for x = 1, Navigation.sizeX do
-            if tileMap[y][x].distanceToWall == 0 then
-                -- Make all unwalkable tiles that are adjacent to walkable tiles
-                -- push entities towards the walkable tile. This is in case
-                -- someone feels like wandering off the map
-                local toMap = { x = 0, y = 0 }
-                ForEachAdjacentWalkable(x, y, function(n)
-                    toMap.x = toMap.x + n.x - x
-                    toMap.y = toMap.y + n.y - y
-                end)
-
-                local len = math.sqrt(toMap.x * toMap.x + toMap.y * toMap.y)
-                -- Let's not track down nan issues again
-                if len ~= 0.0 then
-                    toMap.x = toMap.x / len
-                    toMap.y = toMap.y / len
-                end
-
-                vectorField[y][x] = toMap
-            else
-                vectorField[y][x] = { x = 0, y = 0 }
-            end
-        end
-    end
-
-    -- Build vector field and place walls around walkable tiles
-    Navigation.ForEachTile(function(x, y, _)
-        if not Navigation.IsWalkable(x, y) then
+        if #openList == 0 then
+            print("ERROR: No goal that is touching a wall found, navigation will not be built")
             return
         end
 
-        x = x + 1
-        y = y + 1
+        local processedDistance = 1
+        local anyAddedLastIter = false
+        -- 9999 set to avoid an infinite loop, but this should be exited when no
+        -- more tiles are available to exporse
+        while processedDistance < 9999 do
+            -- Dijkstras
+            while #openList > 0 do
+                local cTile, cWalker = GetNextTile(openList)
 
-        vectorField[y][x] = DirectionToVector(walkerMap[y][x].parentDirection)
+                if not cTile.spawn and not cTile.locked then
+                    ForEachWalkableNeighbour(cTile.x, cTile.y, function(n)
+                        if walkerMap[n.y][n.x].id == UNSET then
+                            if IsAdjacentToWalker(n.x, n.y, cWalker.wallId) then
+                                local valid = true
+                                if cWalker.wallId == 0 then
+                                    if not HasSharedWall(cTile.x, cTile.y, n.x, n.y, cTile.distanceToWall) then
+                                        valid = false
+                                    end
+                                else
+                                    ForEachWalkableNeighbour(n.x, n.y, function(nn)
+                                        if walkerMap[nn.y][nn.x].id ~= cWalker.wallId and tileMap[nn.y][nn.x].distanceToWall == cTile.distanceToWall - 1 then
+                                            valid = false
+                                            return
+                                        end
+                                    end)
+                                end
 
-        ForEachUnwalkableNeighbour(x, y, function(n)
-            if n.direction ~= Direction.NONE then
-                Navigation.SetWall(x - 1, y - 1, n.direction)
-            end
-        end)
-    end)
-
-    if navigationState.smoothField then
-        -- The only reason to not smooth the field is for troubleshooting
-        local finalVectorField = {}
-        for y = 1, Navigation.sizeY do
-            finalVectorField[y] = {}
-            for x = 1, Navigation.sizeX do
-                finalVectorField[y][x] = vectorField[y][x]
-            end
-        end
-
-        -- Average over a 5x5 area
-        -- TODO: Base area on tileSize instead of hard-coding it
-        for y = 1, Navigation.sizeY do
-            for x = 1, Navigation.sizeX do
-                if Navigation.IsWalkable(x - 1, y - 1) then
-                    local average = { x = 0, y = 0 }
-                    for yy = -2, 2 do
-                        for xx = -2, 2 do
-                            if Navigation.IsWalkable(x + xx - 1, y + yy - 1) then
-                                local tileDir = vectorField[y + yy][x + xx]
-                                average.x = average.x + tileDir.x
-                                average.y = average.y + tileDir.y
+                                if valid then
+                                    table.insert(openList, { x = n.x, y = n.y })
+                                    SetNextWalkerStep(cWalker, n.x, n.y, n.opposite)
+                                end
                             end
                         end
-                    end
+                    end)
+                else
+                    tileMap[cTile.y][cTile.x].locked = true
 
-                    local len = math.sqrt(average.x * average.x + average.y * average.y)
+                    local parentDirection = cWalker.parentDirection
+                    SetNextWalkerStep(cWalker, cTile.x, cTile.y, parentDirection)
+
+                    local nextX, nextY = StepInDirection(cTile.x, cTile.y, parentDirection)
+                    if Navigation.IsWalkable(nextX - 1, nextY - 1) and walkerMap[nextY][nextX].id == UNSET then
+                        tileMap[nextY][nextX].locked = true
+
+                        table.insert(openList, { x = nextX, y = nextY })
+                        SetNextWalkerStep(cWalker, nextX, nextY, parentDirection)
+                    end
+                end
+            end
+
+            -- For each walker, find the closest place where a new walker can be
+            -- spawned during the next loop iteration
+            ---@type {[integer]: {x: integer, y: integer, distance: integer}}
+            local spawnMap = {}
+            Navigation.ForEachTile(function(x, y, _) -- Is this faster than a simple nested for loop? Who knows
+                x = x + 1
+                y = y + 1
+
+                if tileMap[y][x].distanceToWall == processedDistance and not tileMap[y][x].spawn and walkerMap[y][x].id ~= UNSET then
+                    local cWalker = walkerMap[y][x]
+
+                    ForEachWalkableNeighbour(x, y, function(n)
+                        if tileMap[n.y][n.x].distanceToWall == processedDistance + 1 and walkerMap[n.y][n.x].id == UNSET then
+                            if not spawnMap[cWalker.id] or spawnMap[cWalker.id].distance > cWalker.distance then
+                                spawnMap[cWalker.id] = { distance = cWalker.distance, x = x, y = y }
+                            end
+                            return
+                        end
+                    end)
+                end
+            end)
+
+            local anyAdded = false
+            for wallId, spawnData in pairs(spawnMap) do
+                anyAdded = true
+                ForEachWalkableNeighbour(spawnData.x, spawnData.y, function(n)
+                    -- Check id here as well just in case it is modified in a
+                    -- previous iteration. It probably wouldn't matter if it was,
+                    -- though...
+                    if walkerMap[n.y][n.x].id == UNSET then
+                        table.insert(openList, { x = n.x, y = n.y, wallId = wallId, id = GetId() })
+                        walkerMap[n.y][n.x].wallId = wallId
+                        walkerMap[n.y][n.x].distance = 0
+                        walkerMap[n.y][n.x].parentDirection = n.opposite
+                    end
+                end)
+            end
+
+            -- It is possible that it takes multiple runs of the loop to step on all
+            -- tiles with a distanceToWall of processedDistance + 1. In that case
+            -- the same distance will be processed again
+            if not anyAdded then
+                processedDistance = processedDistance + 1
+
+                if not anyAddedLastIter then
+                    break
+                end
+            end
+
+            anyAddedLastIter = anyAdded
+        end
+
+        -- "raw" vector field without any smoothing
+        local vectorField = {}
+        for y = 1, Navigation.sizeY do
+            vectorField[y] = {}
+            for x = 1, Navigation.sizeX do
+                if tileMap[y][x].distanceToWall == 0 then
+                    -- Make all unwalkable tiles that are adjacent to walkable tiles
+                    -- push entities towards the walkable tile. This is in case
+                    -- someone feels like wandering off the map
+                    local toMap = { x = 0, y = 0 }
+                    ForEachAdjacentWalkable(x, y, function(n)
+                        toMap.x = toMap.x + n.x - x
+                        toMap.y = toMap.y + n.y - y
+                    end)
+
+                    local len = math.sqrt(toMap.x * toMap.x + toMap.y * toMap.y)
+                    -- Let's not track down nan issues again
                     if len ~= 0.0 then
-                        average.x = average.x / len
-                        average.y = average.y / len
+                        toMap.x = toMap.x / len
+                        toMap.y = toMap.y / len
                     end
 
-                    finalVectorField[y][x] = average
+                    vectorField[y][x] = toMap
+                else
+                    vectorField[y][x] = { x = 0, y = 0 }
                 end
             end
         end
 
-        Navigation.SetVectorField(finalVectorField)
-    else
-        Navigation.SetVectorField(vectorField)
-    end
+        -- Build vector field and place walls around walkable tiles
+        Navigation.ForEachTile(function(x, y, _)
+            if not Navigation.IsWalkable(x, y) then
+                return
+            end
 
-    print("Navigation built")
+            x = x + 1
+            y = y + 1
+
+            vectorField[y][x] = DirectionToVector(walkerMap[y][x].parentDirection)
+
+            ForEachUnwalkableNeighbour(x, y, function(n)
+                if n.direction ~= Direction.NONE then
+                    Navigation.SetWall(x - 1, y - 1, n.direction)
+                end
+            end)
+        end)
+
+        local fieldId <const> = (goalId << 16) | spawnId
+
+        if navigationState.smoothField then
+            -- The only reason to not smooth the field is for troubleshooting
+            local finalVectorField = {}
+            for y = 1, Navigation.sizeY do
+                finalVectorField[y] = {}
+                for x = 1, Navigation.sizeX do
+                    finalVectorField[y][x] = vectorField[y][x]
+                end
+            end
+
+            -- Average over a 5x5 area
+            -- TODO: Base area on tileSize instead of hard-coding it
+            for y = 1, Navigation.sizeY do
+                for x = 1, Navigation.sizeX do
+                    if Navigation.IsWalkable(x - 1, y - 1) then
+                        local average = { x = 0, y = 0 }
+                        for yy = -2, 2 do
+                            for xx = -2, 2 do
+                                if Navigation.IsWalkable(x + xx - 1, y + yy - 1) then
+                                    local tileDir = vectorField[y + yy][x + xx]
+                                    average.x = average.x + tileDir.x
+                                    average.y = average.y + tileDir.y
+                                end
+                            end
+                        end
+
+                        local len = math.sqrt(average.x * average.x + average.y * average.y)
+                        if len ~= 0.0 then
+                            average.x = average.x / len
+                            average.y = average.y / len
+                        end
+
+                        finalVectorField[y][x] = average
+                    end
+                end
+            end
+
+            Navigation.SetVectorField(fieldId, finalVectorField)
+        else
+            Navigation.SetVectorField(fieldId, vectorField)
+        end
+
+        print("Navigation built for goal " .. goalId .. " and spawn " .. spawnId .. " with fieldId " .. fieldId)
+    end
 end
 
 return {

@@ -24,7 +24,6 @@ end
 
 function init()
     Level.LoadLevel(StartLevel or "level1")
-    NavigationTools.Build()
 
     common.playState.enemySpawns = {}
     common.playState.enemyGoals = {}
@@ -38,6 +37,8 @@ function init()
     end)
 
     common.playState.waveState = common.waveStates.NOT_STARTED
+
+    NavigationTools.Build()
 end
 
 function raylib2D()

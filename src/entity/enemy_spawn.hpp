@@ -6,6 +6,7 @@ namespace Component
 {
     struct EnemySpawn
     {
-        int targetGoal;
+        int id;
+        int goalId;
     };
 }
