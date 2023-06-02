@@ -433,6 +433,9 @@ local function Build()
             return
         end
 
+        ---@type {x: integer, y: integer, parentDirection: Direction}
+        local gateList = {}
+
         local processedDistance = 1
         local anyAddedLastIter = false
         -- 9999 set to avoid an infinite loop, but this should be exited when no
@@ -443,27 +446,34 @@ local function Build()
                 local cTile, cWalker = GetNextTile(openList)
 
                 if not cTile.spawn and not cTile.locked then
-                    ForEachPassableNeighbour(spawnId, goalId, cTile.x, cTile.y, function(n)
-                        if walkerMap[n.y][n.x].id == UNSET then
-                            if IsAdjacentToWalker(spawnId, goalId, n.x, n.y, cWalker.wallId) then
-                                local valid = true
-                                if cWalker.wallId == 0 then
-                                    if not HasSharedWall(spawnId, goalId, cTile.x, cTile.y, n.x, n.y, cTile.distanceToUnpassable) then
-                                        valid = false
-                                    end
-                                else
-                                    ForEachPassableNeighbour(spawnId, goalId, n.x, n.y, function(nn)
-                                        if walkerMap[nn.y][nn.x].id ~= cWalker.wallId and tileMap[nn.y][nn.x].distanceToUnpassable == cTile.distanceToUnpassable - 1 then
+                    ForEachNeighbour(cTile.x, cTile.y, function(n)
+                        if Navigation.IsPassable(spawnId, goalId, n.x - 1, n.y - 1) then
+                            if walkerMap[n.y][n.x].id == UNSET then
+                                if IsAdjacentToWalker(spawnId, goalId, n.x, n.y, cWalker.wallId) then
+                                    local valid = true
+                                    if cWalker.wallId == 0 then
+                                        if not HasSharedWall(spawnId, goalId, cTile.x, cTile.y, n.x, n.y, cTile.distanceToUnpassable) then
                                             valid = false
-                                            return
                                         end
-                                    end)
-                                end
+                                    else
+                                        ForEachPassableNeighbour(spawnId, goalId, n.x, n.y, function(nn)
+                                            if walkerMap[nn.y][nn.x].id ~= cWalker.wallId and tileMap[nn.y][nn.x].distanceToUnpassable == cTile.distanceToUnpassable - 1 then
+                                                valid = false
+                                                return
+                                            end
+                                        end)
+                                    end
 
-                                if valid then
-                                    table.insert(openList, { x = n.x, y = n.y })
-                                    SetNextWalkerStep(cWalker, n.x, n.y, n.opposite)
+                                    if valid then
+                                        table.insert(openList, { x = n.x, y = n.y })
+                                        SetNextWalkerStep(cWalker, n.x, n.y, n.opposite)
+                                    end
                                 end
+                            end
+                        else
+                            if Navigation.IsNavGate(n.x - 1, n.y - 1) then
+                                table.insert(gateList, { x = n.x, y = n.y })
+                                SetNextWalkerStep(cWalker, n.x, n.y, n.opposite)
                             end
                         end
                     end)
@@ -481,6 +491,35 @@ local function Build()
                         SetNextWalkerStep(cWalker, nextX, nextY, parentDirection)
                     end
                 end
+            end
+
+            while #gateList > 0 do
+                local cTile, cWalker = GetNextTile(gateList)
+
+                ForEachNeighbour(cTile.x, cTile.y, function(n)
+                    if walkerMap[n.y][n.x].id == UNSET then
+                        if IsAdjacentToWalker(spawnId, goalId, n.x, n.y, cWalker.wallId) then
+                            local valid = true
+                            if cWalker.wallId == 0 then
+                                if not HasSharedWall(spawnId, goalId, cTile.x, cTile.y, n.x, n.y, cTile.distanceToUnpassable) then
+                                    valid = false
+                                end
+                            else
+                                ForEachNeighbour(n.x, n.y, function(nn)
+                                    if walkerMap[nn.y][nn.x].id ~= cWalker.wallId and tileMap[nn.y][nn.x].distanceToUnpassable == cTile.distanceToUnpassable - 1 then
+                                        valid = false
+                                        return
+                                    end
+                                end)
+                            end
+
+                            if valid then
+                                table.insert(gateList, { x = n.x, y = n.y })
+                                SetNextWalkerStep(cWalker, n.x, n.y, n.opposite)
+                            end
+                        end
+                    end
+                end)
             end
 
             -- For each walker, find the closest place where a new walker can be
@@ -566,7 +605,7 @@ local function Build()
 
         -- Build vector field
         Navigation.ForEachTile(function(x, y, _)
-            if not Navigation.IsPassable(spawnId, goalId, x, y) then
+            if not Navigation.IsReachable(x, y) then
                 return
             end
 
