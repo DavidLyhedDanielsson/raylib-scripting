@@ -199,7 +199,11 @@ class Navigation
     bool IsValid(int64_t x, int64_t y) const;
     bool IsReachable(int64_t x, int64_t y) const;
     bool IsWalkable(int64_t x, int64_t y) const;
-    bool IsGoal(Vector3 position) const;
+    bool IsNavGate(int64_t x, int64_t y) const;
+    bool IsSpawn(int64_t x, int64_t y) const;
+    bool IsGoal(int64_t x, int64_t y) const;
+
+    bool IsPassable(uint32_t spawnId, uint32_t goalId, int64_t x, int64_t y) const;
 
     Vector2 GetTileSpace(Vector2 position) const;
     Vector2 ConvertToWorldSpace(uint32_t tileX, uint32_t tileY) const;

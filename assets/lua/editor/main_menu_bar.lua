@@ -50,34 +50,23 @@ local function Window()
         if ImGui.BeginMenu("Spawn", "", false, true) then
             if ImGui.MenuItem("Enemy", "", false, true) then
                 for _, spawnEntity in ipairs(enemySpawns) do
-                    local goalId = Entity.Get(spawnEntity).EnemySpawn.goalId
+                    local sComponent = Entity.Get(spawnEntity).EnemySpawn
+                    local spawnId = sComponent.id
+                    local goalId = sComponent.goalId
+                    local spawnPosition = Entity.Get(spawnEntity).Transform.position
 
-                    local goalPosition
-                    for _, goalEntity in ipairs(enemyGoals) do
-                        local components = Entity.Get(goalEntity)
-                        if components.EnemyGoal.id == goalId then
-                            goalPosition = components.Transform.position
-                        end
-                    end
-
-                    if goalPosition == nil then
-                        print("GoalPosition is nil!")
-                    else
-                        local spawnPosition = Entity.Get(spawnEntity).Transform.position
-
-                        local entity = Entity.Create()
-                        EntityTools.AddComponentOrPrintError("Render", entity,
-                            { assetName = "Pot1" })
-                        EntityTools.AddComponentOrPrintError("Transform", entity,
-                            { position = spawnPosition, rotation = { x = 0, y = 0, z = 0 } })
-                        EntityTools.AddComponentOrPrintError("MoveTowards", entity,
-                            { target = goalPosition, speed = 2.5 })
-                        EntityTools.AddComponentOrPrintError("Velocity", entity,
-                            { x = 0, y = 0, z = 0 })
-                        EntityTools.AddComponentOrPrintError("Acceleration", entity,
-                            { acceleration = { x = 0, y = 0, z = 0 } })
-                        EntityTools.AddComponentOrPrintError("Health", entity, { currentHealth = 3 })
-                    end
+                    local entity = Entity.Create()
+                    EntityTools.AddComponentOrPrintError("Render", entity,
+                        { assetName = "Pot1" })
+                    EntityTools.AddComponentOrPrintError("Transform", entity,
+                        { position = spawnPosition, rotation = { x = 0, y = 0, z = 0 } })
+                    EntityTools.AddComponentOrPrintError("MoveTowards", entity,
+                        { vectorFieldId = (spawnId << 16) | goalId, speed = 2.5 })
+                    EntityTools.AddComponentOrPrintError("Velocity", entity,
+                        { x = 0, y = 0, z = 0 })
+                    EntityTools.AddComponentOrPrintError("Acceleration", entity,
+                        { acceleration = { x = 0, y = 0, z = 0 } })
+                    EntityTools.AddComponentOrPrintError("Health", entity, { currentHealth = 3 })
                 end
             end
 
@@ -85,40 +74,29 @@ local function Window()
                 RegisterThread(function()
                     function Spawn()
                         for _, spawnEntity in ipairs(enemySpawns) do
-                            local goalId = Entity.Get(spawnEntity).EnemySpawn.goalId
+                            local sComponent = Entity.Get(spawnEntity).EnemySpawn
+                            local spawnId = sComponent.id
+                            local goalId = sComponent.goalId
+                            local spawnPosition = Entity.Get(spawnEntity).Transform.position
 
-                            local goalPosition
-                            for _, goalEntity in ipairs(enemyGoals) do
-                                local components = Entity.Get(goalEntity)
-                                if components.EnemyGoal.id == goalId then
-                                    goalPosition = components.Transform.position
-                                end
-                            end
-
-                            if goalPosition == nil then
-                                print("GoalPosition is nil!")
-                            else
-                                local spawnPosition = Entity.Get(spawnEntity).Transform.position
-
-                                local entity = Entity.Create()
-                                EntityTools.AddComponentOrPrintError("Render", entity,
-                                    { assetName = "Pot1" })
-                                EntityTools.AddComponentOrPrintError("Transform", entity,
-                                    { position = spawnPosition, rotation = { x = 0, y = 0, z = 0 } })
-                                EntityTools.AddComponentOrPrintError("MoveTowards", entity,
-                                    { target = goalPosition, speed = 2.5 })
-                                EntityTools.AddComponentOrPrintError("Velocity", entity,
-                                    { x = 0, y = 0, z = 0 })
-                                EntityTools.AddComponentOrPrintError("Acceleration", entity,
-                                    { acceleration = { x = 0, y = 0, z = 0 } })
-                                EntityTools.AddComponentOrPrintError("Health", entity, { currentHealth = 3 })
-                            end
+                            local entity = Entity.Create()
+                            EntityTools.AddComponentOrPrintError("Render", entity,
+                                { assetName = "Pot1" })
+                            EntityTools.AddComponentOrPrintError("Transform", entity,
+                                { position = spawnPosition, rotation = { x = 0, y = 0, z = 0 } })
+                            EntityTools.AddComponentOrPrintError("MoveTowards", entity,
+                                { vectorFieldId = (spawnId << 16) | goalId, speed = 2.5 })
+                            EntityTools.AddComponentOrPrintError("Velocity", entity,
+                                { x = 0, y = 0, z = 0 })
+                            EntityTools.AddComponentOrPrintError("Acceleration", entity,
+                                { acceleration = { x = 0, y = 0, z = 0 } })
+                            EntityTools.AddComponentOrPrintError("Health", entity, { currentHealth = 3 })
                         end
                     end
 
                     local shortest = 400
 
-                    for i = 0, 50 do
+                    for i = 0, 10 do
                         Spawn()
                         coroutine.yield(shortest)
                     end
@@ -183,7 +161,7 @@ local function Window()
             _, drawFieldId = ImGui.InputInt("Spawn ID", drawFieldId, 1)
             _, drawFieldGoalId = ImGui.InputInt("Goal ID", drawFieldGoalId, 1)
             if (Navigation.drawField) then
-                Navigation.drawField = (drawFieldGoalId << 16) | drawFieldId
+                Navigation.drawField = (drawFieldId << 16) | drawFieldGoalId
             end
             ImGui.Separator()
             if ImGui.MenuItem("Smooth field", "", navigationState.smoothField, true) then

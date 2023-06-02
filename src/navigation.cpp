@@ -167,16 +167,41 @@ bool Navigation::IsReachable(int64_t x, int64_t y) const
 
 bool Navigation::IsWalkable(int64_t x, int64_t y) const
 {
-    return IsValid(x, y) && tileData.tiles[y][x].type != Tile::NONE
-           && tileData.tiles[y][x].type != Tile::NAV_GATE;
+    return IsValid(x, y) && tileData.tiles[y][x].type == Tile::WALKABLE;
 }
 
-bool Navigation::IsGoal(Vector3 pos) const
+bool Navigation::IsNavGate(int64_t x, int64_t y) const
 {
-    auto tilePos = GetTileSpace({.x = pos.x, .y = pos.z});
-    if(!IsReachable((int64_t)tilePos.x, (int64_t)tilePos.y))
-        return false;
-    return tileData.tiles[(int64_t)tilePos.y][(int64_t)tilePos.x].type == Tile::GOAL;
+    return IsValid(x, y) && tileData.tiles[y][x].type == Tile::NAV_GATE;
+}
+
+bool Navigation::IsSpawn(int64_t x, int64_t y) const
+{
+    return IsValid(x, y) && tileData.tiles[y][x].type == Tile::SPAWN;
+}
+
+bool Navigation::IsGoal(int64_t x, int64_t y) const
+{
+    return IsValid(x, y) && tileData.tiles[y][x].type == Tile::GOAL;
+}
+
+bool Navigation::IsPassable(uint32_t spawnId, uint32_t goalId, int64_t x, int64_t y) const
+{
+    if(IsWalkable(x, y))
+        return true;
+
+    if(IsNavGate(x, y))
+        return tileData.tiles[y][x].navGate.allowedGoalId == goalId;
+
+    // if(IsSpawn(x, y))
+    //     return tileData.tiles[y][x].spawn.id == spawnId;
+    if(IsSpawn(x, y))
+        return true;
+
+    if(IsGoal(x, y))
+        return tileData.tiles[y][x].goal.id == goalId;
+
+    return false;
 }
 
 Vector2 Navigation::GetTileSpace(Vector2 position) const

@@ -7,7 +7,7 @@ local defaultComponents = {
     Tile = {},
     EnemyGoal = { id = 0 },
     EnemySpawn = { id = 0, goalId = 0 },
-    MoveTowards = {},
+    MoveTowards = { vectorFieldId = 0, speed = 1 },
     Projectile = { damage = 1 },
     Health = { currentHealth = 2 },
     MaxRange = { maxDistance = 99999999, distanceFrom = { x = 0, y = 0, z = 0 } },
@@ -54,16 +54,6 @@ local function Single(entity)
         NavGate = Entity.HasComponent("NavGate", entity),
         Behaviour = Entity.HasComponent("Behaviour", entity),
     }
-
-    -- Debugging code that is unlikely to be useful again
-    -- if components.Walkable.hasComponent then
-    --     ImGui.Text("Distance to wall: ")
-    --     ImGui.SameLine()
-
-    --     local position = Entity.Get(entity).Transform.position
-    --     local tilePos = Navigation.GetTileSpace({ x = position.x, y = position.z })
-    --     ImGui.Text(DistanceToWall(tilePos.x, tilePos.y))
-    -- end
 
     for componentName, hasComponent in pairs(components) do
         if hasComponent then

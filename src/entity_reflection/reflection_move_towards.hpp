@@ -20,12 +20,16 @@ EntityReflectionStruct(RComponent)
     static void Create(entt::registry & registry, entt::entity entity)
     {
         // TODO: emplace the component object
-        registry.emplace<Component::RComponent>(entity, 0.0f, 0.0f, 0.0f);
+        registry.emplace<Component::RComponent>(
+            entity,
+            Component::RComponent{.vectorFieldId = 0, .speed = 1.0f});
     }
 
     static LuaValidator::LuaValidator GetLuaValidator(lua_State * lua)
     {
-        return LuaValidator::LuaValidator(lua).FieldIs<Vector3>("target").FieldIs<float>("speed");
+        return LuaValidator::LuaValidator(lua)
+            .FieldIs<uint32_t>("vectorFieldId")
+            .FieldIs<float>("speed");
     }
 
     static void CreateFromLuaInternal(
@@ -33,14 +37,14 @@ EntityReflectionStruct(RComponent)
         entt::registry & registry,
         entt::entity entity)
     {
-        lua_getfield(lua, -1, "target");
+        lua_getfield(lua, -1, "vectorFieldId");
         lua_getfield(lua, -2, "speed");
 
         auto stackTop = lua_gettop(lua) + 1;
         registry.emplace<Component::RComponent>(
             entity,
             Component::RComponent{
-                .target = LuaRegister::LuaGetFunc<Vector3>(lua, stackTop - 2),
+                .vectorFieldId = LuaRegister::LuaGetFunc<uint32_t>(lua, stackTop - 2),
                 .speed = (float)lua_tonumber(lua, stackTop - 1),
             });
 
@@ -49,8 +53,8 @@ EntityReflectionStruct(RComponent)
 
     static void PushToLuaInternal(lua_State * lua, const Component::RComponent& component)
     {
-        lua_pushstring(lua, "target");
-        LuaRegister::LuaSetFunc<Vector3>(lua, component.target);
+        lua_pushstring(lua, "vectorFieldId");
+        LuaRegister::LuaSetFunc<uint32_t>(lua, component.vectorFieldId);
         lua_settable(lua, -3);
         lua_pushstring(lua, "speed");
         lua_pushnumber(lua, component.speed);
@@ -59,12 +63,7 @@ EntityReflectionStruct(RComponent)
 
     static void View(Component::RComponent & component)
     {
-        ImGui::Text(
-            "Target: %f, %f, %f",
-            component.target.x,
-            component.target.y,
-            component.target.z);
-
+        ImGui::Text("Field ID: %ui", component.vectorFieldId);
         ImGui::Text("Speed: %f", component.speed);
     }
 
@@ -73,7 +72,11 @@ EntityReflectionStruct(RComponent)
         entt::entity entity,
         Component::RComponent & component)
     {
-        ImGui::DragFloat3("Target", &component.target.x);
+        int32_t val = (int32_t)component.vectorFieldId;
+        ImGui::InputInt("Field ID", &val);
+        if(val < 0)
+            val = 0;
+        component.vectorFieldId = (uint32_t)val;
         ImGui::DragFloat("Speed", &component.speed, 0.01f, 0.0f);
     }
 
@@ -82,8 +85,11 @@ EntityReflectionStruct(RComponent)
         const Component::RComponent& component,
         entt::entity target)
     {
-        // TODO: emplace a new object here as well
-        registry.emplace<Component::RComponent>(target, component.target, component.speed);
+        registry.emplace<Component::RComponent>(
+            target,
+            Component::RComponent{
+                .vectorFieldId = component.vectorFieldId,
+                .speed = component.speed});
     }
 };
 EntityReflectionStructTail(RComponent)

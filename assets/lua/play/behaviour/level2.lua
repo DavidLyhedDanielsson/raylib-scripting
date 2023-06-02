@@ -15,34 +15,23 @@ local state = {
 
 local function Spawn()
     for _, spawnEntity in ipairs(common.playState.enemySpawns) do
-        local goalId = Entity.Get(spawnEntity).EnemySpawn.goalId
+        local sComponent = Entity.Get(spawnEntity).EnemySpawn
+        local spawnId = sComponent.id
+        local goalId = sComponent.goalId
+        local spawnPosition = Entity.Get(spawnEntity).Transform.position
 
-        local goalPosition
-        for _, goalEntity in ipairs(common.playState.enemyGoals) do
-            local components = Entity.Get(goalEntity)
-            if components.EnemyGoal.id == goalId then
-                goalPosition = components.Transform.position
-            end
-        end
-
-        if goalPosition == nil then
-            print("GoalPosition is nil!")
-        else
-            local spawnPosition = Entity.Get(spawnEntity).Transform.position
-
-            local entity = Entity.Create()
-            EntityTools.AddComponentOrPrintError("Render", entity,
-                { assetName = "Pot1" })
-            EntityTools.AddComponentOrPrintError("Transform", entity,
-                { position = spawnPosition, rotation = { x = 0, y = 0, z = 0 } })
-            EntityTools.AddComponentOrPrintError("MoveTowards", entity,
-                { target = goalPosition, speed = 2.5 })
-            EntityTools.AddComponentOrPrintError("Velocity", entity,
-                { x = 0, y = 0, z = 0 })
-            EntityTools.AddComponentOrPrintError("Acceleration", entity,
-                { acceleration = { x = 0, y = 0, z = 0 } })
-            EntityTools.AddComponentOrPrintError("Health", entity, { currentHealth = 3 })
-        end
+        local entity = Entity.Create()
+        EntityTools.AddComponentOrPrintError("Render", entity,
+            { assetName = "Pot1" })
+        EntityTools.AddComponentOrPrintError("Transform", entity,
+            { position = spawnPosition, rotation = { x = 0, y = 0, z = 0 } })
+        EntityTools.AddComponentOrPrintError("MoveTowards", entity,
+            { vectorFieldId = (spawnId << 16) | goalId, speed = 2.5 })
+        EntityTools.AddComponentOrPrintError("Velocity", entity,
+            { x = 0, y = 0, z = 0 })
+        EntityTools.AddComponentOrPrintError("Acceleration", entity,
+            { acceleration = { x = 0, y = 0, z = 0 } })
+        EntityTools.AddComponentOrPrintError("Health", entity, { currentHealth = 3 })
     end
 end
 

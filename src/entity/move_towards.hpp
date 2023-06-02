@@ -6,7 +6,7 @@ namespace Component
 {
     struct MoveTowards
     {
-        Vector3 target;
+        uint32_t vectorFieldId;
         float speed;
     };
 }

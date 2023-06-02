@@ -560,6 +560,7 @@ namespace World
                 return navigation.ConvertToTileSpace(min, max);
             });
 
+        // TODO: These below here can be quick registered?
         LuaRegister::PushRegister(
             lua,
             "IsReachable",
@@ -569,6 +570,18 @@ namespace World
             lua,
             "IsWalkable",
             +[](lua_State* lua, int x, int y) { return navigation.IsWalkable(x, y); });
+
+        LuaRegister::PushRegister(
+            lua,
+            "IsNavGate",
+            +[](lua_State* lua, int x, int y) { return navigation.IsNavGate(x, y); });
+
+        LuaRegister::PushRegister(
+            lua,
+            "IsPassable",
+            +[](lua_State* lua, int spawnId, int goalId, int x, int y) {
+                return navigation.IsPassable(spawnId, goalId, x, y);
+            });
 
         LuaRegister::PushRegister(
             lua,
@@ -747,15 +760,17 @@ namespace World
 
                 const float radius = 0.30f;
 
-                if(navigation.IsGoal(transform.position))
+                Vector2 tilePos = navigation.GetTileSpace(Vector3Flatten(transform.position));
+                if(navigation.IsGoal(tilePos.x, tilePos.y))
                 {
                     if(auto health = world.registry->try_get<Component::Health>(entity); health)
                         health->currentHealth = 0.0f;
                     continue;
                 }
 
-                Vector2 force =
-                    navigation.GetForce(0, {.x = transform.position.x, .y = transform.position.z});
+                Vector2 force = navigation.GetForce(
+                    moveTowards.vectorFieldId,
+                    Vector3Flatten(transform.position));
 
                 Vector3 movementDirection = {force.x, 0.0f, force.y};
 

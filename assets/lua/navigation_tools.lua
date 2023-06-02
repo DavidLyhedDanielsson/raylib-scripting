@@ -12,7 +12,7 @@
 
 ---@class Tile
 ---@field distance integer shortest distance from spawn
----@field distanceToWall integer distance from this tile to the closest wall
+---@field distanceToUnpassable integer distance from this tile to the closest wall
 ---@field spawn boolean whether or not this tile is an enemy spawn tile
 ---@field locked boolean if a walker crosses a spawn tile, it and all subsequent tiles will be locked
 
@@ -30,10 +30,12 @@ if navigationState == nil then
 end
 
 ---For the given tile, find the tile-distance to the nearest unreachable tile
+---@param spawnId integer
+---@param goalId integer
 ---@param x integer
 ---@param y integer
 ---@return integer
-local function DistanceToWall(x, y)
+local function DistanceToUnpassable(spawnId, goalId, x, y)
     if not Navigation.IsReachable(x - 1, y - 1) then
         return 0
     end
@@ -46,7 +48,7 @@ local function DistanceToWall(x, y)
                 local x = x + rx
                 local y = y + ry
 
-                if not Navigation.IsReachable(x - 1, y - 1) then
+                if not Navigation.IsPassable(spawnId, goalId, x - 1, y - 1) then
                     return radius
                 end
             end
@@ -57,13 +59,15 @@ local function DistanceToWall(x, y)
 end
 
 ---Given two adjacent tiles, check if they share a wall in any of the tiles around them
+---@param spawnId integer
+---@param goalId integer
 ---@param x integer x position of first tile
 ---@param y integer y position of first tile
 ---@param ox integer x position of second tile
 ---@param oy integer y position of second tile
 ---@param searchRadius integer
 ---@return boolean
-local function HasSharedWall(x, y, ox, oy, searchRadius)
+local function HasSharedWall(spawnId, goalId, x, y, ox, oy, searchRadius)
     -- Build a grid that is centered on the two tiles (X and Y in the example
     -- below), step around the tiles and add `1` if there is a wall in that
     -- position. After stepping around both points, check if there is a `2` in
@@ -93,7 +97,7 @@ local function HasSharedWall(x, y, ox, oy, searchRadius)
 
     for yy = -searchRadius, searchRadius do
         for xx = -searchRadius, searchRadius do
-            if not Navigation.IsWalkable(x + xx - 1, y + yy - 1) then
+            if not Navigation.IsPassable(spawnId, goalId, x + xx - 1, y + yy - 1) then
                 -- Map from [-sR; sR] to [0; 2*sR]
                 local val = map[yy + searchRadius + offsetY][xx + searchRadius + offsetX]
                 map[yy + searchRadius + offsetY][xx + searchRadius + offsetX] = val + 1
@@ -107,7 +111,7 @@ local function HasSharedWall(x, y, ox, oy, searchRadius)
 
     for yy = -searchRadius, searchRadius do
         for xx = -searchRadius, searchRadius do
-            if not Navigation.IsWalkable(ox + xx - 1, oy + yy - 1) then
+            if not Navigation.IsPassable(spawnId, goalId, ox + xx - 1, oy + yy - 1) then
                 local val = map[yy + searchRadius + offsetY][xx + searchRadius + offsetX]
 
                 if val == 1 then
@@ -153,7 +157,6 @@ local function ForEachNeighbour(x, y, func)
     end
 end
 
----Runs the given callback for each unwalkable neighbour
 ---@param x integer
 ---@param y integer
 ---@param func fun(n: Neighbour)
@@ -165,23 +168,43 @@ local function ForEachUnwalkableNeighbour(x, y, func)
     end
 end
 
----Runs the given function for each cardinally adjacent neighbour that is walkable
+---Runs the given callback for each passable neighbour. A passable tile is
+--either walkable or a navgate with a matching goal id.
+---@param spawnId integer
+---@param goalId integer
 ---@param x integer
 ---@param y integer
 ---@param func fun(n: Neighbour)
-local function ForEachWalkableNeighbour(x, y, func)
+local function ForEachPassableNeighbour(spawnId, goalId, x, y, func)
     for _, n in ipairs(GetNeighbours(x, y)) do
-        if Navigation.IsWalkable(n.x - 1, n.y - 1) then
+        if Navigation.IsPassable(spawnId, goalId, n.x - 1, n.y - 1) then
+            func(n)
+        end
+    end
+end
+
+---Runs the given callback for each unpassable neighbour. A passable tile is
+--either walkable or a navgate with a matching goal id.
+---@param spawnId integer
+---@param goalId integer
+---@param x integer
+---@param y integer
+---@param func fun(n: Neighbour)
+local function ForEachUnpassableNeighbour(spawnId, goalId, x, y, func)
+    for _, n in ipairs(GetNeighbours(x, y)) do
+        if not Navigation.IsPassable(spawnId, goalId, n.x - 1, n.y - 1) then
             func(n)
         end
     end
 end
 
 ---Runs the given function for _all adjacent_ neighbours that are walkable
+---@param spawnId integer
+---@param goalId integer
 ---@param x integer
 ---@param y integer
 ---@param func fun(n: {x: integer, y: integer})
-local function ForEachAdjacentWalkable(x, y, func)
+local function ForEachAdjacentPassable(spawnId, goalId, x, y, func)
     local neighbours = {
         { x = x - 1, y = y - 1, },
         { x = x - 1, y = y, },
@@ -195,24 +218,26 @@ local function ForEachAdjacentWalkable(x, y, func)
         { x = x + 1, y = y + 1, },
     }
     for _, n in ipairs(neighbours) do
-        if Navigation.IsWalkable(n.x - 1, n.y - 1) then
+        if Navigation.IsPassable(spawnId, goalId, n.x - 1, n.y - 1) then
             func(n)
         end
     end
 end
 
 ---Given a tile, checks whether or not it is adjacent to the walker with the given wall id
+---@param spawnId integer
+---@param goalId integer
 ---@param x integer
 ---@param y integer
 ---@param walkerWallId integer
 ---@return boolean
-function IsAdjacentToWalker(x, y, walkerWallId)
+function IsAdjacentToWalker(spawnId, goalId, x, y, walkerWallId)
     for ry = -1, 1, 1 do
         for rx = -1, 1, 1 do
             local x = x + rx
             local y = y + ry
 
-            if Navigation.IsWalkable(x - 1, y - 1) then
+            if Navigation.IsPassable(spawnId, goalId, x - 1, y - 1) then
                 if walkerMap[y][x].id == walkerWallId then
                     return true
                 end
@@ -268,7 +293,7 @@ local function GetNextTile(openList)
     local cTile = {
         x = current.x,
         y = current.y,
-        distanceToWall = tile.distanceToWall,
+        distanceToUnpassable = tile.distanceToUnpassable,
         distance = tile.distance,
         spawn = tile.spawn,
         locked = tile.locked,
@@ -335,6 +360,18 @@ local function Build()
 
     --StopAllThreads()
     Navigation.Build(navigationState.tileSize)
+    Navigation.ForEachTile(function(x, y, _)
+        -- TODO: Add this back?
+        --if not Navigation.IsWalkable(x, y) and not Navigation.IsNavGate(x, y) then
+        --return
+        --end
+
+        ForEachNeighbour(x, y, function(n)
+            if not Navigation.IsReachable(n.x, n.y) then
+                Navigation.SetWall(x, y, n.direction)
+            end
+        end)
+    end)
 
     --RegisterThread(function()
     local MAX_DISTANCE <const> = 999999
@@ -354,13 +391,13 @@ local function Build()
             walkerMap[y] = {}
             tileMap[y] = {}
             for x = 1, Navigation.sizeX do
-                local distanceToWall = DistanceToWall(x, y)
+                local distanceToUnpassable = DistanceToUnpassable(spawnId, goalId, x, y)
                 -- All unreachable tiles are given the special id 0
-                local id = distanceToWall > 0 and UNSET or 0
+                local id = distanceToUnpassable > 0 and UNSET or 0
 
                 tileMap[y][x] = {
                     distance = MAX_DISTANCE,
-                    distanceToWall = distanceToWall,
+                    distanceToUnpassable = distanceToUnpassable,
                     spawn = false,
                     locked = false,
                 }
@@ -381,7 +418,7 @@ local function Build()
             x = x + 1
             y = y + 1
 
-            if tile.type == Navigation.TileType.GOAL and tile.id == goalId and tileMap[y][x].distanceToWall == 1 then
+            if tile.type == Navigation.TileType.GOAL and tile.id == goalId and tileMap[y][x].distanceToUnpassable == 1 then
                 walkerMap[y][x].wallId = 0
                 walkerMap[y][x].distance = 0
                 walkerMap[y][x].id = GetId()
@@ -399,24 +436,24 @@ local function Build()
         local processedDistance = 1
         local anyAddedLastIter = false
         -- 9999 set to avoid an infinite loop, but this should be exited when no
-        -- more tiles are available to exporse
+        -- more tiles are available to explore
         while processedDistance < 9999 do
             -- Dijkstras
             while #openList > 0 do
                 local cTile, cWalker = GetNextTile(openList)
 
                 if not cTile.spawn and not cTile.locked then
-                    ForEachWalkableNeighbour(cTile.x, cTile.y, function(n)
+                    ForEachPassableNeighbour(spawnId, goalId, cTile.x, cTile.y, function(n)
                         if walkerMap[n.y][n.x].id == UNSET then
-                            if IsAdjacentToWalker(n.x, n.y, cWalker.wallId) then
+                            if IsAdjacentToWalker(spawnId, goalId, n.x, n.y, cWalker.wallId) then
                                 local valid = true
                                 if cWalker.wallId == 0 then
-                                    if not HasSharedWall(cTile.x, cTile.y, n.x, n.y, cTile.distanceToWall) then
+                                    if not HasSharedWall(spawnId, goalId, cTile.x, cTile.y, n.x, n.y, cTile.distanceToUnpassable) then
                                         valid = false
                                     end
                                 else
-                                    ForEachWalkableNeighbour(n.x, n.y, function(nn)
-                                        if walkerMap[nn.y][nn.x].id ~= cWalker.wallId and tileMap[nn.y][nn.x].distanceToWall == cTile.distanceToWall - 1 then
+                                    ForEachPassableNeighbour(spawnId, goalId, n.x, n.y, function(nn)
+                                        if walkerMap[nn.y][nn.x].id ~= cWalker.wallId and tileMap[nn.y][nn.x].distanceToUnpassable == cTile.distanceToUnpassable - 1 then
                                             valid = false
                                             return
                                         end
@@ -437,7 +474,7 @@ local function Build()
                     SetNextWalkerStep(cWalker, cTile.x, cTile.y, parentDirection)
 
                     local nextX, nextY = StepInDirection(cTile.x, cTile.y, parentDirection)
-                    if Navigation.IsWalkable(nextX - 1, nextY - 1) and walkerMap[nextY][nextX].id == UNSET then
+                    if Navigation.IsPassable(spawnId, goalId, nextX - 1, nextY - 1) and walkerMap[nextY][nextX].id == UNSET then
                         tileMap[nextY][nextX].locked = true
 
                         table.insert(openList, { x = nextX, y = nextY })
@@ -454,11 +491,11 @@ local function Build()
                 x = x + 1
                 y = y + 1
 
-                if tileMap[y][x].distanceToWall == processedDistance and not tileMap[y][x].spawn and walkerMap[y][x].id ~= UNSET then
+                if tileMap[y][x].distanceToUnpassable == processedDistance and not tileMap[y][x].spawn and walkerMap[y][x].id ~= UNSET then
                     local cWalker = walkerMap[y][x]
 
-                    ForEachWalkableNeighbour(x, y, function(n)
-                        if tileMap[n.y][n.x].distanceToWall == processedDistance + 1 and walkerMap[n.y][n.x].id == UNSET then
+                    ForEachPassableNeighbour(spawnId, goalId, x, y, function(n)
+                        if tileMap[n.y][n.x].distanceToUnpassable == processedDistance + 1 and walkerMap[n.y][n.x].id == UNSET then
                             if not spawnMap[cWalker.id] or spawnMap[cWalker.id].distance > cWalker.distance then
                                 spawnMap[cWalker.id] = { distance = cWalker.distance, x = x, y = y }
                             end
@@ -471,7 +508,7 @@ local function Build()
             local anyAdded = false
             for wallId, spawnData in pairs(spawnMap) do
                 anyAdded = true
-                ForEachWalkableNeighbour(spawnData.x, spawnData.y, function(n)
+                ForEachPassableNeighbour(spawnId, goalId, spawnData.x, spawnData.y, function(n)
                     -- Check id here as well just in case it is modified in a
                     -- previous iteration. It probably wouldn't matter if it was,
                     -- though...
@@ -485,7 +522,7 @@ local function Build()
             end
 
             -- It is possible that it takes multiple runs of the loop to step on all
-            -- tiles with a distanceToWall of processedDistance + 1. In that case
+            -- tiles with a distanceToUnpassable of processedDistance + 1. In that case
             -- the same distance will be processed again
             if not anyAdded then
                 processedDistance = processedDistance + 1
@@ -503,12 +540,12 @@ local function Build()
         for y = 1, Navigation.sizeY do
             vectorField[y] = {}
             for x = 1, Navigation.sizeX do
-                if tileMap[y][x].distanceToWall == 0 then
+                if tileMap[y][x].distanceToUnpassable == 0 then
                     -- Make all unwalkable tiles that are adjacent to walkable tiles
                     -- push entities towards the walkable tile. This is in case
                     -- someone feels like wandering off the map
                     local toMap = { x = 0, y = 0 }
-                    ForEachAdjacentWalkable(x, y, function(n)
+                    ForEachAdjacentPassable(spawnId, goalId, x, y, function(n)
                         toMap.x = toMap.x + n.x - x
                         toMap.y = toMap.y + n.y - y
                     end)
@@ -527,9 +564,9 @@ local function Build()
             end
         end
 
-        -- Build vector field and place walls around walkable tiles
+        -- Build vector field
         Navigation.ForEachTile(function(x, y, _)
-            if not Navigation.IsWalkable(x, y) then
+            if not Navigation.IsPassable(spawnId, goalId, x, y) then
                 return
             end
 
@@ -537,15 +574,9 @@ local function Build()
             y = y + 1
 
             vectorField[y][x] = DirectionToVector(walkerMap[y][x].parentDirection)
-
-            ForEachUnwalkableNeighbour(x, y, function(n)
-                if n.direction ~= Direction.NONE then
-                    Navigation.SetWall(x - 1, y - 1, n.direction)
-                end
-            end)
         end)
 
-        local fieldId <const> = (goalId << 16) | spawnId
+        local vectorFieldId <const> = (spawnId << 16) | goalId
 
         if navigationState.smoothField then
             -- The only reason to not smooth the field is for troubleshooting
@@ -561,11 +592,11 @@ local function Build()
             -- TODO: Base area on tileSize instead of hard-coding it
             for y = 1, Navigation.sizeY do
                 for x = 1, Navigation.sizeX do
-                    if Navigation.IsWalkable(x - 1, y - 1) then
+                    if Navigation.IsPassable(spawnId, goalId, x - 1, y - 1) then
                         local average = { x = 0, y = 0 }
                         for yy = -2, 2 do
                             for xx = -2, 2 do
-                                if Navigation.IsWalkable(x + xx - 1, y + yy - 1) then
+                                if Navigation.IsPassable(spawnId, goalId, x + xx - 1, y + yy - 1) then
                                     local tileDir = vectorField[y + yy][x + xx]
                                     average.x = average.x + tileDir.x
                                     average.y = average.y + tileDir.y
@@ -584,16 +615,17 @@ local function Build()
                 end
             end
 
-            Navigation.SetVectorField(fieldId, finalVectorField)
+            Navigation.SetVectorField(vectorFieldId, finalVectorField)
         else
-            Navigation.SetVectorField(fieldId, vectorField)
+            Navigation.SetVectorField(vectorFieldId, vectorField)
         end
 
-        print("Navigation built for goal " .. goalId .. " and spawn " .. spawnId .. " with fieldId " .. fieldId)
+        print("Navigation built for goal " ..
+            goalId .. " and spawn " .. spawnId .. " with vectorFieldId " .. vectorFieldId)
     end
 end
 
 return {
     Build = Build,
-    DistanceToWall = DistanceToWall
+    DistanceToPassable = DistanceToUnpassable
 }

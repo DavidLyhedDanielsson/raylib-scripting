@@ -278,7 +278,7 @@ function imgui()
                     elseif menuBarState.drawTileInfo then
                         Raylib.DrawText(x .. "x" .. y, pos.x, pos.y - 14, 12)
                         Raylib.DrawText(tileMap[y][x].distance, pos.x, pos.y + 0, 12)
-                        Raylib.DrawText(tileMap[y][x].distanceToWall, pos.x, pos.y + 14, 12)
+                        Raylib.DrawText(tileMap[y][x].distanceToUnpassable, pos.x, pos.y + 14, 12)
                         if tileMap[y][x].locked then
                             Raylib.DrawText("locked", pos.x, pos.y + 28, 12)
                         end
