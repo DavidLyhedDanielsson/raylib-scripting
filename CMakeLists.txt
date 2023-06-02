@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.11)
+cmake_minimum_required(VERSION 3.26)
 project(raylib_test VERSION 0.1.0)
 
 # Used mostly for convenience things like std::numbers::pi and std::make_array

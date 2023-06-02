@@ -218,3 +218,9 @@ inline Vector3 Vector2Inflate(Vector2 v, float y = 0.0f)
 {
     return {.x = v.x, .y = y, .z = v.y};
 }
+
+inline Vector2 Vector2Round(Vector2 v)
+{
+    Vector2 result{.x = std::round(v.x), .y = std::round(v.y)};
+    return result;
+}

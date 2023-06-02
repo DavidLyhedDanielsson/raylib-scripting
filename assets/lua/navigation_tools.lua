@@ -34,7 +34,7 @@ end
 ---@param y integer
 ---@return integer
 local function DistanceToWall(x, y)
-    if not Navigation.Reachable(x - 1, y - 1) then
+    if not Navigation.IsReachable(x - 1, y - 1) then
         return 0
     end
 
@@ -46,7 +46,7 @@ local function DistanceToWall(x, y)
                 local x = x + rx
                 local y = y + ry
 
-                if not Navigation.Reachable(x - 1, y - 1) then
+                if not Navigation.IsReachable(x - 1, y - 1) then
                     return radius
                 end
             end
@@ -93,7 +93,7 @@ local function HasSharedWall(x, y, ox, oy, searchRadius)
 
     for yy = -searchRadius, searchRadius do
         for xx = -searchRadius, searchRadius do
-            if not Navigation.Walkable(x + xx - 1, y + yy - 1) then
+            if not Navigation.IsWalkable(x + xx - 1, y + yy - 1) then
                 -- Map from [-sR; sR] to [0; 2*sR]
                 local val = map[yy + searchRadius + offsetY][xx + searchRadius + offsetX]
                 map[yy + searchRadius + offsetY][xx + searchRadius + offsetX] = val + 1
@@ -107,7 +107,7 @@ local function HasSharedWall(x, y, ox, oy, searchRadius)
 
     for yy = -searchRadius, searchRadius do
         for xx = -searchRadius, searchRadius do
-            if not Navigation.Walkable(ox + xx - 1, oy + yy - 1) then
+            if not Navigation.IsWalkable(ox + xx - 1, oy + yy - 1) then
                 local val = map[yy + searchRadius + offsetY][xx + searchRadius + offsetX]
 
                 if val == 1 then
@@ -159,7 +159,7 @@ end
 ---@param func fun(n: Neighbour)
 local function ForEachUnwalkableNeighbour(x, y, func)
     for _, n in ipairs(GetNeighbours(x, y)) do
-        if not Navigation.Walkable(n.x - 1, n.y - 1) then
+        if not Navigation.IsWalkable(n.x - 1, n.y - 1) then
             func(n)
         end
     end
@@ -171,7 +171,7 @@ end
 ---@param func fun(n: Neighbour)
 local function ForEachWalkableNeighbour(x, y, func)
     for _, n in ipairs(GetNeighbours(x, y)) do
-        if Navigation.Walkable(n.x - 1, n.y - 1) then
+        if Navigation.IsWalkable(n.x - 1, n.y - 1) then
             func(n)
         end
     end
@@ -195,7 +195,7 @@ local function ForEachAdjacentWalkable(x, y, func)
         { x = x + 1, y = y + 1, },
     }
     for _, n in ipairs(neighbours) do
-        if Navigation.Walkable(n.x - 1, n.y - 1) then
+        if Navigation.IsWalkable(n.x - 1, n.y - 1) then
             func(n)
         end
     end
@@ -212,7 +212,7 @@ function IsAdjacentToWalker(x, y, walkerWallId)
             local x = x + rx
             local y = y + ry
 
-            if Navigation.Walkable(x - 1, y - 1) then
+            if Navigation.IsWalkable(x - 1, y - 1) then
                 if walkerMap[y][x].id == walkerWallId then
                     return true
                 end
@@ -415,7 +415,7 @@ local function Build()
                 SetNextWalkerStep(cWalker, cTile.x, cTile.y, parentDirection)
 
                 local nextX, nextY = StepInDirection(cTile.x, cTile.y, parentDirection)
-                if Navigation.Walkable(nextX - 1, nextY - 1) and walkerMap[nextY][nextX].id == UNSET then
+                if Navigation.IsWalkable(nextX - 1, nextY - 1) and walkerMap[nextY][nextX].id == UNSET then
                     tileMap[nextY][nextX].locked = true
 
                     table.insert(openList, { x = nextX, y = nextY })
@@ -507,7 +507,7 @@ local function Build()
 
     -- Build vector field and place walls around walkable tiles
     Navigation.ForEachTile(function(x, y, _)
-        if not Navigation.Walkable(x, y) then
+        if not Navigation.IsWalkable(x, y) then
             return
         end
 
@@ -537,11 +537,11 @@ local function Build()
         -- TODO: Base area on tileSize instead of hard-coding it
         for y = 1, Navigation.sizeY do
             for x = 1, Navigation.sizeX do
-                if Navigation.Walkable(x - 1, y - 1) then
+                if Navigation.IsWalkable(x - 1, y - 1) then
                     local average = { x = 0, y = 0 }
                     for yy = -2, 2 do
                         for xx = -2, 2 do
-                            if Navigation.Walkable(x + xx - 1, y + yy - 1) then
+                            if Navigation.IsWalkable(x + xx - 1, y + yy - 1) then
                                 local tileDir = vectorField[y + yy][x + xx]
                                 average.x = average.x + tileDir.x
                                 average.y = average.y + tileDir.y

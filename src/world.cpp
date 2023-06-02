@@ -444,10 +444,10 @@ namespace World
 
                 lua_getglobal(lua, "Navigation");
                 lua_pushstring(lua, "sizeX");
-                lua_pushinteger(lua, navigation.sizeX);
+                lua_pushinteger(lua, navigation.GetSizeX());
                 lua_settable(lua, -3);
                 lua_pushstring(lua, "sizeY");
-                lua_pushinteger(lua, navigation.sizeY);
+                lua_pushinteger(lua, navigation.GetSizeY());
                 lua_settable(lua, -3);
                 lua_pushstring(lua, "tileSize");
                 lua_pushnumber(lua, navigation.tileSize);
@@ -541,13 +541,13 @@ namespace World
 
         LuaRegister::PushRegister(
             lua,
-            "Reachable",
-            +[](lua_State* lua, int x, int y) { return navigation.Reachable(x, y); });
+            "IsReachable",
+            +[](lua_State* lua, int x, int y) { return navigation.IsReachable(x, y); });
 
         LuaRegister::PushRegister(
             lua,
-            "Walkable",
-            +[](lua_State* lua, int x, int y) { return navigation.Walkable(x, y); });
+            "IsWalkable",
+            +[](lua_State* lua, int x, int y) { return navigation.IsWalkable(x, y); });
 
         LuaRegister::PushRegister(
             lua,
@@ -579,7 +579,7 @@ namespace World
                     lua_pop(lua, 1);
                 }
 
-                navigation.vectorField = std::move(vectorField);
+                navigation.SetVectorField(0, std::move(vectorField));
             });
 
         LuaRegister::PushRegister(
@@ -728,7 +728,7 @@ namespace World
                 }
 
                 Vector2 force =
-                    navigation.GetForce({.x = transform.position.x, .y = transform.position.z});
+                    navigation.GetForce(0, {.x = transform.position.x, .y = transform.position.z});
 
                 Vector3 movementDirection = {force.x, 0.0f, force.y};
 
@@ -822,8 +822,8 @@ namespace World
                             .x = transform.position.x + currentSpeed * obstacleT,
                             .y = transform.position.z + currentSpeed * obstacleT,
                         },
-                        [&](Navigation::Tile tile, uint32_t x, uint32_t y) {
-                            tile.forEachWall([&](Navigation::Tile::Side side) {
+                        [&](const Navigation::Tile& tile, uint32_t x, uint32_t y) {
+                            tile.ForEachWall([&](Navigation::Tile::Side side) {
                                 Navigation::Wall wall = navigation.GetWall(x, y, side);
 
                                 std::optional<float> timeToCollisionOpt = TimeToCollisionCircleLine(
@@ -1020,7 +1020,10 @@ namespace World
         drawNavigation = lua_toboolean(lua, -1);
         lua_pop(lua, 2);
         if(drawNavigation)
-            navigation.Draw();
+        {
+            navigation.DrawField(0);
+            navigation.DrawTiles();
+        }
     }
 
     void DrawImgui()

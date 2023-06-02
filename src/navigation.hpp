@@ -5,13 +5,12 @@
 #include <cmath>
 #include <cstdint>
 #include <external/raylib.hpp>
+#include <unordered_map>
 #include <vector>
 
 class Navigation
 {
   public:
-    uint32_t sizeX;
-    uint32_t sizeY;
     float offsetX;
     float offsetY;
     float tileSize;
@@ -61,7 +60,7 @@ class Navigation
         int wallSides;
 
         template<typename Func>
-        void forEachWall(Func func)
+        void ForEachWall(Func func) const
         {
             if((wallSides & (int)Side::TOP) != 0)
                 func(Side::TOP);
@@ -81,25 +80,55 @@ class Navigation
         Vector2 normal;
     };
 
-    std::vector<std::vector<Tile>> tiles;
-    std::vector<std::vector<Vector2>> vectorField;
+    class VectorField
+    {
+      public:
+        std::vector<std::vector<Vector2>> vectors;
 
-    Vector2 GetTileSpace(Vector2 position) const;
-    void ConvertToTileSpace(Vector2& min, Vector2& max) const;
-    Vector2 ConvertToWorldSpace(uint32_t tileX, uint32_t tileY) const;
-    Wall GetWall(uint32_t tileX, uint32_t tileY, Tile::Side wallSide) const;
+        Vector2 GetForce(uint32_t x, uint32_t y) const;
+
+        template<typename Func>
+        void ForEach(const Func& func) const
+        {
+            for(uint32_t y = 0; y < vectors.size(); ++y)
+            {
+                for(uint32_t x = 0; x < vectors[y].size(); ++x)
+                    func(x, y, vectors[y][x]);
+            }
+        }
+    };
+
+    // If tiles change, so does the vector field, so keep it in the same struct
+    struct TileData
+    {
+        std::vector<std::vector<Tile>> tiles;
+        std::unordered_map<int32_t, VectorField> vectorFields;
+    } tileData;
 
     Navigation();
     Navigation(Vector2 min, Vector2 max, float offsetX, float offsetY, float tileSize);
 
-    void Build();
-
     template<typename Func>
     void ForEachTile(const Func& func)
     {
-        for(uint32_t y = 0; y < tiles.size(); ++y)
+        // Possible use for const_cast?
+        for(uint32_t y = 0; y < tileData.tiles.size(); ++y)
         {
-            const auto& row = tiles[y];
+            auto& row = tileData.tiles[y];
+            for(uint32_t x = 0; x < row.size(); ++x)
+            {
+                if(row[x].type != Tile::NONE)
+                    func(x, y, row[x]);
+            }
+        }
+    }
+
+    template<typename Func>
+    void ForEachTile(const Func& func) const
+    {
+        for(uint32_t y = 0; y < tileData.tiles.size(); ++y)
+        {
+            const auto& row = tileData.tiles[y];
             for(uint32_t x = 0; x < row.size(); ++x)
             {
                 if(row[x].type != Tile::NONE)
@@ -127,11 +156,14 @@ class Navigation
         if(min.y == max.y)
             max.y += 1.0f;
 
+        const auto sizeY = tileData.tiles.size();
         for(auto y = (uint32_t)min.y; y < (uint32_t)max.y; ++y)
         {
             if(y < 0 || y >= sizeY)
                 continue;
-            auto& row = tiles[y];
+
+            auto& row = tileData.tiles[y];
+            const auto sizeX = row.size();
             for(auto x = (uint32_t)min.x; x < (uint32_t)max.x; ++x)
             {
                 if(x < 0 || x >= sizeX)
@@ -149,20 +181,28 @@ class Navigation
         }
     }
 
-    Vector2 GetForce(Vector2 position);
+    Vector2 GetForce(int32_t goal, Vector2 position) const;
+    Wall GetWall(uint32_t tileX, uint32_t tileY, Tile::Side wallSide) const;
+    uint32_t GetSizeX() const;
+    uint32_t GetSizeY() const;
 
     void SetWalkable(Vector2 min, Vector2 max);
     void SetGoal(Vector2 min, Vector2 max);
     void SetSpawn(Vector2 min, Vector2 max);
     void SetObstacle(Vector2 min, Vector2 max);
-
     void SetWall(uint64_t x, uint64_t y, Tile::Side side);
+    void SetVectorField(uint32_t goal, const std::vector<std::vector<Vector2>>& field);
+    void SetVectorField(uint32_t goal, std::vector<std::vector<Vector2>>&& field);
 
-    bool Valid(int64_t x, int64_t y);
-    bool Reachable(int64_t x, int64_t y);
-    bool Walkable(int64_t x, int64_t y);
+    bool IsValid(int64_t x, int64_t y) const;
+    bool IsReachable(int64_t x, int64_t y) const;
+    bool IsWalkable(int64_t x, int64_t y) const;
+    bool IsGoal(Vector3 position) const;
 
-    bool IsGoal(Vector3 position);
+    Vector2 GetTileSpace(Vector2 position) const;
+    Vector2 ConvertToWorldSpace(uint32_t tileX, uint32_t tileY) const;
+    void ConvertToTileSpace(Vector2& min, Vector2& max) const;
 
-    void Draw();
+    void DrawTiles() const;
+    void DrawField(int32_t goal) const;
 };

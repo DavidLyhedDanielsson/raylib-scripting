@@ -1,17 +1,13 @@
 #include "navigation.hpp"
-#include "raylib.h"
-#include "raymath.h"
 
 #include <cassert>
+#include <external/raylib.hpp>
 #include <limits>
-#include <queue>
 
 Navigation::Navigation() {}
 
 Navigation::Navigation(Vector2 min, Vector2 max, float offsetX, float offsetY, float tileSize)
-    : sizeX((uint32_t)((max.x - min.x) / tileSize)) // If size is 5, [0; 5] are all valid positions
-    , sizeY((uint32_t)((max.y - min.y) / tileSize))
-    , offsetX(offsetX)
+    : offsetX(offsetX)
     , offsetY(offsetY)
     , tileSize(tileSize)
 {
@@ -19,56 +15,31 @@ Navigation::Navigation(Vector2 min, Vector2 max, float offsetX, float offsetY, f
     assert(max.x >= min.x);
     assert(max.y >= min.y);
 
-    tiles.resize(
-        this->sizeY,
+    tileData = {
+        .tiles = {},
+        .vectorFields = {},
+    };
+
+    // If size is 5, [0; 5] are all valid positions
+    tileData.tiles.resize(
+        (max.y - min.y) / tileSize,
         std::vector<Tile>(
-            this->sizeX,
+            (max.x - min.x) / tileSize,
             Tile{.type = Tile::NONE, .wallSides = (int32_t)Tile::Side::NONE}));
 }
 
-void Navigation::Build()
+Vector2 Navigation::GetForce(int32_t goal, Vector2 position) const
 {
-    // This is implemented in lua now!
-    assert(false);
-}
+    auto [x, y] = GetTileSpace(position);
 
-Vector2 Navigation::GetForce(Vector2 position)
-{
-    Vector2 offset = {.x = -this->offsetX, .y = -this->offsetY};
-    position = Vector2Add(position, offset);
-    position = Vector2Scale(position, 1.0f / this->tileSize);
+    if(IsValid((int64_t)x, (int64_t)y))
+    {
+        auto iter = tileData.vectorFields.find(goal);
+        if(iter != tileData.vectorFields.end())
+            return iter->second.GetForce((int32_t)x, (int32_t)y);
+    }
 
-    if(Valid((int64_t)position.x, (int64_t)position.y))
-        return vectorField[(int)position.y][(int)position.x];
-    else
-        return Vector2Zero();
-}
-
-Vector2 Vector2Round(Vector2 v)
-{
-    Vector2 result{.x = std::round(v.x), .y = std::round(v.y)};
-    return result;
-}
-
-Vector2 Navigation::GetTileSpace(Vector2 position) const
-{
-    Vector2 offset = {.x = -this->offsetX, .y = -this->offsetY};
-    return Vector2Round(Vector2Scale(Vector2Add(position, offset), 1.0f / tileSize));
-}
-
-void Navigation::ConvertToTileSpace(Vector2& min, Vector2& max) const
-{
-    Vector2 offset = {.x = -this->offsetX, .y = -this->offsetY};
-    min = Vector2Round(Vector2Scale(Vector2Add(min, offset), 1.0f / tileSize));
-    max = Vector2Round(Vector2Scale(Vector2Add(max, offset), 1.0f / tileSize));
-}
-
-Vector2 Navigation::ConvertToWorldSpace(uint32_t tileX, uint32_t tileY) const
-{
-    return {
-        .x = (float)tileX * tileSize + offsetX,
-        .y = (float)tileY * tileSize + offsetY,
-    };
+    return Vector2Zero();
 }
 
 Navigation::Wall Navigation::GetWall(uint32_t tileX, uint32_t tileY, Tile::Side wallSide) const
@@ -120,6 +91,19 @@ Navigation::Wall Navigation::GetWall(uint32_t tileX, uint32_t tileY, Tile::Side 
     assert(false && "No you");
 }
 
+uint32_t Navigation::GetSizeX() const
+{
+    if(tileData.tiles.empty())
+        return 0;
+
+    return tileData.tiles[0].size();
+}
+
+uint32_t Navigation::GetSizeY() const
+{
+    return tileData.tiles.size();
+}
+
 void Navigation::SetWalkable(Vector2 min, Vector2 max)
 {
     ForArea(min, max, [](Tile& tile) { tile.type = Tile::WALKABLE; });
@@ -142,89 +126,123 @@ void Navigation::SetObstacle(Vector2 min, Vector2 max)
 
 void Navigation::SetWall(uint64_t x, uint64_t y, Tile::Side side)
 {
-    if(Reachable(x, y))
-        tiles[y][x].wallSides |= (int32_t)side;
+    if(IsReachable(x, y))
+        tileData.tiles[y][x].wallSides |= (int32_t)side;
 }
 
-bool Navigation::Valid(int64_t x, int64_t y)
+void Navigation::SetVectorField(uint32_t goal, const std::vector<std::vector<Vector2>>& field)
 {
-    if(x < 0 || x >= sizeX)
+    tileData.vectorFields[goal] = VectorField{.vectors = field};
+}
+
+void Navigation::SetVectorField(uint32_t goal, std::vector<std::vector<Vector2>>&& field)
+{
+    tileData.vectorFields[goal] = VectorField{.vectors = std::move(field)};
+}
+
+bool Navigation::IsValid(int64_t x, int64_t y) const
+{
+    if(y < 0 || y >= (int64_t)tileData.tiles.size())
         return false;
-    if(y < 0 || y >= sizeY)
+    if(x < 0 || x >= (int64_t)tileData.tiles[0].size())
         return false;
 
     return true;
 }
 
-bool Navigation::Reachable(int64_t x, int64_t y)
+bool Navigation::IsReachable(int64_t x, int64_t y) const
 {
-    return Valid(x, y) && tiles[y][x].type != Tile::NONE;
+    return IsValid(x, y) && tileData.tiles[y][x].type != Tile::NONE;
 }
 
-bool Navigation::Walkable(int64_t x, int64_t y)
+bool Navigation::IsWalkable(int64_t x, int64_t y) const
 {
-    return Valid(x, y) && tiles[y][x].type != Tile::NONE && tiles[y][x].type != Tile::OBSTACLE;
+    return IsValid(x, y) && tileData.tiles[y][x].type != Tile::NONE
+           && tileData.tiles[y][x].type != Tile::OBSTACLE;
 }
 
-bool Navigation::IsGoal(Vector3 pos)
+bool Navigation::IsGoal(Vector3 pos) const
 {
     auto tilePos = GetTileSpace({.x = pos.x, .y = pos.z});
-    if(!Reachable((int64_t)tilePos.x, (int64_t)tilePos.y))
+    if(!IsReachable((int64_t)tilePos.x, (int64_t)tilePos.y))
         return false;
-    return tiles[(int64_t)tilePos.y][(int64_t)tilePos.x].type == Tile::GOAL;
+    return tileData.tiles[(int64_t)tilePos.y][(int64_t)tilePos.x].type == Tile::GOAL;
 }
 
-void Navigation::Draw()
+Vector2 Navigation::GetTileSpace(Vector2 position) const
 {
-    for(uint32_t y = 0; y < vectorField.size(); ++y)
-    {
-        for(uint32_t x = 0; x < vectorField[y].size(); ++x)
-        {
-            auto direction = vectorField[y][x];
-            Vector3 start = {
-                .x = (float)x * tileSize + offsetX + tileSize * 0.5f,
-                .y = 0.2f,
-                .z = (float)y * tileSize + offsetY + tileSize * 0.5f};
-            Vector3 end = Vector3Add(
-                start,
-                Vector3Scale({.x = direction.x, .y = 0.0f, .z = direction.y}, tileSize * 0.75f));
+    Vector2 offset = {.x = -this->offsetX, .y = -this->offsetY};
+    return Vector2Round(Vector2Scale(Vector2Add(position, offset), 1.0f / tileSize));
+}
 
-            Color color = [&]() {
-                switch(tiles[y][x].type)
-                {
-                    case(Tile::GOAL): return GREEN;
-                    case(Tile::SPAWN): return BLUE;
-                    default: return RED;
-                }
-            }();
+void Navigation::ConvertToTileSpace(Vector2& min, Vector2& max) const
+{
+    Vector2 offset = {.x = -this->offsetX, .y = -this->offsetY};
+    min = Vector2Round(Vector2Scale(Vector2Add(min, offset), 1.0f / tileSize));
+    max = Vector2Round(Vector2Scale(Vector2Add(max, offset), 1.0f / tileSize));
+}
 
-            // DrawSphere(start, 0.1f, color);
-            DrawCube(start, 0.1f, 0.1f, 0.1f, ColorAlpha(color, 0.2f));
-            DrawLine3D(start, end, color);
-        }
-    }
+Vector2 Navigation::ConvertToWorldSpace(uint32_t tileX, uint32_t tileY) const
+{
+    return {
+        .x = (float)tileX * tileSize + offsetX,
+        .y = (float)tileY * tileSize + offsetY,
+    };
+}
 
-    for(uint32_t y = 0; y < tiles.size(); ++y)
-    {
-        for(uint32_t x = 0; x < tiles[y].size(); ++x)
-        {
-            tiles[y][x].forEachWall([&](Tile::Side side) {
-                Wall wall = GetWall(x, y, side);
-                DrawLine3D(
-                    Vector3{wall.start.x, 0.5f, wall.start.y},
-                    {wall.end.x, 0.5f, wall.end.y},
-                    ORANGE);
+void Navigation::DrawTiles() const
+{
+    ForEachTile([&](uint32_t x, uint32_t y, const Tile& tile) {
+        tile.ForEachWall([&](Tile::Side side) {
+            Wall wall = GetWall(x, y, side);
+            DrawLine3D(
+                Vector3{wall.start.x, 0.5f, wall.start.y},
+                {wall.end.x, 0.5f, wall.end.y},
+                ORANGE);
 
-                Vector2 center = Vector2Add(
-                    wall.start,
-                    Vector2Scale(Vector2Subtract(wall.end, wall.start), 0.5f));
-                DrawLine3D(
+            Vector2 center =
+                Vector2Add(wall.start, Vector2Scale(Vector2Subtract(wall.end, wall.start), 0.5f));
+            DrawLine3D(
+                {center.x, 0.5f, center.y},
+                Vector3Add(
                     {center.x, 0.5f, center.y},
-                    Vector3Add(
-                        {center.x, 0.5f, center.y},
-                        {.x = wall.normal.x, .y = 0.0f, .z = wall.normal.y}),
-                    ORANGE);
-            });
-        }
-    }
+                    {.x = wall.normal.x, .y = 0.0f, .z = wall.normal.y}),
+                ORANGE);
+        });
+    });
+}
+
+void Navigation::DrawField(int32_t goal) const
+{
+    auto iter = tileData.vectorFields.find(goal);
+    if(iter == tileData.vectorFields.end())
+        return;
+
+    const auto& vectorField = iter->second;
+    vectorField.ForEach([&](uint32_t x, uint32_t y, Vector2 direction) {
+        Vector3 start = {
+            .x = (float)x * tileSize + offsetX + tileSize * 0.5f,
+            .y = 0.2f,
+            .z = (float)y * tileSize + offsetY + tileSize * 0.5f};
+        Vector3 end = Vector3Add(
+            start,
+            Vector3Scale({.x = direction.x, .y = 0.0f, .z = direction.y}, tileSize * 0.75f));
+
+        Color color = [&]() {
+            switch(tileData.tiles[y][x].type)
+            {
+                case(Tile::GOAL): return GREEN;
+                case(Tile::SPAWN): return BLUE;
+                default: return RED;
+            }
+        }();
+
+        DrawCube(start, 0.1f, 0.1f, 0.1f, ColorAlpha(color, 0.2f));
+        DrawLine3D(start, end, color);
+    });
+}
+
+Vector2 Navigation::VectorField::GetForce(uint32_t x, uint32_t y) const
+{
+    return this->vectors[y][x];
 }
