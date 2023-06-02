@@ -23,7 +23,7 @@ class Navigation
             WALKABLE,
             SPAWN,
             GOAL,
-            OBSTACLE,
+            NAV_GATE,
         };
         enum class Side
         {
@@ -56,7 +56,8 @@ class Navigation
             } goal;
             struct
             {
-            } obstacle;
+                uint32_t allowedGoalId;
+            } navGate;
         };
         int wallSides;
 
@@ -190,7 +191,7 @@ class Navigation
     void SetWalkable(Vector2 min, Vector2 max);
     void SetGoal(uint32_t id, Vector2 min, Vector2 max);
     void SetSpawn(uint32_t id, uint32_t goalId, Vector2 min, Vector2 max);
-    void SetObstacle(Vector2 min, Vector2 max);
+    void SetNavGate(uint32_t allowedGoalId, Vector2 min, Vector2 max);
     void SetWall(uint64_t x, uint64_t y, Tile::Side side);
     void SetVectorField(uint32_t fieldId, const std::vector<std::vector<Vector2>>& field);
     void SetVectorField(uint32_t fieldId, std::vector<std::vector<Vector2>>&& field);

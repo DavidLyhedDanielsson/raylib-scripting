@@ -18,7 +18,7 @@
 #include <entity/health.hpp>
 #include <entity/max_range.hpp>
 #include <entity/move_towards.hpp>
-#include <entity/obstacle.hpp>
+#include <entity/nav_gate.hpp>
 #include <entity/projectile.hpp>
 #include <entity/render.hpp>
 #include <entity/tile.hpp>
@@ -318,7 +318,10 @@ namespace LuaRegister
                 lua_pushinteger(lua, tile.goal.id);
                 lua_setfield(lua, -2, "id");
                 break;
-            case Navigation::Tile::OBSTACLE: break;
+            case Navigation::Tile::NAV_GATE:
+                lua_pushinteger(lua, tile.navGate.allowedGoalId);
+                lua_setfield(lua, -2, "allowedGoalId");
+                break;
         }
     };
 
@@ -401,8 +404,9 @@ namespace World
                         }
                     });
 
-                world.registry->view<Component::Obstacle, Component::Render, Component::Transform>()
+                world.registry->view<Component::NavGate, Component::Render, Component::Transform>()
                     .each([&](entt::entity entity,
+                              Component::NavGate navGate,
                               Component::Render render,
                               Component::Transform transform) {
                         auto bounds = BoundingBoxTransform(
@@ -416,7 +420,7 @@ namespace World
                         Vector2 max =
                             Vector2Add({transform.position.x, transform.position.z}, maxBounds);
 
-                        navigation.SetObstacle(min, max);
+                        navigation.SetNavGate(navGate.allowedGoalId, min, max);
                     });
 
                 world.registry

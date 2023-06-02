@@ -1,22 +1,23 @@
 local EntityTools = require("entity_tools")
 
-local function Multiple(entities)
-    local defaultComponents = {
-        Render = { assetName = "Barrel" },
-        Transform = { position = { x = 0, y = 0, z = 0 }, rotation = { x = 0, y = 0, z = 0 } },
-        Velocity = { x = 0.0, y = 0.0, z = 0.0 },
-        Tile = {},
-        EnemyGoal = { id = 0 },
-        EnemySpawn = { goalId = 0 },
-        MoveTowards = {},
-        Projectile = { damage = 1 },
-        Health = { currentHealth = 2 },
-        MaxRange = { maxDistance = 99999999, distanceFrom = { x = 0, y = 0, z = 0 } },
-        AreaTracker = { offset = { x = 0, y = 0, z = 0 }, size = { x = 2, y = 2, z = 2 } },
-        Walkable = {},
-        Obstacle = {},
-    }
+local defaultComponents = {
+    Render = { assetName = "Barrel" },
+    Transform = { position = { x = 0, y = 0, z = 0 }, rotation = { x = 0, y = 0, z = 0 } },
+    Velocity = { x = 0.0, y = 0.0, z = 0.0 },
+    Tile = {},
+    EnemyGoal = { id = 0 },
+    EnemySpawn = { id = 0, goalId = 0 },
+    MoveTowards = {},
+    Projectile = { damage = 1 },
+    Health = { currentHealth = 2 },
+    MaxRange = { maxDistance = 99999999, distanceFrom = { x = 0, y = 0, z = 0 } },
+    AreaTracker = { offset = { x = 0, y = 0, z = 0 }, size = { x = 2, y = 2, z = 2 } },
+    Walkable = {},
+    NavGate = { allowedGoalId = 0 },
+    Behaviour = { script = "" }
+}
 
+local function Multiple(entities)
     if ImGui.BeginCombo("##addcomponent", "Add component") then
         for componentName, default in pairs(defaultComponents) do
             if ImGui.Selectable(componentName) then
@@ -37,37 +38,21 @@ local function Single(entity)
     end
 
     local components = {
-        Render = {
-            hasComponent = Entity.HasComponent("Render", entity),
-            default = { assetName = "Barrel" }
-        },
-        Transform = {
-            hasComponent = Entity.HasComponent("Transform", entity),
-            default = { position = { x = 0, y = 0, z = 0 }, rotation = { x = 0, y = 0, z = 0 } }
-        },
-        Velocity = {
-            hasComponent = Entity.HasComponent("Velocity", entity),
-            default = { x = 0.0, y = 0.0, z = 0.0 }
-        },
-        Tile = { hasComponent = Entity.HasComponent("Tile", entity) },
-        EnemyGoal = { hasComponent = Entity.HasComponent("EnemyGoal", entity), default = { id = 0 } },
-        EnemySpawn = { hasComponent = Entity.HasComponent("EnemySpawn", entity), default = { goalId = 0 } },
-        Camera = { hasComponent = Entity.HasComponent("Camera", entity) },
-        MoveTowards = { hasComponent = Entity.HasComponent("MoveTowards", entity) },
-        Projectile = { hasComponent = Entity.HasComponent("Projectile", entity), default = { damage = 1 } },
-        Health = { hasComponent = Entity.HasComponent("Health", entity), default = { currentHealth = 2 } },
-        MaxRange = {
-            hasComponent = Entity.HasComponent("MaxRange", entity),
-            -- This has to be configured manually
-            default = { maxDistance = 99999999, distanceFrom = { x = 0, y = 0, z = 0 } }
-        },
-        AreaTracker = {
-            hasComponent = Entity.HasComponent("AreaTracker", entity),
-            default = { offset = { x = 0, y = 0, z = 0 }, size = { x = 2, y = 2, z = 2 } }
-        },
-        Walkable = { hasComponent = Entity.HasComponent("Walkable", entity) },
-        Obstacle = { hasComponent = Entity.HasComponent("Obstacle", entity) },
-        Behaviour = { hasComponent = Entity.HasComponent("Behaviour", entity), default = { script = "" } },
+        Render = Entity.HasComponent("Render", entity),
+        Transform = Entity.HasComponent("Transform", entity),
+        Velocity = Entity.HasComponent("Velocity", entity),
+        Tile = Entity.HasComponent("Tile", entity),
+        EnemyGoal = Entity.HasComponent("EnemyGoal", entity),
+        EnemySpawn = Entity.HasComponent("EnemySpawn", entity),
+        Camera = Entity.HasComponent("Camera", entity),
+        MoveTowards = Entity.HasComponent("MoveTowards", entity),
+        Projectile = Entity.HasComponent("Projectile", entity),
+        Health = Entity.HasComponent("Health", entity),
+        MaxRange = Entity.HasComponent("MaxRange", entity),
+        AreaTracker = Entity.HasComponent("AreaTracker", entity),
+        Walkable = Entity.HasComponent("Walkable", entity),
+        NavGate = Entity.HasComponent("NavGate", entity),
+        Behaviour = Entity.HasComponent("Behaviour", entity),
     }
 
     -- Debugging code that is unlikely to be useful again
@@ -80,8 +65,8 @@ local function Single(entity)
     --     ImGui.Text(DistanceToWall(tilePos.x, tilePos.y))
     -- end
 
-    for componentName, info in pairs(components) do
-        if info.hasComponent then
+    for componentName, hasComponent in pairs(components) do
+        if hasComponent then
             local open, clicked = ImGui.CollapsingHeaderToggle(componentName, true)
             if open then
                 Entity.ImGuiModify(componentName, entity)
@@ -94,10 +79,10 @@ local function Single(entity)
     end
 
     if ImGui.BeginCombo("##addcomponent", "Add component") then
-        for componentName, info in pairs(components) do
-            if not info.hasComponent and componentName ~= "Camera" then
+        for componentName, hasComponent in pairs(components) do
+            if not hasComponent and componentName ~= "Camera" then
                 if ImGui.Selectable(componentName) then
-                    EntityTools.AddComponentOrPrintError(componentName, entity, info.default)
+                    EntityTools.AddComponentOrPrintError(componentName, entity, defaultComponents[componentName])
                 end
             end
         end

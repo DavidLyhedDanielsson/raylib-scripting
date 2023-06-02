@@ -126,9 +126,12 @@ void Navigation::SetSpawn(uint32_t id, uint32_t goalId, Vector2 min, Vector2 max
     });
 }
 
-void Navigation::SetObstacle(Vector2 min, Vector2 max)
+void Navigation::SetNavGate(uint32_t allowedGoalId, Vector2 min, Vector2 max)
 {
-    ForArea(min, max, [](Tile& tile) { tile.type = Tile::OBSTACLE; });
+    ForArea(min, max, [&](Tile& tile) {
+        tile.type = Tile::NAV_GATE;
+        tile.navGate.allowedGoalId = allowedGoalId;
+    });
 }
 
 void Navigation::SetWall(uint64_t x, uint64_t y, Tile::Side side)
@@ -165,7 +168,7 @@ bool Navigation::IsReachable(int64_t x, int64_t y) const
 bool Navigation::IsWalkable(int64_t x, int64_t y) const
 {
     return IsValid(x, y) && tileData.tiles[y][x].type != Tile::NONE
-           && tileData.tiles[y][x].type != Tile::OBSTACLE;
+           && tileData.tiles[y][x].type != Tile::NAV_GATE;
 }
 
 bool Navigation::IsGoal(Vector3 pos) const

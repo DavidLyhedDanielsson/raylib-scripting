@@ -9,7 +9,7 @@
 #include "reflection_health.hpp"
 #include "reflection_max_range.hpp"
 #include "reflection_move_towards.hpp"
-#include "reflection_obstacle.hpp"
+#include "reflection_nav_gate.hpp"
 #include "reflection_projectile.hpp"
 #include "reflection_render.hpp"
 #include "reflection_tile.hpp"
