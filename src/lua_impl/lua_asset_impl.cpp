@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <fstream>
 #include <lua_impl/lua_register.hpp>
+#include <vector>
 
 namespace LuaAsset
 {

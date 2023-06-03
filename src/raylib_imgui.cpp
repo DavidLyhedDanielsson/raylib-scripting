@@ -139,9 +139,9 @@ ImGuiKey TranslateKey(KeyboardKey key)
 void RaylibImGui::Init()
 {
     ImGui::CreateContext();
-    ImGui::GetStyle().ScaleAllSizes(GetWindowScaleDPI().x);
+    // ImGui::GetStyle().ScaleAllSizes(GetWindowScaleDPI().x);
     ImGui::GetIO().BackendPlatformName = "custom_raylib_impl";
-    ImGui::GetIO().FontGlobalScale = std::floor(GetWindowScaleDPI().x);
+    // ImGui::GetIO().FontGlobalScale = std::floor(GetWindowScaleDPI().x);
 
     ImGui_ImplOpenGL3_Init();
 }
@@ -309,9 +309,10 @@ void RaylibImGui::Begin()
 
     if(!IsWindowMinimized())
     {
-        io.AddMousePosEvent(
-            (float)GetMouseX() * GetWindowScaleDPI().x,
-            (float)GetMouseY() * GetWindowScaleDPI().y);
+        io.AddMousePosEvent((float)GetMouseX(), (float)GetMouseY());
+        // io.AddMousePosEvent(
+        //     (float)GetMouseX() * GetWindowScaleDPI().x,
+        //     (float)GetMouseY() * GetWindowScaleDPI().y);
         const static int mouseButtons[] = {
             MOUSE_BUTTON_LEFT,
             MOUSE_BUTTON_RIGHT,
