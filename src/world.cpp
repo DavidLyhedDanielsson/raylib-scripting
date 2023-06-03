@@ -779,7 +779,10 @@ namespace World
 
                 const Vector2 velocity = {.x = velocityComponent.x, .y = velocityComponent.z};
                 Vector2 forces =
-                    Vector2Scale(Vector2Subtract({goalVelocity.x, goalVelocity.z}, velocity), ksi);
+                    Vector2Scale(Vector2Subtract(Vector3Flatten(goalVelocity), velocity), ksi);
+                float forceScaleFactor = ksi / 2.0f;
+                if(ksi < 2.0f)
+                    forceScaleFactor = 1.0f;
 
                 forces =
                     Vector2Add(forces, Vector2Scale({randomNumber(mt), randomNumber(mt)}, 0.5f));
@@ -830,8 +833,8 @@ namespace World
                             if(magnitude > 10.0f)
                                 magnitude = 10.0f;
 
-                            forces.x += avoidanceForce.x * magnitude;
-                            forces.y += avoidanceForce.y * magnitude;
+                            forces.x += avoidanceForce.x * magnitude * forceScaleFactor;
+                            forces.y += avoidanceForce.y * magnitude * forceScaleFactor;
                         }
                         else
                         {
@@ -846,8 +849,8 @@ namespace World
                             if(magnitude > 20.0f)
                                 magnitude = 20.0f;
 
-                            forces.x += avoidanceForce.x * magnitude;
-                            forces.y += avoidanceForce.y * magnitude;
+                            forces.x += avoidanceForce.x * magnitude * forceScaleFactor;
+                            forces.y += avoidanceForce.y * magnitude * forceScaleFactor;
                         }
                     }
                 });
