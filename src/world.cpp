@@ -638,7 +638,7 @@ namespace World
             lua_pushnil(lua);
         lua_settable(lua, -3);
         lua_pushstring(lua, "ksi");
-        lua_pushnumber(lua, 10.0f);
+        lua_pushnumber(lua, 6.0f);
         lua_settable(lua, -3);
         lua_pushstring(lua, "avoidanceLookAhead");
         lua_pushnumber(lua, 3.0f);

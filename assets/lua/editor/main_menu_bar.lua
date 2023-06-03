@@ -61,7 +61,7 @@ local function Window()
                     EntityTools.AddComponentOrPrintError("Transform", entity,
                         { position = spawnPosition, rotation = { x = 0, y = 0, z = 0 } })
                     EntityTools.AddComponentOrPrintError("MoveTowards", entity,
-                        { vectorFieldId = (spawnId << 16) | goalId, speed = 2.5 })
+                        { vectorFieldId = (spawnId << 16) | goalId, speed = 1.5 })
                     EntityTools.AddComponentOrPrintError("Velocity", entity,
                         { x = 0, y = 0, z = 0 })
                     EntityTools.AddComponentOrPrintError("Acceleration", entity,
@@ -85,7 +85,7 @@ local function Window()
                             EntityTools.AddComponentOrPrintError("Transform", entity,
                                 { position = spawnPosition, rotation = { x = 0, y = 0, z = 0 } })
                             EntityTools.AddComponentOrPrintError("MoveTowards", entity,
-                                { vectorFieldId = (spawnId << 16) | goalId, speed = 2.5 })
+                                { vectorFieldId = (spawnId << 16) | goalId, speed = 1.5 })
                             EntityTools.AddComponentOrPrintError("Velocity", entity,
                                 { x = 0, y = 0, z = 0 })
                             EntityTools.AddComponentOrPrintError("Acceleration", entity,
