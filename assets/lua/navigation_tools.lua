@@ -199,12 +199,10 @@ local function ForEachUnpassableNeighbour(spawnId, goalId, x, y, func)
 end
 
 ---Runs the given function for _all adjacent_ neighbours that are walkable
----@param spawnId integer
----@param goalId integer
 ---@param x integer
 ---@param y integer
 ---@param func fun(n: {x: integer, y: integer})
-local function ForEachAdjacentPassable(spawnId, goalId, x, y, func)
+local function ForEachAdjacentReachable(x, y, func)
     local neighbours = {
         { x = x - 1, y = y - 1, },
         { x = x - 1, y = y, },
@@ -218,7 +216,7 @@ local function ForEachAdjacentPassable(spawnId, goalId, x, y, func)
         { x = x + 1, y = y + 1, },
     }
     for _, n in ipairs(neighbours) do
-        if Navigation.IsPassable(spawnId, goalId, n.x - 1, n.y - 1) then
+        if Navigation.IsReachable(n.x - 1, n.y - 1) then
             func(n)
         end
     end
@@ -470,11 +468,18 @@ local function Build()
                                     end
                                 end
                             end
-                        else
-                            if Navigation.IsNavGate(n.x - 1, n.y - 1) then
-                                table.insert(gateList, { x = n.x, y = n.y })
-                                SetNextWalkerStep(cWalker, n.x, n.y, n.opposite)
-                            end
+                        elseif Navigation.IsNavGate(n.x - 1, n.y - 1) then
+                            -- This should only happen when processedDistance == 1,
+                            -- but I'm sure it will break if I move it...
+
+                            -- When a NavGate is found, use Dijkstras to move
+                            -- back towards the "valid" portion of the map
+
+                            -- Hijack the walkermap distance so another map doesn't
+                            -- have to be created
+                            walkerMap[n.y][n.x].distance = 0
+                            walkerMap[n.y][n.x].parentDirection = n.opposite
+                            table.insert(gateList, { x = n.x, y = n.y })
                         end
                     end)
                 else
@@ -494,30 +499,19 @@ local function Build()
             end
 
             while #gateList > 0 do
-                local cTile, cWalker = GetNextTile(gateList)
+                ---@class GateTile
+                ---@field x integer
+                ---@field y integer
+                local current = table.remove(gateList, 1)
+                local cWalker = walkerMap[current.y][current.x]
 
-                ForEachNeighbour(cTile.x, cTile.y, function(n)
-                    if walkerMap[n.y][n.x].id == UNSET then
-                        if IsAdjacentToWalker(spawnId, goalId, n.x, n.y, cWalker.wallId) then
-                            local valid = true
-                            if cWalker.wallId == 0 then
-                                if not HasSharedWall(spawnId, goalId, cTile.x, cTile.y, n.x, n.y, cTile.distanceToUnpassable) then
-                                    valid = false
-                                end
-                            else
-                                ForEachNeighbour(n.x, n.y, function(nn)
-                                    if walkerMap[nn.y][nn.x].id ~= cWalker.wallId and tileMap[nn.y][nn.x].distanceToUnpassable == cTile.distanceToUnpassable - 1 then
-                                        valid = false
-                                        return
-                                    end
-                                end)
-                            end
+                ForEachNeighbour(current.x, current.y, function(n)
+                    local nWalker = walkerMap[n.y][n.x]
+                    if nWalker.id == UNSET and nWalker.distance > cWalker.distance + 1 then
+                        nWalker.distance = cWalker.distance + 1
+                        nWalker.parentDirection = n.opposite
 
-                            if valid then
-                                table.insert(gateList, { x = n.x, y = n.y })
-                                SetNextWalkerStep(cWalker, n.x, n.y, n.opposite)
-                            end
-                        end
+                        table.insert(gateList, { x = n.x, y = n.y })
                     end
                 end)
             end
@@ -584,7 +578,7 @@ local function Build()
                     -- push entities towards the walkable tile. This is in case
                     -- someone feels like wandering off the map
                     local toMap = { x = 0, y = 0 }
-                    ForEachAdjacentPassable(spawnId, goalId, x, y, function(n)
+                    ForEachAdjacentReachable(x, y, function(n)
                         toMap.x = toMap.x + n.x - x
                         toMap.y = toMap.y + n.y - y
                     end)
