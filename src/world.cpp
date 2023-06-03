@@ -787,6 +787,8 @@ namespace World
                 forces =
                     Vector2Add(forces, Vector2Scale({randomNumber(mt), randomNumber(mt)}, 0.5f));
 
+                Vector2 separationForce = Vector2Zero();
+
                 Profiling::ProfileCall("EntityAvoidance", [&]() {
                     for(auto [otherEntity, otherTransform, otherHealth] :
                         world.registry->view<Component::Transform, Component::Health>().each())
@@ -807,11 +809,19 @@ namespace World
                         {
                             otherVelocity = {.x = oVel->ToVector3().x, .y = oVel->ToVector3().z};
                         };
-
                         Vector2 position = {transform.position.x, transform.position.z};
                         Vector2 otherPosition = {
                             otherTransform.position.x,
                             otherTransform.position.z};
+
+                        if(distance < 1.0f)
+                        {
+                            separationForce = Vector2Add(
+                                separationForce,
+                                Vector2Scale(
+                                    Vector2DirectionTo(otherPosition, position),
+                                    1.0f / distance));
+                        }
 
                         std::optional<float> timeToCollision = TimeToCollisionSphere(
                             position,
@@ -854,6 +864,9 @@ namespace World
                         }
                     }
                 });
+
+                forces.x += separationForce.x;
+                forces.y += separationForce.y;
 
                 Profiling::ProfileCall("ObstacleAvoidance", [&]() {
                     Vector2 position = {.x = transform.position.x, .y = transform.position.z};
