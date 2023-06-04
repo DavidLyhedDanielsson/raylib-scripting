@@ -1,5 +1,6 @@
 #include "navigation.hpp"
 
+#include <algorithm>
 #include <cassert>
 #include <external/raylib.hpp>
 #include <limits>
@@ -112,8 +113,21 @@ void Navigation::SetWalkable(Vector2 min, Vector2 max)
 void Navigation::SetGoal(uint32_t id, Vector2 min, Vector2 max)
 {
     ForArea(min, max, [&](Tile& tile) {
+        assert(tile.goal.numberOfIds < 8);
+        if(tile.goal.numberOfIds == 8)
+            return;
+
+        if(tile.type != Tile::GOAL)
+            tile.goal.numberOfIds = 0;
+
+        for(uint32_t i = 0; i < tile.goal.numberOfIds; ++i)
+        {
+            if(tile.goal.ids[i] == id)
+                return;
+        }
+
         tile.type = Tile::GOAL;
-        tile.goal.id = id;
+        tile.goal.ids[tile.goal.numberOfIds++] = id;
     });
 }
 
@@ -129,8 +143,20 @@ void Navigation::SetSpawn(uint32_t id, uint32_t goalId, Vector2 min, Vector2 max
 void Navigation::SetNavGate(uint32_t allowedGoalId, Vector2 min, Vector2 max)
 {
     ForArea(min, max, [&](Tile& tile) {
+        assert(tile.navGate.numberOfGoalIds < 8);
+        if(tile.navGate.numberOfGoalIds == 8)
+            return;
+
+        for(uint32_t i = 0; i < tile.navGate.numberOfGoalIds; ++i)
+        {
+            if(tile.navGate.allowedGoalIds[i] == allowedGoalId)
+                return;
+        }
+
+        if(tile.type != Tile::NAV_GATE)
+            tile.navGate.numberOfGoalIds = 0;
         tile.type = Tile::NAV_GATE;
-        tile.navGate.allowedGoalId = allowedGoalId;
+        tile.navGate.allowedGoalIds[tile.navGate.numberOfGoalIds++] = allowedGoalId;
     });
 }
 
@@ -191,7 +217,14 @@ bool Navigation::IsPassable(uint32_t spawnId, uint32_t goalId, int64_t x, int64_
         return true;
 
     if(IsNavGate(x, y))
-        return tileData.tiles[y][x].navGate.allowedGoalId == goalId;
+    {
+        for(int i = 0; i < tileData.tiles[y][x].navGate.numberOfGoalIds; ++i)
+        {
+            if(tileData.tiles[y][x].navGate.allowedGoalIds[i] == goalId)
+                return true;
+        }
+        return false;
+    }
 
     // if(IsSpawn(x, y))
     //     return tileData.tiles[y][x].spawn.id == spawnId;
@@ -199,7 +232,14 @@ bool Navigation::IsPassable(uint32_t spawnId, uint32_t goalId, int64_t x, int64_
         return true;
 
     if(IsGoal(x, y))
-        return tileData.tiles[y][x].goal.id == goalId;
+    {
+        for(int i = 0; i < tileData.tiles[y][x].goal.numberOfIds; ++i)
+        {
+            if(tileData.tiles[y][x].goal.ids[i] == goalId)
+                return true;
+        }
+        return false;
+    }
 
     return false;
 }

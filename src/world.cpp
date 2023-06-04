@@ -315,12 +315,22 @@ namespace LuaRegister
                 lua_setfield(lua, -2, "goalId");
                 break;
             case Navigation::Tile::GOAL:
-                lua_pushinteger(lua, tile.goal.id);
-                lua_setfield(lua, -2, "id");
+                lua_createtable(lua, 0, 0);
+                for(int i = 0; i < tile.goal.numberOfIds; ++i)
+                {
+                    lua_pushinteger(lua, tile.goal.ids[i]);
+                    lua_rawseti(lua, -2, i + 1);
+                }
+                lua_setfield(lua, -2, "ids");
                 break;
             case Navigation::Tile::NAV_GATE:
-                lua_pushinteger(lua, tile.navGate.allowedGoalId);
-                lua_setfield(lua, -2, "allowedGoalId");
+                lua_createtable(lua, 0, 0);
+                for(int i = 0; i < tile.navGate.numberOfGoalIds; ++i)
+                {
+                    lua_pushinteger(lua, tile.navGate.allowedGoalIds[i]);
+                    lua_rawseti(lua, -2, i + 1);
+                }
+                lua_setfield(lua, -2, "allowedGoalIds");
                 break;
         }
     };
@@ -391,7 +401,8 @@ namespace World
 
                         if(auto goal = world.registry->try_get<Component::EnemyGoal>(entity); goal)
                         {
-                            navigation.SetGoal(goal->id, min, max);
+                            for(auto id : goal->ids)
+                                navigation.SetGoal(id, min, max);
                         }
                         else if(auto spawn = world.registry->try_get<Component::EnemySpawn>(entity);
                                 spawn)
@@ -420,7 +431,8 @@ namespace World
                         Vector2 max =
                             Vector2Add({transform.position.x, transform.position.z}, maxBounds);
 
-                        navigation.SetNavGate(navGate.allowedGoalId, min, max);
+                        for(uint32_t i = 0; i < navGate.allowedGoalIds.size(); ++i)
+                            navigation.SetNavGate(navGate.allowedGoalIds[i], min, max);
                     });
 
                 world.registry
@@ -440,7 +452,8 @@ namespace World
                         Vector2 max =
                             Vector2Add({transform.position.x, transform.position.z}, maxBounds);
 
-                        navigation.SetGoal(goal.id, min, max);
+                        for(auto id : goal.ids)
+                            navigation.SetGoal(id, min, max);
                     });
 
                 world.registry

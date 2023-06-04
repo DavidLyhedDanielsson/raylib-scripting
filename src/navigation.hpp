@@ -2,8 +2,11 @@
 
 #include "raylib.h"
 #include "raymath.h"
+#include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdint>
+#include <cstring>
 #include <external/raylib.hpp>
 #include <unordered_map>
 #include <vector>
@@ -52,11 +55,16 @@ class Navigation
             } spawn;
             struct
             {
-                uint32_t id;
+                std::array<uint32_t, 8> ids;
+                uint8_t numberOfIds;
             } goal;
             struct
             {
-                uint32_t allowedGoalId;
+                // 8 allowed, this wastes so much memory. Could be a uint8_t but
+                // it wouldn't align with everything else that is uint32_t.
+                // Placing a vector in a union is not very fun.
+                std::array<uint32_t, 8> allowedGoalIds;
+                uint8_t numberOfGoalIds;
             } navGate;
         };
         int wallSides;

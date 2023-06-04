@@ -1,11 +1,12 @@
 #pragma once
 
 #include <cstdint>
+#include <vector>
 
 namespace Component
 {
     struct NavGate
     {
-        uint32_t allowedGoalId;
+        std::vector<uint32_t> allowedGoalIds;
     };
 }

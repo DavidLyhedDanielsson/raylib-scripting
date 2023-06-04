@@ -417,11 +417,18 @@ local function Build()
             x = x + 1
             y = y + 1
 
-            if tile.type == Navigation.TileType.GOAL and tile.id == goalId and tileMap[y][x].distanceToUnpassable == 1 then
-                walkerMap[y][x].wallId = 0
-                walkerMap[y][x].distance = 0
-                walkerMap[y][x].id = GetId()
-                table.insert(openList, { x = x, y = y })
+            if tile.type == Navigation.TileType.GOAL and tileMap[y][x].distanceToUnpassable == 1 then
+                local found = false
+                for _, v in ipairs(tile.ids) do
+                    if v == goalId then found = true end
+                end
+
+                if found then
+                    walkerMap[y][x].wallId = 0
+                    walkerMap[y][x].distance = 0
+                    walkerMap[y][x].id = GetId()
+                    table.insert(openList, { x = x, y = y })
+                end
             elseif tile.type == Navigation.TileType.SPAWN and tile.id == spawnId then
                 tileMap[y][x].spawn = true
             end

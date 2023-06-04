@@ -1,9 +1,12 @@
 #pragma once
 
+#include <cstdint>
+#include <vector>
+
 namespace Component
 {
     struct EnemyGoal
     {
-        int id;
+        std::vector<uint32_t> ids;
     };
 }
