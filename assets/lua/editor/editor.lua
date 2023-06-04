@@ -264,7 +264,7 @@ function imgui()
                 })
                 if pos.x > 0 and pos.y > 0 then
                     if menuBarState.drawWalkerInfo then
-                        if walkerMap[y][x].id ~= -1 then
+                        if walkerMap[y][x].wallId ~= -1 then
                             Raylib.DrawText(walkerMap[y][x].id, pos.x, pos.y - 14, 12)
                             Raylib.DrawText(walkerMap[y][x].distance, pos.x, pos.y, 12)
                             Raylib.DrawText(walkerMap[y][x].wallId, pos.x, pos.y + 14, 12)

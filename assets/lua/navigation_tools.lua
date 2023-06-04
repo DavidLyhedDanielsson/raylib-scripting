@@ -349,6 +349,7 @@ local function Build()
         ---@type integer
         local goalId = esComponent.goalId
 
+
         if configs[spawnId] ~= nil and configs[spawnId] ~= goalId then
             print("Spawn id ", spawnId, " targets both ", goalId, " and ", configs[spawnId])
         else

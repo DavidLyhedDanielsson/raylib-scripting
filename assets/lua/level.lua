@@ -1,15 +1,29 @@
 local EntityTools = require("entity_tools")
 
 local function WriteFile(file, tab)
-    for key, value in pairs(tab) do
-        if type(value) == "table" then
-            file:write(key, "={")
-            WriteFile(file, value)
-            file:write("},")
-        elseif type(value) == "string" then
-            file:write(key, "=\"", value, "\",")
-        else
-            file:write(key, "=", value, ",")
+    if #tab > 0 then
+        for _, value in ipairs(tab) do
+            if type(value) == "table" then
+                file:write("{")
+                WriteFile(file, value)
+                file:write("},")
+            elseif type(value) == "string" then
+                file:write("\"", value, "\",")
+            else
+                file:write(value, ",")
+            end
+        end
+    else
+        for key, value in pairs(tab) do
+            if type(value) == "table" then
+                file:write(key, "={")
+                WriteFile(file, value)
+                file:write("},")
+            elseif type(value) == "string" then
+                file:write(key, "=\"", value, "\",")
+            else
+                file:write(key, "=", value, ",")
+            end
         end
     end
 end
