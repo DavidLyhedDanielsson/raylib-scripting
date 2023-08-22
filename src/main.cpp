@@ -35,9 +35,11 @@ using dmicroseconds = std::chrono::duration<double, std::micro>;
 using dmilliseconds = std::chrono::duration<double, std::milli>;
 using dseconds = std::chrono::duration<double>;
 
-std::chrono::steady_clock::time_point last;
+static std::chrono::steady_clock::time_point last;
 
-lua_State* luaState;
+static lua_State* luaState;
+
+// Lua coroutine support, they simply sleep for the yielded amount of time
 struct LuaThread
 {
     int refIndex;
@@ -45,31 +47,35 @@ struct LuaThread
     dmilliseconds sleepTime;
 };
 static std::vector<LuaThread> luaThreads;
-entt::registry registry;
+static entt::registry registry;
 
 #ifndef SKIP_CONSOLE
-// Hacky lua console
-std::array<char, 256> inputBuffer;
-bool scrollDown = false;
-bool addCommandToHistory = false;
-std::vector<std::string> history;
+// Hacky lua console, allows command execution and output to be shown
+static std::array<char, 256> inputBuffer;
+static bool scrollDown = false;
+static bool addCommandToHistory = false;
+static std::vector<std::string> history;
 #endif
 
-std::string currentLuaFile = "menu.lua";
+// Support switching which lua file is currently executed
+static std::string currentLuaFile = "menu.lua";
 
 void main_loop()
 {
     Profiling::NewFrame();
 
+    // Update running coroutines
     auto threadNow = std::chrono::steady_clock::now();
     for(uint32_t i = 0; i < luaThreads.size(); ++i)
     {
         LuaThread& thread = luaThreads[i];
 
+        // Sleep time has not yet been reached; do nothing
         auto sleepGoal = thread.sleepStart + thread.sleepTime;
         if(sleepGoal > threadNow)
             continue;
 
+        // Thread state is stored in the registry
         lua_rawgeti(luaState, LUA_REGISTRYINDEX, thread.refIndex);
         lua_State* luaThread = lua_tothread(luaState, -1);
         lua_getglobal(luaThread, "func");
@@ -78,18 +84,22 @@ void main_loop()
         auto ret = lua_resume(luaThread, luaState, 0, &nres);
         if(ret == LUA_OK)
         {
+            // Coroutine returned (it didn't yield), so it is done executing
             luaL_unref(luaState, LUA_REGISTRYINDEX, thread.refIndex);
             luaThreads.erase(luaThreads.begin() + i);
             --i;
         }
         else if(ret == LUA_YIELD)
         {
+            // Coroutine yielded the number of ms it should sleep
             assert(lua_isnumber(luaThread, nres));
             thread.sleepStart = std::chrono::steady_clock::now();
             thread.sleepTime = dmilliseconds{lua_tointeger(luaThread, nres)};
         }
         else
         {
+            // Error :(
+            // Coroutine execution is stopped
             std::cerr << "Error when executing coroutine: " << lua_tostring(luaThread, -1)
                       << std::endl;
             luaL_traceback(luaState, luaThread, nullptr, 0);
@@ -103,21 +113,23 @@ void main_loop()
             --i;
         }
     }
-    PROFILE_CALL(World::Update);
 
-    // Calculate time delta
-    auto now = std::chrono::steady_clock::now();
-    dmilliseconds deltaMs = now - last;
-    last = now;
+    // This macro calls the given function and profiles it
+    PROFILE_CALL(World::Update);
 
     BeginDrawing();
 
     ClearBackground(DARKGRAY);
 
+    //// Uncomment to show FPS
+    // auto now = std::chrono::steady_clock::now();
+    // dmilliseconds deltaMs = now - last;
+    // last = now;
     // char buf[128];
     // sprintf(buf, "Frame time: %f", deltaMs.count());
     // DrawText(buf, 0, 64, 20, LIGHTGRAY);
 
+    // Convert camera entity to the Raylib camera struct
     Camera camera;
     for(auto [entity, transform, cameraComponent] :
         registry.view<Component::Transform, Component::Camera>().each())
@@ -131,6 +143,9 @@ void main_loop()
         };
     }
 
+    // Reload the current lua file every frame. This is useful for debugging/development but
+    // should be disabled when the game is "released".
+    // luaError signals that no lua functions can be called since some error occurred during dofile
     bool luaError = false;
     Profiling::ProfileCall("Load currentLuaFile", [&]() {
         auto res = luaL_dofile(luaState, LuaFilePath(currentLuaFile.c_str()).data());
@@ -142,22 +157,12 @@ void main_loop()
         }
     });
 
+    //// 3D rendering
     PROFILE_CALL(BeginMode3D, camera);
     PROFILE_CALL(World::Draw);
 
-    // Profiling::ProfileCall("Execute editor.lua::raylib", [&]() {
-    //     if(!guiError)
-    //     {
-    //         lua_getglobal(luaState, "raylib");
-    //         if(lua_pcall(luaState, 0, 0, 0) != LUA_OK)
-    //         {
-    //             std::cerr << "Error when executing editor.lua:raylib" << std::endl;
-    //             std::cerr << lua_tostring(luaState, -1) << std::endl;
-    //             guiError = true;
-    //         }
-    //     }
-    // });
-
+    // Call the raylib3D function in the currently loaded lua file. It needs to be separated from
+    // the 2D rendering because Raylib requires 3D code to be wrapped in BeginMode3D/EndMode3D
     if(!luaError)
     {
         lua_getglobal(luaState, "raylib3D");
@@ -177,6 +182,7 @@ void main_loop()
 
     PROFILE_CALL(EndMode3D);
 
+    //// 2D rendering
     if(!luaError)
     {
         lua_getglobal(luaState, "raylib2D");
@@ -195,7 +201,6 @@ void main_loop()
     }
 
     PROFILE_CALL(RaylibImGui::Begin);
-
     PROFILE_CALL(World::DrawImgui);
 
     // Imgui might update the camera
@@ -249,21 +254,24 @@ void main_loop()
     ImGui::End();
 #endif
 
-    lua_getglobal(luaState, "imgui");
-    if(lua_isfunction(luaState, -1))
+    if(!luaError)
     {
-        Profiling::ProfileCall("Execute lua::imgui", [&]() {
-            if(lua_pcall(luaState, 0, 0, 0) != LUA_OK)
-            {
-                std::cerr << "Error when executing lua::imgui:" << std::endl;
-                std::cerr << lua_tostring(luaState, -1) << std::endl;
-                lua_pop(luaState, 1);
-                ErrorCheckEndWindowRecover();
-            }
-        });
+        lua_getglobal(luaState, "imgui");
+        if(lua_isfunction(luaState, -1))
+        {
+            Profiling::ProfileCall("Execute lua::imgui", [&]() {
+                if(lua_pcall(luaState, 0, 0, 0) != LUA_OK)
+                {
+                    std::cerr << "Error when executing lua::imgui:" << std::endl;
+                    std::cerr << lua_tostring(luaState, -1) << std::endl;
+                    lua_pop(luaState, 1);
+                    ErrorCheckEndWindowRecover();
+                }
+            });
+        }
+        else
+            lua_pop(luaState, 1);
     }
-    else
-        lua_pop(luaState, 1);
 
     // Camera might be modified by lua
     for(auto [entity, transform, cameraComponent] :
@@ -282,9 +290,10 @@ void main_loop()
 
     PROFILE_CALL(RaylibImGui::End);
 
-    if(!ImGui::GetIO().WantCaptureMouse && IsKeyDown(KEY_LEFT_ALT))
+    if(!ImGui::GetIO().WantCaptureMouse && IsMouseButtonDown(MOUSE_RIGHT_BUTTON))
         UpdateCamera(&camera, CAMERA_THIRD_PERSON);
 
+    // Finally, save the current camera into the camera entity
     for(auto [entity, transform, cameraComponent] :
         registry.view<Component::Transform, Component::Camera>().each())
     {
@@ -332,42 +341,26 @@ static int lua_print(lua_State* state)
 }
 #endif
 
-int main()
+static bool keepRunning = true;
+void Register()
 {
-    const int screenWidth = 1280;
-    const int screenHeight = 720;
+    // Set lua PATH. Works the same as the PATH system variable in Windows and *nix
+    {
+        lua_getglobal(luaState, "package");
+        lua_getfield(luaState, -1, "path");
+        std::string path = lua_tostring(luaState, -1);
+        lua_pop(luaState, 1);
 
-    SetConfigFlags(FLAG_WINDOW_RESIZABLE);
-    SetConfigFlags(FLAG_MSAA_4X_HINT);
-    // SetConfigFlags(FLAG_WINDOW_HIGHDPI);
-    InitWindow(screenWidth, screenHeight, "Raylib test");
-    RaylibImGui::Init();
+        if(!path.empty())
+            path += ";";
+        path += DASSET_ROOT;
+        path += "/lua/?.lua";
+        lua_pushstring(luaState, path.c_str());
+        lua_setfield(luaState, -2, "path");
+        lua_pop(luaState, 1);
+    }
 
-    // Create lua state and perform initial setup
-    luaState = luaL_newstate();
-    luaL_openlibs(luaState);
-    // Use our own print function
-#ifndef SKIP_CONSOLE
-    const luaL_Reg printarr[] = {{"print", lua_print}, {NULL, NULL}};
-    lua_getglobal(luaState, "_G");
-    luaL_setfuncs(luaState, printarr, 0);
-    lua_pop(luaState, 1);
-#endif
-
-    lua_getglobal(luaState, "package");
-
-    lua_getfield(luaState, -1, "path");
-    std::string val = lua_tostring(luaState, -1);
-    lua_pop(luaState, 1);
-
-    if(!val.empty())
-        val += ";";
-    val += DASSET_ROOT;
-    val += "/lua/?.lua";
-    lua_pushstring(luaState, val.c_str());
-    lua_setfield(luaState, -2, "path");
-    lua_pop(luaState, 1);
-
+    // Register lua functions to work with coroutines
     lua_pushcclosure(
         luaState,
         [](lua_State* lua) {
@@ -393,63 +386,15 @@ int main()
         },
         0);
     lua_setglobal(luaState, "RegisterThread");
+
     lua_pushcclosure(
         luaState,
-        [](lua_State* lua) {
+        [](lua_State*) {
             luaThreads.clear();
             return 0;
         },
         0);
     lua_setglobal(luaState, "StopAllThreads");
-
-    last = std::chrono::steady_clock::now();
-
-    LoadAssets();
-
-    World::Init(&registry, luaState);
-
-    auto cameraComponent = Component::Camera{
-        .target = {0.0f, 0.0f, 0.0f},
-        .up = {0.0f, 1.0f, 0.0f},
-        .fovy = 45.0f,
-        .projection = CAMERA_PERSPECTIVE,
-    };
-    auto cameraEntity = registry.create();
-    registry.emplace<Component::Camera>(cameraEntity, cameraComponent);
-    registry.emplace<Component::Transform>(
-        cameraEntity,
-        Component::Transform{
-            .position{10.0f, 10.0f, 10.0f},
-            .rotation{0.0f, 0.0f, 0.0f},
-        });
-
-    World::Register(luaState);
-    LuaAsset::Register(luaState);
-    LuaEntt::Register(luaState, &registry);
-    LuaImGui::Register(luaState);
-    LuaImGuizmo::Register(luaState, &registry);
-    LuaRaylib::Register(luaState, &registry);
-
-    auto res = luaL_loadfile(luaState, LuaFilePath(currentLuaFile.c_str()).data());
-    if(res != LUA_OK)
-    {
-        std::cerr << "Couldn't load " << currentLuaFile << " or error occurred ";
-        return 1;
-    }
-    lua_pcall(luaState, 0, 0, 0);
-
-    lua_getglobal(luaState, "init");
-    lua_pcall(luaState, 0, 0, 0);
-
-    static bool keepRunning = true;
-    lua_pushcclosure(
-        luaState,
-        +[](lua_State* lua) {
-            keepRunning = false;
-            return 0;
-        },
-        0);
-    lua_setglobal(luaState, "Exit");
 
     lua_pushcclosure(
         luaState,
@@ -483,6 +428,83 @@ int main()
         },
         0);
     lua_setglobal(luaState, "SetLuaFile");
+
+    lua_pushcclosure(
+        luaState,
+        +[](lua_State*) {
+            keepRunning = false;
+            return 0;
+        },
+        0);
+    lua_setglobal(luaState, "Exit");
+}
+
+int main()
+{
+    const int screenWidth = 1280;
+    const int screenHeight = 720;
+
+    //// Init Raylib
+    SetConfigFlags(FLAG_WINDOW_RESIZABLE);
+    SetConfigFlags(FLAG_MSAA_4X_HINT);
+    InitWindow(screenWidth, screenHeight, "Raylib + ImGui + EnTT");
+    RaylibImGui::Init();
+
+    //// Init lua
+    // Create lua state and perform initial setup
+    luaState = luaL_newstate();
+    luaL_openlibs(luaState);
+
+#ifndef SKIP_CONSOLE
+    // Redirect output to the console to view it in-game
+    const luaL_Reg printarr[] = {{"print", lua_print}, {NULL, NULL}};
+    lua_getglobal(luaState, "_G");
+    luaL_setfuncs(luaState, printarr, 0);
+    lua_pop(luaState, 1);
+#endif
+
+    // Register lua functions related to each piece of functionality
+    Register();
+    World::Register(luaState);
+    LuaAsset::Register(luaState);
+    LuaEntt::Register(luaState, &registry);
+    LuaImGui::Register(luaState);
+    LuaImGuizmo::Register(luaState, &registry);
+    LuaRaylib::Register(luaState, &registry);
+
+    //// General init
+    last = std::chrono::steady_clock::now();
+
+    LoadAssets();
+    World::Init(&registry, luaState);
+
+    auto cameraComponent = Component::Camera{
+        .target = {0.0f, 0.0f, 0.0f},
+        .up = {0.0f, 1.0f, 0.0f},
+        .fovy = 45.0f,
+        .projection = CAMERA_PERSPECTIVE,
+    };
+    auto cameraEntity = registry.create();
+    registry.emplace<Component::Camera>(cameraEntity, cameraComponent);
+    registry.emplace<Component::Transform>(
+        cameraEntity,
+        Component::Transform{
+            .position{10.0f, 10.0f, 10.0f},
+            .rotation{0.0f, 0.0f, 0.0f},
+        });
+
+    // Load this file after all the setup since it might use the world, camera, or something else
+    // The file must be valid at startup
+    auto res = luaL_loadfile(luaState, LuaFilePath(currentLuaFile.c_str()).data());
+    if(res != LUA_OK)
+    {
+        std::cerr << "Couldn't load " << currentLuaFile << " or error occurred ";
+        return 1;
+    }
+    lua_pcall(luaState, 0, 0, 0);
+
+    lua_getglobal(luaState, "init");
+    lua_pcall(luaState, 0, 0, 0);
 
 #ifdef PLATFORM_WEB
     emscripten_set_main_loop(main_loop, 0, 1);
