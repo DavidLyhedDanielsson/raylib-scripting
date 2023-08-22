@@ -14,6 +14,7 @@
 #include "../../libs/raygui-custom/raygui.h"
 
 #include <cmath>
+#include <limits>
 
 inline BoundingBox BoundingBoxTransform(BoundingBox box, Vector3 translation)
 {

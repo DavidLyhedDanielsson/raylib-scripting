@@ -139,9 +139,20 @@ ImGuiKey TranslateKey(KeyboardKey key)
 void RaylibImGui::Init()
 {
     ImGui::CreateContext();
-    // ImGui::GetStyle().ScaleAllSizes(GetWindowScaleDPI().x);
-    ImGui::GetIO().BackendPlatformName = "custom_raylib_impl";
-    // ImGui::GetIO().FontGlobalScale = std::floor(GetWindowScaleDPI().x);
+    auto& io = ImGui::GetIO();
+    io.BackendPlatformName = "custom_raylib_impl";
+    io.BackendFlags |= ImGuiBackendFlags_HasMouseCursors;
+    io.BackendFlags |= ImGuiBackendFlags_HasSetMousePos;
+
+    // String is allocated/deallocated by GLFW so perhaps there's some undefined behaviour here
+    io.SetClipboardTextFn = [](void*, const char* text) {
+        SetClipboardText(text);
+    };
+    io.GetClipboardTextFn = [](void*) {
+        return ImGui::GetClipboardText();
+    };
+    io.ClipboardUserData = nullptr;
+    io.SetPlatformImeDataFn = nullptr; // No IME shenanigans
 
     ImGui_ImplOpenGL3_Init();
 }
@@ -270,6 +281,40 @@ void RaylibImGui::Begin()
 {
     ImGuiIO& io = ImGui::GetIO();
 
+    //// Order follows imgui_impl_sdl
+    // No touch support
+
+    // SDL_EVENT_MOUSE_MOTION
+    int mouseX = GetMouseX();
+    int mouseY = GetMouseY();
+    if(io.MousePos.x != mouseX || io.MousePos.y != mouseY)
+        io.AddMousePosEvent((float)mouseX, (float)mouseY);
+
+    // SDL_EVENT_MOUSE_WHEEL
+    Vector2 mouseWheel = GetMouseWheelMoveV();
+    if(mouseWheel.x != 0.0f || mouseWheel.y != 0.0f)
+    {
+        io.AddMouseWheelEvent(mouseWheel.x, mouseWheel.y);
+    }
+
+    // SDL_EVENT_MOUSE_BUTTON_[DOWN|UP]
+    const static int mouseButtons[] = {MOUSE_BUTTON_LEFT, MOUSE_BUTTON_RIGHT, MOUSE_BUTTON_MIDDLE};
+    for(int i = 0; i < 3; ++i)
+    {
+        io.AddMouseButtonEvent(i, IsMouseButtonDown(mouseButtons[i]));
+    }
+
+    // SDL_EVENT_TEXT_INPUT
+    // There is a difference between "the key that represents W was pressed" and
+    // "the user typed a W", so this is handled separately
+    for(int keyPressed = GetCharPressed(); keyPressed != 0; keyPressed = GetCharPressed())
+    {
+        // Not explicitly using UTF8 or UTF16
+        io.AddInputCharacter(keyPressed);
+    }
+
+    // SDL_EVENT_KEY_[DOWN|UP]
+    // Loop through all watched keys and send events to imgui if required
     for(uint32_t i = 0; i < WATCHED_KEYS.size(); ++i)
     {
         auto key = WATCHED_KEYS[i];
@@ -281,6 +326,7 @@ void RaylibImGui::Begin()
             if(translatedKey != -1)
             {
                 io.AddKeyEvent(translatedKey, currentlyDown);
+                // io.SetKeyEventNativeData required for imgui < 1.87
 
                 // Modifier keys are set separately in imgui for platform
                 // compatibility
@@ -292,6 +338,8 @@ void RaylibImGui::Begin()
                     case KEY_RIGHT_SHIFT: io.AddKeyEvent(ImGuiKey_ModShift, currentlyDown); break;
                     case KEY_LEFT_ALT:
                     case KEY_RIGHT_ALT: io.AddKeyEvent(ImGuiKey_ModAlt, currentlyDown); break;
+                    case KEY_LEFT_SUPER:
+                    case KEY_RIGHT_SUPER: io.AddKeyEvent(ImGuiKey_ModSuper, currentlyDown); break;
                     default: break;
                 }
             }
@@ -300,50 +348,19 @@ void RaylibImGui::Begin()
         watchedKeyStates[i] = currentlyDown;
     }
 
-    // There is a difference between "the key that represents W was pressed" and
-    // "the user typed a W", so this is handled separately
-    for(int keyPressed = GetCharPressed(); keyPressed != 0; keyPressed = GetCharPressed())
+    // No SDL_EVENT_WINDOW_MOUSE_[ENTER|LEAVE]
+    // No SDL_EVENT_WINDOW_FOCUS_[GAINED|LOST]
+
+    int width = GetRenderWidth();
+    int height = GetRenderHeight();
+    if(IsWindowMinimized())
     {
-        io.AddInputCharacter(keyPressed);
+        width = 0;
+        height = 0;
     }
 
-    if(!IsWindowMinimized())
-    {
-        io.AddMousePosEvent((float)GetMouseX(), (float)GetMouseY());
-        // io.AddMousePosEvent(
-        //     (float)GetMouseX() * GetWindowScaleDPI().x,
-        //     (float)GetMouseY() * GetWindowScaleDPI().y);
-        const static int mouseButtons[] = {
-            MOUSE_BUTTON_LEFT,
-            MOUSE_BUTTON_RIGHT,
-            MOUSE_BUTTON_MIDDLE};
-        for(int i = 0; i < 3; ++i)
-        {
-            io.AddMouseButtonEvent(i, IsMouseButtonDown(mouseButtons[i]));
-        }
-    }
-    else
-    {
-        io.AddMousePosEvent(-1.0f, -1.0f);
-    }
-
-    if(GetMouseWheelMove() != 0)
-    {
-        io.AddMouseWheelEvent(0.0f, GetMouseWheelMove());
-    }
-
-    /*if (!(io.ConfigFlags & ImGuiConfigFlags_NoMouseCursorChange))
-    {
-        ImGuiMouseCursor imguiCursor = ImGui::GetMouseCursor();
-        if (io.MouseDrawCursor || imguiCursor == ImGuiMouseCursor_None)
-        {
-            HideCursor();
-        }
-        else
-        {
-            ShowCursor();
-        }
-    }*/
+    io.DisplaySize = ImVec2((float)width, (float)height);
+    io.DisplayFramebufferScale = ImVec2(1.0f, 1.0f);
 
     // Avoids having to pass in delta time
     double currentTime = GetTime();
@@ -353,8 +370,19 @@ void RaylibImGui::Begin()
     io.DeltaTime = lastTime > 0.0 ? (float)(delta) : (float)(1.0f / 60.0f);
     lastTime = currentTime;
 
-    ImGui::GetIO().DisplaySize.x = (float)GetRenderWidth();
-    ImGui::GetIO().DisplaySize.y = (float)GetRenderHeight();
+    if(IsWindowFocused())
+    {
+        if(io.WantSetMousePos)
+            SetMousePosition(io.MousePos.x, io.MousePos.y);
+    }
+
+    if((io.ConfigFlags & ImGuiConfigFlags_NoMouseCursorChange) == 0)
+    {
+        if(io.MouseDrawCursor || ImGui::GetMouseCursor() == ImGuiMouseCursor_None)
+            HideCursor();
+        else
+            ShowCursor(); // No custom cursor shenanigans
+    }
 
     ImGui_ImplOpenGL3_NewFrame();
     ImGui::NewFrame();
