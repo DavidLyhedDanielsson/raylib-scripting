@@ -47,11 +47,13 @@ struct LuaThread
 static std::vector<LuaThread> luaThreads;
 entt::registry registry;
 
+#ifndef SKIP_CONSOLE
 // Hacky lua console
 std::array<char, 256> inputBuffer;
 bool scrollDown = false;
 bool addCommandToHistory = false;
 std::vector<std::string> history;
+#endif
 
 std::string currentLuaFile = "menu.lua";
 
@@ -209,6 +211,7 @@ void main_loop()
         };
     }
 
+#ifndef SKIP_CONSOLE
     ImGui::SetNextWindowPos({400.0f, 400.0f}, ImGuiCond_Once);
     ImGui::Begin("Lua console");
     ImGui::SameLine();
@@ -244,6 +247,7 @@ void main_loop()
     last_history_size = history.size();
     ImGui::EndChild();
     ImGui::End();
+#endif
 
     lua_getglobal(luaState, "imgui");
     if(lua_isfunction(luaState, -1))
@@ -298,6 +302,7 @@ void main_loop()
     Profiling::EndFrame();
 }
 
+#ifndef SKIP_CONSOLE
 // Function to write to the console output window instead of stdout when `print` is used in lua
 static int lua_print(lua_State* state)
 {
@@ -325,6 +330,7 @@ static int lua_print(lua_State* state)
 
     return 0;
 }
+#endif
 
 int main()
 {
@@ -341,10 +347,12 @@ int main()
     luaState = luaL_newstate();
     luaL_openlibs(luaState);
     // Use our own print function
+#ifndef SKIP_CONSOLE
     const luaL_Reg printarr[] = {{"print", lua_print}, {NULL, NULL}};
     lua_getglobal(luaState, "_G");
     luaL_setfuncs(luaState, printarr, 0);
     lua_pop(luaState, 1);
+#endif
 
     lua_getglobal(luaState, "package");
 
