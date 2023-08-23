@@ -4,7 +4,7 @@
 #include <external/raylib.hpp>
 #include <lua_impl/lua_register_types.hpp>
 
-#include <entity/enemy_goal.hpp>
+#include <component/enemy_goal.hpp>
 #define RComponent EnemyGoal
 EntityReflectionStruct(RComponent)
 {

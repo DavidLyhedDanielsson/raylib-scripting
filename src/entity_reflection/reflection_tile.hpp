@@ -4,7 +4,7 @@
 #include <external/raylib.hpp>
 #include <lua_impl/lua_register_types.hpp>
 
-#include <entity/tile.hpp>
+#include <component/tile.hpp>
 #define RComponent Tile
 EntityReflectionStruct(RComponent)
 {

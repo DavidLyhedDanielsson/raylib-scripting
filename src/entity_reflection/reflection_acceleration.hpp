@@ -10,7 +10,7 @@
 #include <lua_impl/lua_register_types.hpp>
 #include <lua_impl/lua_validator.hpp>
 
-#include <entity/acceleration.hpp>
+#include <component/acceleration.hpp>
 #define RComponent Acceleration
 EntityReflectionStruct(RComponent)
 {

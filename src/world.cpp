@@ -1,60 +1,61 @@
 #include "world.hpp"
-#include "entity/enemy_goal.hpp"
-#include "entity/enemy_spawn.hpp"
-#include "entity/walkable.hpp"
-#include "navigation.hpp"
-#include "profiling.hpp"
-#include "raylib.h"
-#include "raymath.h"
+// #include "raylib.h"
+// #include "raymath.h"
 #include <algorithm>
 #include <array>
-#include <assets.hpp>
 #include <cmath>
 #include <cstdint>
-#include <entity/acceleration.hpp>
-#include <entity/area_tracker.hpp>
-#include <entity/behaviour.hpp>
-#include <entity/camera.hpp>
-#include <entity/health.hpp>
-#include <entity/max_range.hpp>
-#include <entity/move_towards.hpp>
-#include <entity/nav_gate.hpp>
-#include <entity/projectile.hpp>
-#include <entity/render.hpp>
-#include <entity/tile.hpp>
-#include <entity/transform.hpp>
-#include <entity/velocity.hpp>
 #include <entt/entity/utility.hpp>
-#include <external/imgui.hpp>
-#include <external/imguizmo.hpp>
-#include <external/raylib.hpp>
 #include <fstream>
 #include <iostream>
 #include <limits>
-#include <lua_impl/lua_register.hpp>
-#include <lua_impl/lua_register_types.hpp>
 #include <optional>
 #include <random>
+
+#include <assets.hpp>
+#include <component/acceleration.hpp>
+#include <component/area_tracker.hpp>
+#include <component/behaviour.hpp>
+#include <component/camera.hpp>
+#include <component/enemy_goal.hpp>
+#include <component/enemy_spawn.hpp>
+#include <component/health.hpp>
+#include <component/max_range.hpp>
+#include <component/move_towards.hpp>
+#include <component/nav_gate.hpp>
+#include <component/projectile.hpp>
+#include <component/render.hpp>
+#include <component/tile.hpp>
+#include <component/transform.hpp>
+#include <component/velocity.hpp>
+#include <component/walkable.hpp>
+#include <external/imgui.hpp>
+#include <external/imguizmo.hpp>
+#include <external/raylib.hpp>
+#include <lua_impl/lua_register.hpp>
+#include <lua_impl/lua_register_types.hpp>
+#include <navigation.hpp>
+#include <profiling.hpp>
+#include <system/align_tiles.hpp>
+#include <system/area_tracker.hpp>
+#include <system/calculate_velocity.hpp>
+#include <system/check_health.hpp>
+#include <system/draw_renderables.hpp>
+#include <system/max_range.hpp>
 #include <system/move_entities.hpp>
+#include <system/navigate.hpp>
+#include <system/update_projectiles.hpp>
 
 struct WorldData
 {
     entt::registry* registry;
     lua_State* lua;
     int behaviourTable;
+
+    bool drawNavigationTiles = false;
+    std::optional<int32_t> drawNavigationField;
+    Navigation navigation;
 } world;
-
-float RoundToMultiple(float number, float multiple)
-{
-    return std::round(number / multiple) * multiple;
-}
-
-// Move these
-bool drawNavigationTiles = false;
-std::optional<int32_t> drawNavigationField;
-Navigation navigation;
-
-bool buildNavigation = false;
 
 namespace LuaRegister
 {
@@ -141,7 +142,7 @@ namespace World
                 min = Vector3Subtract(min, {1.0f, 0.0f, 1.0f});
                 max = Vector3Add(max, {1.0f, 0.0f, 1.0f});
 
-                navigation = Navigation(
+                world.navigation = Navigation(
                     {min.x, min.z},
                     {max.x, max.z},
                     min.x,
@@ -166,16 +167,16 @@ namespace World
                         if(auto goal = world.registry->try_get<Component::EnemyGoal>(entity); goal)
                         {
                             for(auto id : goal->ids)
-                                navigation.SetGoal(id, min, max);
+                                world.navigation.SetGoal(id, min, max);
                         }
                         else if(auto spawn = world.registry->try_get<Component::EnemySpawn>(entity);
                                 spawn)
                         {
-                            navigation.SetSpawn(spawn->id, spawn->goalId, min, max);
+                            world.navigation.SetSpawn(spawn->id, spawn->goalId, min, max);
                         }
                         else
                         {
-                            navigation.SetWalkable(min, max);
+                            world.navigation.SetWalkable(min, max);
                         }
                     });
 
@@ -196,7 +197,7 @@ namespace World
                             Vector2Add({transform.position.x, transform.position.z}, maxBounds);
 
                         for(uint32_t i = 0; i < navGate.allowedGoalIds.size(); ++i)
-                            navigation.SetNavGate(navGate.allowedGoalIds[i], min, max);
+                            world.navigation.SetNavGate(navGate.allowedGoalIds[i], min, max);
                     });
 
                 world.registry
@@ -217,7 +218,7 @@ namespace World
                             Vector2Add({transform.position.x, transform.position.z}, maxBounds);
 
                         for(auto id : goal.ids)
-                            navigation.SetGoal(id, min, max);
+                            world.navigation.SetGoal(id, min, max);
                     });
 
                 world.registry
@@ -237,24 +238,24 @@ namespace World
                         Vector2 max =
                             Vector2Add({transform.position.x, transform.position.z}, maxBounds);
 
-                        navigation.SetSpawn(spawn.id, spawn.goalId, min, max);
+                        world.navigation.SetSpawn(spawn.id, spawn.goalId, min, max);
                     });
 
                 lua_getglobal(lua, "Navigation");
                 lua_pushstring(lua, "sizeX");
-                lua_pushinteger(lua, navigation.GetSizeX());
+                lua_pushinteger(lua, world.navigation.GetSizeX());
                 lua_settable(lua, -3);
                 lua_pushstring(lua, "sizeY");
-                lua_pushinteger(lua, navigation.GetSizeY());
+                lua_pushinteger(lua, world.navigation.GetSizeY());
                 lua_settable(lua, -3);
                 lua_pushstring(lua, "tileSize");
-                lua_pushnumber(lua, navigation.tileSize);
+                lua_pushnumber(lua, world.navigation.tileSize);
                 lua_settable(lua, -3);
                 lua_pushstring(lua, "offsetX");
-                lua_pushnumber(lua, navigation.offsetX);
+                lua_pushnumber(lua, world.navigation.offsetX);
                 lua_settable(lua, -3);
                 lua_pushstring(lua, "offsetY");
-                lua_pushnumber(lua, navigation.offsetY);
+                lua_pushnumber(lua, world.navigation.offsetY);
                 lua_settable(lua, -3);
                 lua_pop(lua, 1);
 
@@ -308,7 +309,7 @@ namespace World
             +[](lua_State* lua, LuaRegister::Placeholder callback) {
                 static bool error = false;
                 error = false;
-                navigation.ForEachTile([&](uint32_t x, uint32_t y, Navigation::Tile tile) {
+                world.navigation.ForEachTile([&](uint32_t x, uint32_t y, Navigation::Tile tile) {
                     if(error)
                         return;
 
@@ -328,36 +329,38 @@ namespace World
         LuaRegister::PushRegister(
             lua,
             "GetTileSpace",
-            +[](lua_State* lua, Vector2 position) { return navigation.GetTileSpace(position); });
+            +[](lua_State* lua, Vector2 position) {
+                return world.navigation.GetTileSpace(position);
+            });
 
         LuaRegister::PushRegister(
             lua,
             "ConvertToTileSpace",
             +[](lua_State* lua, Vector2 min, Vector2 max) {
-                return navigation.ConvertToTileSpace(min, max);
+                return world.navigation.ConvertToTileSpace(min, max);
             });
 
         // TODO: These below here can be quick registered?
         LuaRegister::PushRegister(
             lua,
             "IsReachable",
-            +[](lua_State* lua, int x, int y) { return navigation.IsReachable(x, y); });
+            +[](lua_State* lua, int x, int y) { return world.navigation.IsReachable(x, y); });
 
         LuaRegister::PushRegister(
             lua,
             "IsWalkable",
-            +[](lua_State* lua, int x, int y) { return navigation.IsWalkable(x, y); });
+            +[](lua_State* lua, int x, int y) { return world.navigation.IsWalkable(x, y); });
 
         LuaRegister::PushRegister(
             lua,
             "IsNavGate",
-            +[](lua_State* lua, int x, int y) { return navigation.IsNavGate(x, y); });
+            +[](lua_State* lua, int x, int y) { return world.navigation.IsNavGate(x, y); });
 
         LuaRegister::PushRegister(
             lua,
             "IsPassable",
             +[](lua_State* lua, int spawnId, int goalId, int x, int y) {
-                return navigation.IsPassable(spawnId, goalId, x, y);
+                return world.navigation.IsPassable(spawnId, goalId, x, y);
             });
 
         LuaRegister::PushRegister(
@@ -390,7 +393,7 @@ namespace World
                     lua_pop(lua, 1);
                 }
 
-                navigation.SetVectorField(fieldId, std::move(vectorField));
+                world.navigation.SetVectorField(fieldId, std::move(vectorField));
             });
 
         LuaRegister::PushRegister(
@@ -402,15 +405,15 @@ namespace World
                 if(y < 0)
                     return;
 
-                navigation.SetWall(x, y, (Navigation::Tile::Side)side);
+                world.navigation.SetWall(x, y, (Navigation::Tile::Side)side);
             });
 
         lua_pushstring(lua, "drawTiles");
-        lua_pushboolean(lua, drawNavigationTiles);
+        lua_pushboolean(lua, world.drawNavigationTiles);
         lua_settable(lua, -3);
         lua_pushstring(lua, "drawField");
-        if(drawNavigationField)
-            lua_pushinteger(lua, drawNavigationField.value());
+        if(world.drawNavigationField)
+            lua_pushinteger(lua, world.drawNavigationField.value());
         else
             lua_pushnil(lua);
         lua_settable(lua, -3);
@@ -495,6 +498,7 @@ namespace World
         float time = 1.0f / 60.0f;
         auto lua = world.lua;
 
+        // Run any global scripts, aka behaviour scripts
         lua_rawgeti(lua, LUA_REGISTRYINDEX, world.behaviourTable);
         auto table = lua_gettop(lua);
 
@@ -508,6 +512,7 @@ namespace World
             }
         }
 
+        // These variables are tweakable from imgui for easy experimentation with navigation
         lua_getglobal(lua, "Navigation");
         lua_getfield(lua, -1, "ksi");
         const float ksi = (float)lua_tonumber(lua, -1);
@@ -519,180 +524,56 @@ namespace World
         const float obstacleT = (float)lua_tonumber(lua, -1);
         lua_pop(lua, 2);
 
-        Profiling::ProfileCall("MoveEntities", [&]() {
-            System::MoveEntities(*world.registry, navigation, ksi, avoidanceT, obstacleT, time);
-        });
-
-        Profiling::ProfileCall("CalculateVelocity", [&]() {
-            for(auto [entity, velocity, acceleration] :
-                world.registry->view<Component::Velocity, Component::Acceleration>().each())
-            {
-                float length = Vector3Length(acceleration.acceleration);
-                if(length > 20.0f * time)
-                {
-                    acceleration.acceleration =
-                        Vector3Scale(Vector3Normalize(acceleration.acceleration), 20.0f * time);
-                }
-
-                assert(!std::isnan(acceleration.acceleration.x));
-                assert(!std::isnan(acceleration.acceleration.y));
-                assert(!std::isnan(acceleration.acceleration.z));
-
-                velocity.x += acceleration.acceleration.x;
-                velocity.y += acceleration.acceleration.y;
-                velocity.z += acceleration.acceleration.z;
-
-                acceleration.acceleration = {0.0f, 0.0f, 0.0f};
-            }
-        });
-
-        Profiling::ProfileCall("MoveEntities", [&]() {
-            for(auto [entity, transform, velocity] :
-                world.registry->view<Component::Transform, Component::Velocity>().each())
-            {
-                transform.position.x += velocity.x * time;
-                transform.position.y += velocity.y * time;
-                transform.position.z += velocity.z * time;
-            }
-        });
-
-        Profiling::ProfileCall("Tile", [&]() {
-            for(auto [entity, transform] :
-                world.registry->view<Component::Transform, Component::Tile>().each())
-            {
-                transform.position.x = std::roundf(transform.position.x);
-                transform.position.y = std::roundf(transform.position.y);
-                transform.position.z = std::roundf(transform.position.z);
-
-                transform.rotation.x =
-                    RoundToMultiple(transform.rotation.x * RAD2DEG, 90.0f) * DEG2RAD;
-                transform.rotation.y =
-                    RoundToMultiple(transform.rotation.y * RAD2DEG, 90.0f) * DEG2RAD;
-                transform.rotation.z =
-                    RoundToMultiple(transform.rotation.z * RAD2DEG, 90.0f) * DEG2RAD;
-            }
-        });
-
-        Profiling::ProfileCall("Projectiles", [&]() {
-            for(auto [projectileEntity, projectileRender, projectileTransform, projectile] :
-                world.registry
-                    ->view<Component::Render, Component::Transform, Component::Projectile>()
-                    .each())
-            {
-                bool destroy = false;
-
-                auto projectileHitBox = BoundingBoxTransform(
-                    projectileRender.boundingBox,
-                    projectileTransform.position);
-
-                // Entity = entity (potentially) affected by projectile
-                for(auto [entity, entityRender, entityTransform, entityHealth] :
-                    world.registry
-                        ->view<Component::Render, Component::Transform, Component::Health>()
-                        .each())
-                {
-                    auto entityHitBox =
-                        BoundingBoxTransform(entityRender.boundingBox, entityTransform.position);
-
-                    if(CheckCollisionBoxes(projectileHitBox, entityHitBox))
-                    {
-                        // Entity will be destroyed in a different system
-                        entityHealth.currentHealth -= projectile.damage;
-                        destroy = true;
-                    }
-                }
-
-                if(destroy)
-                    world.registry->destroy(projectileEntity);
-            }
-        });
-
-        // From the docs:
-        // "Deleting the current entity or removing its components is allowed during iterations"
-        for(auto [entity, transform, maxRange] :
-            world.registry->view<Component::Transform, Component::MaxRange>().each())
-        {
-            if(Vector3Distance(transform.position, maxRange.distanceFrom) >= maxRange.maxDistance)
-                world.registry->destroy(entity);
-        }
-
-        for(auto [entity, health] : world.registry->view<Component::Health>().each())
-        {
-            if(health.currentHealth <= 0.0001f)
-                world.registry->destroy(entity);
-        }
-
-        Profiling::ProfileCall("AreaTracker", [&]() {
-            for(auto [trackerEntity, trackerTransform, tracker] :
-                world.registry->view<Component::Transform, Component::AreaTracker>().each())
-            {
-                tracker.entitiesInside.clear();
-
-                auto trackerHitBox = tracker.GetBoundingBox(trackerTransform);
-
-                for(auto [entity, entityRender, entityTransform, entityHealth] :
-                    world.registry
-                        ->view<Component::Render, Component::Transform, Component::Health>()
-                        .each())
-                {
-                    auto entityHitBox =
-                        BoundingBoxTransform(entityRender.boundingBox, entityTransform.position);
-
-                    if(CheckCollisionBoxes(trackerHitBox, entityHitBox))
-                        tracker.entitiesInside.push_back(entity);
-                }
-            }
-        });
+        PROFILE_CALL(
+            System::Navigate,
+            *world.registry,
+            world.navigation,
+            ksi,
+            avoidanceT,
+            obstacleT,
+            time);
+        PROFILE_CALL(System::CalculateVelocity, *world.registry, time);
+        PROFILE_CALL(System::MoveEntities, *world.registry, time);
+        PROFILE_CALL(System::AlignTiles, *world.registry);
+        PROFILE_CALL(System::UpdateProjectiles, *world.registry);
+        PROFILE_CALL(System::MaxRange, *world.registry);
+        PROFILE_CALL(System::CheckHealth, *world.registry);
+        PROFILE_CALL(System::UpdateAreaTrackers, *world.registry);
     }
 
     void Draw()
     {
+        PROFILE_CALL(System::DrawRenderable, *world.registry);
+
+        // Debugging visualisation
+        // world.registry->view<Component::Transform, Component::AreaTracker>().each(
+        //     [](entt::entity entity,
+        //        Component::Transform transform,
+        //        Component::AreaTracker tracker) {
+        //         auto boundingBox = tracker.GetBoundingBox(transform);
+        //         Vector3 center = Vector3Scale(Vector3Add(boundingBox.min, boundingBox.max),
+        //         0.5f); DrawCubeV(
+        //             center,
+        //             Vector3Subtract(boundingBox.max, boundingBox.min),
+        //             {255, 0, 0, 80});
+        //     });
+
+        // Some debugging visualisations that are controllable from imgui
         auto lua = world.lua;
-
-        auto group = world.registry->group<Component::Render, Component::Transform>();
-        for(auto entity : group)
-        {
-            auto [render, transform] = group.get<Component::Render, Component::Transform>(entity);
-
-            render.model.transform = MatrixMultiply(
-                MatrixRotateZYX(transform.rotation),
-                MatrixTranslate(transform.position.x, transform.position.y, transform.position.z));
-            DrawModel(render.model, {0.0f, 0.0f, 0.0f}, 1.0f, WHITE);
-
-            render.model.transform = MatrixIdentity();
-        }
-
-        world.registry->view<Component::Transform, Component::AreaTracker>().each(
-            [](entt::entity entity,
-               Component::Transform transform,
-               Component::AreaTracker tracker) {
-                auto boundingBox = tracker.GetBoundingBox(transform);
-                Vector3 center = Vector3Scale(Vector3Add(boundingBox.min, boundingBox.max), 0.5f);
-                DrawCubeV(
-                    center,
-                    Vector3Subtract(boundingBox.max, boundingBox.min),
-                    {255, 0, 0, 80});
-            });
-
         lua_getglobal(lua, "Navigation");
         lua_getfield(lua, -1, "drawTiles");
-        drawNavigationTiles = lua_toboolean(lua, -1);
+        world.drawNavigationTiles = lua_toboolean(lua, -1);
         lua_pop(lua, 2);
-        if(drawNavigationTiles)
-            navigation.DrawTiles();
+        if(world.drawNavigationTiles)
+            world.navigation.DrawTiles();
 
         lua_getglobal(lua, "Navigation");
         if(lua_getfield(lua, -1, "drawField") == LUA_TNUMBER)
-            drawNavigationField = lua_tointeger(lua, -1);
+            world.drawNavigationField = (int)lua_tointeger(lua, -1);
         else
-            drawNavigationField = std::nullopt;
+            world.drawNavigationField = std::nullopt;
         lua_pop(lua, 2);
-        if(drawNavigationField)
-            navigation.DrawField(drawNavigationField.value());
-    }
-
-    void DrawImgui()
-    {
-        // Yay this is empty now!
+        if(world.drawNavigationField)
+            world.navigation.DrawField(world.drawNavigationField.value());
     }
 }

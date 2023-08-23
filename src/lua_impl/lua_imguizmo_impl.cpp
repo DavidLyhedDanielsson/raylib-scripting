@@ -1,7 +1,7 @@
 #include "lua_imguizmo_impl.hpp"
 
-#include <entity/camera.hpp>
-#include <entity/transform.hpp>
+#include <component/camera.hpp>
+#include <component/transform.hpp>
 #include <entt/entt.hpp>
 #include <external/imgui.hpp>
 #include <external/imguizmo.hpp>

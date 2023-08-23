@@ -5,7 +5,7 @@
 #include <external/raylib.hpp>
 #include <lua_impl/lua_register_types.hpp>
 
-#include <entity/velocity.hpp>
+#include <component/velocity.hpp>
 #define RComponent Velocity
 EntityReflectionStruct(RComponent)
 {

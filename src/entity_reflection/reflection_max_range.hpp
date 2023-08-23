@@ -7,7 +7,7 @@
 #include <lua_impl/lua_register.hpp>
 #include <lua_impl/lua_register_types.hpp>
 
-#include <entity/max_range.hpp>
+#include <component/max_range.hpp>
 #define RComponent MaxRange
 EntityReflectionStruct(RComponent)
 {

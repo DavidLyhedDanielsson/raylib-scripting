@@ -5,7 +5,7 @@
 #include <external/lua.hpp>
 #include <lua_impl/lua_register_types.hpp>
 
-#include <entity/render.hpp>
+#include <component/render.hpp>
 #define RComponent Render
 EntityReflectionStruct(RComponent)
 {

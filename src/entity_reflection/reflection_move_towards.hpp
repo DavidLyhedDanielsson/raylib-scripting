@@ -10,7 +10,7 @@
 #include <lua_impl/lua_register_types.hpp>
 #include <lua_impl/lua_validator.hpp>
 
-#include <entity/move_towards.hpp>
+#include <component/move_towards.hpp>
 #define RComponent MoveTowards
 EntityReflectionStruct(RComponent)
 {

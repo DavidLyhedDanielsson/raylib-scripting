@@ -6,7 +6,7 @@
 #include <external/raylib.hpp>
 #include <lua_impl/lua_register_types.hpp>
 
-#include <entity/projectile.hpp>
+#include <component/projectile.hpp>
 #define RComponent Projectile
 EntityReflectionStruct(RComponent)
 {

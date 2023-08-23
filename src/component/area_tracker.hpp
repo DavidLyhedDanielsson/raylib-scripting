@@ -1,6 +1,6 @@
 #pragma once
 
-#include <entity/transform.hpp>
+#include <component/transform.hpp>
 #include <entt/entity/fwd.hpp>
 #include <entt/fwd.hpp>
 #include <external/raylib.hpp>

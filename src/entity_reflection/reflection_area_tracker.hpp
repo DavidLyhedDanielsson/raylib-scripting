@@ -11,7 +11,7 @@
 #include <lua_impl/lua_register_types.hpp>
 #include <lua_impl/lua_validator.hpp>
 
-#include <entity/area_tracker.hpp>
+#include <component/area_tracker.hpp>
 #define RComponent AreaTracker
 EntityReflectionStruct(RComponent)
 {

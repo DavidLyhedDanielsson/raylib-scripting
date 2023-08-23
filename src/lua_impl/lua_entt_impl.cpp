@@ -1,5 +1,4 @@
 #include "lua_entt_impl.hpp"
-#include "entity/area_tracker.hpp"
 
 #include <array>
 #include <cstring>
@@ -8,15 +7,17 @@
 #include <type_traits>
 
 #include <assets.hpp>
-#include <entity/render.hpp>
-#include <entity/tile.hpp>
-#include <entity/transform.hpp>
-#include <entity/velocity.hpp>
+#include <component/area_tracker.hpp>
+#include <component/render.hpp>
+#include <component/tile.hpp>
+#include <component/transform.hpp>
+#include <component/velocity.hpp>
 #include <entity_reflection/entity_reflection.hpp>
 #include <entt/entt.hpp>
 #include <external/lua.hpp>
 #include <lua_impl/lua_register.hpp>
 #include <lua_impl/lua_register_types.hpp>
+
 
 #define QuickRegister(Func) LuaRegister::PushRegisterMember(lua, #Func, registry, Func);
 

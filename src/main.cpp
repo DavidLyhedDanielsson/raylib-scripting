@@ -8,8 +8,8 @@
 #include <vector>
 
 #include <assets.hpp>
-#include <entity/camera.hpp>
-#include <entity/transform.hpp>
+#include <component/camera.hpp>
+#include <component/transform.hpp>
 #include <entt/entt.hpp>
 #include <external/imgui.hpp>
 #include <external/lua.hpp>
@@ -201,7 +201,6 @@ void main_loop()
     }
 
     PROFILE_CALL(RaylibImGui::Begin);
-    PROFILE_CALL(World::DrawImgui);
 
     // Imgui might update the camera
     for(auto [entity, transform, cameraComponent] :

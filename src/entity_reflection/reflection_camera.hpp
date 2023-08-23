@@ -6,7 +6,7 @@
 #include <lua_impl/lua_register.hpp>
 #include <lua_impl/lua_register_types.hpp>
 
-#include <entity/camera.hpp>
+#include <component/camera.hpp>
 #define RComponent Camera
 EntityReflectionStruct(RComponent)
 {

@@ -5,7 +5,7 @@
 #include <external/raylib.hpp>
 #include <lua_impl/lua_register_types.hpp>
 
-#include <entity/enemy_spawn.hpp>
+#include <component/enemy_spawn.hpp>
 #define RComponent EnemySpawn
 EntityReflectionStruct(RComponent)
 {

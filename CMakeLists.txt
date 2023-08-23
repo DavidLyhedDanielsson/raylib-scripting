@@ -32,27 +32,47 @@ else()
 endif()
 
 ## Executable
+# header files aren't required here, but some build systems want to know about them
 set(SRC
-    assets.cpp assets.hpp
-    imgui_error_check.cpp imgui_error_check.hpp
-    main.cpp
-    navigation.cpp navigation.hpp
-    profiling.cpp profiling.hpp
-    raylib_imgui.cpp raylib_imgui.hpp
-    world.cpp world.hpp
+    component/acceleration.hpp
+    component/area_tracker.hpp
+    component/behaviour.hpp
+    component/camera.hpp
+    component/enemy_goal.hpp
+    component/enemy_spawn.hpp
+    component/health.hpp
+    component/max_range.hpp
+    component/move_towards.hpp
+    component/nav_gate.hpp
+    component/projectile.hpp
+    component/render.hpp
+    component/tile.hpp
+    component/transform.hpp
+    component/velocity.hpp
+    component/walkable.hpp
+    external/imgui_internal.hpp
+    external/imgui.hpp
+    external/imguizmo.hpp
+    external/lua.hpp
     external/raygui.cpp
-    entity/camera.hpp
-    entity/enemy_goal.hpp
-    entity/enemy_spawn.hpp
-    entity/health.hpp
-    entity/max_range.hpp
-    entity/move_towards.hpp
-    entity/projectile.hpp
-    entity/render.hpp
-    entity/transform.hpp
-    entity/tile.hpp
-    entity/velocity.hpp
-    entity/area_tracker.hpp
+    external/raylib.hpp
+    lua_impl/lua_asset_impl.cpp lua_impl/lua_asset_impl.hpp
+    lua_impl/lua_entt_impl.cpp lua_impl/lua_entt_impl.hpp
+    lua_impl/lua_imgui_impl.cpp lua_impl/lua_imgui_impl.hpp
+    lua_impl/lua_imguizmo_impl.cpp lua_impl/lua_imguizmo_impl.hpp
+    lua_impl/lua_raylib_impl.cpp lua_impl/lua_raylib_impl.hpp
+    lua_impl/lua_register_types.hpp
+    lua_impl/lua_register.hpp
+    lua_impl/lua_validator.hpp
+    system/align_tiles.hpp
+    system/area_tracker.hpp
+    system/calculate_velocity.hpp
+    system/check_health.hpp
+    system/max_range.hpp
+    system/draw_renderables.hpp
+    system/move_entities.hpp
+    system/navigate.hpp
+    system/update_projectiles.hpp
     entity_reflection/entity_reflection.hpp
     entity_reflection/include_reflection.cpp
     entity_reflection/reflection_area_tracker.hpp
@@ -69,12 +89,13 @@ set(SRC
     entity_reflection/reflection_tile.hpp
     entity_reflection/reflection_velocity.hpp
     entity_reflection/reflection_walkable.hpp
-    lua_impl/lua_asset_impl.cpp lua_impl/lua_asset_impl.hpp
-    lua_impl/lua_entt_impl.cpp lua_impl/lua_entt_impl.hpp
-    lua_impl/lua_imgui_impl.cpp lua_impl/lua_imgui_impl.hpp
-    lua_impl/lua_imguizmo_impl.cpp lua_impl/lua_imguizmo_impl.hpp
-    lua_impl/lua_raylib_impl.cpp lua_impl/lua_raylib_impl.hpp
-    lua_impl/lua_register.hpp
+    assets.cpp assets.hpp
+    imgui_error_check.cpp imgui_error_check.hpp
+    main.cpp
+    navigation.cpp navigation.hpp
+    profiling.cpp profiling.hpp
+    raylib_imgui.cpp raylib_imgui.hpp
+    world.cpp world.hpp
 )
 list(TRANSFORM SRC PREPEND ${CMAKE_CURRENT_SOURCE_DIR}/src/)
 

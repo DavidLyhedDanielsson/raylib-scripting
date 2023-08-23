@@ -4,7 +4,7 @@
 #include <external/raylib.hpp>
 #include <lua_impl/lua_register_types.hpp>
 
-#include <entity/walkable.hpp>
+#include <component/walkable.hpp>
 #define RComponent Walkable
 EntityReflectionStruct(RComponent)
 {

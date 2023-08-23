@@ -4,7 +4,7 @@
 #include <external/raylib.hpp>
 #include <lua_impl/lua_register_types.hpp>
 
-#include <entity/nav_gate.hpp>
+#include <component/nav_gate.hpp>
 #define RComponent NavGate
 EntityReflectionStruct(RComponent)
 {

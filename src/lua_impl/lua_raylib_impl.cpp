@@ -7,9 +7,9 @@
 #include <optional>
 #include <world.hpp>
 
-#include <entity/camera.hpp>
-#include <entity/render.hpp>
-#include <entity/transform.hpp>
+#include <component/camera.hpp>
+#include <component/render.hpp>
+#include <component/transform.hpp>
 
 std::optional<entt::entity> GetRayCollision(entt::registry* registry, Ray ray)
 {

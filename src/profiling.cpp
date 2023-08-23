@@ -127,7 +127,7 @@ namespace Profiling
         if(frames.size() <= 1)
             return;
 
-        ImGui::Begin("Profiling");
+        /*ImGui::Begin("Profiling");
         ImGui::Checkbox("Stop", &stop);
 
         static std::optional<int> selectedFrame = 0;
@@ -174,6 +174,6 @@ namespace Profiling
             },
             flameData.data(),
             flameData.size());
-        ImGui::End();
+        ImGui::End();*/
     }
 };

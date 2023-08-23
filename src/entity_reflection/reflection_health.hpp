@@ -6,7 +6,7 @@
 #include <external/raylib.hpp>
 #include <lua_impl/lua_register_types.hpp>
 
-#include <entity/health.hpp>
+#include <component/health.hpp>
 #define RComponent Health
 EntityReflectionStruct(RComponent)
 {

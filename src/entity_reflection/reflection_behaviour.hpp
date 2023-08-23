@@ -6,7 +6,7 @@
 #include <lua_impl/lua_register.hpp>
 #include <lua_impl/lua_register_types.hpp>
 
-#include <entity/behaviour.hpp>
+#include <component/behaviour.hpp>
 #define RComponent Behaviour
 EntityReflectionStruct(RComponent)
 {

@@ -8,5 +8,4 @@ namespace World
     void Init(entt::registry*, lua_State*);
     void Update();
     void Draw();
-    void DrawImgui();
 }

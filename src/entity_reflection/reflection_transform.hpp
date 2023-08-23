@@ -10,7 +10,7 @@
 #include <lua_impl/lua_register_types.hpp>
 #include <lua_impl/lua_validator.hpp>
 
-#include <entity/transform.hpp>
+#include <component/transform.hpp>
 #define RComponent Transform
 EntityReflectionStruct(RComponent)
 {
