@@ -16,6 +16,7 @@ if (EMSCRIPTEN)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s USE_GLFW=3 -s ASSERTIONS=1 -s WASM=1 -s ASYNCIFY --preload-file ../assets@assets -s TOTAL_MEMORY=134217728")
   set(CMAKE_EXECUTABLE_SUFFIX ".html")
 else()
+  # TODO: full path in DASSET_ROOT is only required in debug mode
   add_compile_definitions(DNOMINMAX)
   add_compile_definitions(DASSET_ROOT=\"${CMAKE_CURRENT_SOURCE_DIR}/assets\")
 endif ()
@@ -64,6 +65,7 @@ set(SRC
     lua_impl/lua_register_types.hpp
     lua_impl/lua_register.hpp
     lua_impl/lua_validator.hpp
+    lua_impl/lua_world_impl.cpp lua_impl/lua_world_impl.hpp
     system/align_tiles.hpp
     system/area_tracker.hpp
     system/calculate_velocity.hpp

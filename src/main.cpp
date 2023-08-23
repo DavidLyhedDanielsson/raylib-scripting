@@ -20,6 +20,7 @@
 #include <lua_impl/lua_imgui_impl.hpp>
 #include <lua_impl/lua_imguizmo_impl.hpp>
 #include <lua_impl/lua_raylib_impl.hpp>
+#include <lua_impl/lua_world_impl.hpp>
 #include <profiling.hpp>
 #include <raylib_imgui.hpp>
 #include <world.hpp>
@@ -464,7 +465,7 @@ int main()
 
     // Register lua functions related to each piece of functionality
     Register();
-    World::Register(luaState);
+    LuaWorld::Register(luaState);
     LuaAsset::Register(luaState);
     LuaEntt::Register(luaState, &registry);
     LuaImGui::Register(luaState);
@@ -475,7 +476,9 @@ int main()
     last = std::chrono::steady_clock::now();
 
     LoadAssets();
-    World::Init(&registry, luaState);
+    World::state.registry = &registry;
+    World::state.lua = luaState;
+    World::Init();
 
     auto cameraComponent = Component::Camera{
         .target = {0.0f, 0.0f, 0.0f},
@@ -508,6 +511,8 @@ int main()
 #ifdef PLATFORM_WEB
     emscripten_set_main_loop(main_loop, 0, 1);
 #else
+    // TODO: Changing this breaks the assumption that the game will run at >= 60 FPS in
+    // World::Update
     SetTargetFPS(60);
 
     while(!WindowShouldClose() && keepRunning)
