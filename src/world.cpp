@@ -17,6 +17,8 @@
 #include <profiling.hpp>
 #include <system/align_tiles.hpp>
 #include <system/area_tracker.hpp>
+#include <system/avoid_entities.hpp>
+#include <system/avoid_obstacles.hpp>
 #include <system/calculate_velocity.hpp>
 #include <system/check_health.hpp>
 #include <system/draw_renderables.hpp>
@@ -130,14 +132,9 @@ namespace World
         const float obstacleT = (float)lua_tonumber(lua, -1);
         lua_pop(lua, 2);
 
-        PROFILE_CALL(
-            System::Navigate,
-            *state.registry,
-            state.navigation,
-            ksi,
-            avoidanceT,
-            obstacleT,
-            time);
+        PROFILE_CALL(System::Navigate, *state.registry, state.navigation, ksi, time);
+        PROFILE_CALL(System::AvoidEntities, *state.registry, ksi, avoidanceT, time);
+        PROFILE_CALL(System::AvoidObstacles, *state.registry, state.navigation, obstacleT, time);
         PROFILE_CALL(System::CalculateVelocity, *state.registry, time);
         PROFILE_CALL(System::MoveEntities, *state.registry, time);
         PROFILE_CALL(System::AlignTiles, *state.registry);

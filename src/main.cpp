@@ -65,62 +65,73 @@ void main_loop()
 {
     Profiling::NewFrame();
 
-    // Update running coroutines
-    auto threadNow = std::chrono::steady_clock::now();
-    for(uint32_t i = 0; i < luaThreads.size(); ++i)
     {
-        LuaThread& thread = luaThreads[i];
-
-        // Sleep time has not yet been reached; do nothing
-        auto sleepGoal = thread.sleepStart + thread.sleepTime;
-        if(sleepGoal > threadNow)
-            continue;
-
-        // Thread state is stored in the registry
-        lua_rawgeti(luaState, LUA_REGISTRYINDEX, thread.refIndex);
-        lua_State* luaThread = lua_tothread(luaState, -1);
-        lua_getglobal(luaThread, "func");
-
-        int nres = 0;
-        auto ret = lua_resume(luaThread, luaState, 0, &nres);
-        if(ret == LUA_OK)
+        PROFILE_SCOPE("RunCoroutines");
+        // Update running coroutines
+        auto threadNow = std::chrono::steady_clock::now();
+        for(uint32_t i = 0; i < luaThreads.size(); ++i)
         {
-            // Coroutine returned (it didn't yield), so it is done executing
-            luaL_unref(luaState, LUA_REGISTRYINDEX, thread.refIndex);
-            luaThreads.erase(luaThreads.begin() + i);
-            --i;
-        }
-        else if(ret == LUA_YIELD)
-        {
-            // Coroutine yielded the number of ms it should sleep
-            assert(lua_isnumber(luaThread, nres));
-            thread.sleepStart = std::chrono::steady_clock::now();
-            thread.sleepTime = dmilliseconds{lua_tointeger(luaThread, nres)};
-        }
-        else
-        {
-            // Error :(
-            // Coroutine execution is stopped
-            std::cerr << "Error when executing coroutine: " << lua_tostring(luaThread, -1)
-                      << std::endl;
-            luaL_traceback(luaState, luaThread, nullptr, 0);
-            if(lua_isstring(luaState, -1))
+            PROFILE_SCOPE(i);
+
+            LuaThread& thread = luaThreads[i];
+
+            // Sleep time has not yet been reached; do nothing
+            auto sleepGoal = thread.sleepStart + thread.sleepTime;
+            if(sleepGoal > threadNow)
+                continue;
+
+            // Thread state is stored in the registry
+            lua_rawgeti(luaState, LUA_REGISTRYINDEX, thread.refIndex);
+            lua_State* luaThread = lua_tothread(luaState, -1);
+            lua_getglobal(luaThread, "func");
+
+            int nres = 0;
+            lua_Integer ret;
             {
-                std::cerr << lua_tostring(luaState, -1) << std::endl;
+                PROFILE_SCOPE("lua_resume");
+                ret = lua_resume(luaThread, luaState, 0, &nres);
             }
+            if(ret == LUA_OK)
+            {
+                // Coroutine returned (it didn't yield), so it is done executing
+                luaL_unref(luaState, LUA_REGISTRYINDEX, thread.refIndex);
+                luaThreads.erase(luaThreads.begin() + i);
+                --i;
+            }
+            else if(ret == LUA_YIELD)
+            {
+                // Coroutine yielded the number of ms it should sleep
+                assert(lua_isnumber(luaThread, nres));
+                thread.sleepStart = std::chrono::steady_clock::now();
+                thread.sleepTime = dmilliseconds{lua_tointeger(luaThread, nres)};
+            }
+            else
+            {
+                // Error :(
+                // Coroutine execution is stopped
+                std::cerr << "Error when executing coroutine: " << lua_tostring(luaThread, -1)
+                          << std::endl;
+                luaL_traceback(luaState, luaThread, nullptr, 0);
+                if(lua_isstring(luaState, -1))
+                {
+                    std::cerr << lua_tostring(luaState, -1) << std::endl;
+                }
 
-            luaL_unref(luaState, LUA_REGISTRYINDEX, thread.refIndex);
-            luaThreads.erase(luaThreads.begin() + i);
-            --i;
+                luaL_unref(luaState, LUA_REGISTRYINDEX, thread.refIndex);
+                luaThreads.erase(luaThreads.begin() + i);
+                --i;
+            }
         }
     }
 
     // This macro calls the given function and profiles it
     PROFILE_CALL(World::Update);
 
-    BeginDrawing();
-
-    ClearBackground(DARKGRAY);
+    {
+        PROFILE_SCOPE("BeginDrawing");
+        BeginDrawing();
+        ClearBackground(DARKGRAY);
+    }
 
     //// Uncomment to show FPS
     // auto now = std::chrono::steady_clock::now();

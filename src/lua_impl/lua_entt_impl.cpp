@@ -17,7 +17,7 @@
 #include <external/lua.hpp>
 #include <lua_impl/lua_register.hpp>
 #include <lua_impl/lua_register_types.hpp>
-
+#include <profiling.hpp>
 
 #define QuickRegister(Func) LuaRegister::PushRegisterMember(lua, #Func, registry, Func);
 
@@ -174,6 +174,8 @@ namespace LuaEntt
             +[](entt::registry* registry,
                 lua_State* lua,
                 lua_Integer entity) -> LuaRegister::Placeholder {
+                PROFILE_SCOPE("Entity.Get");
+
                 if(!registry->valid((entt::entity)entity))
                 {
                     lua_pushnil(lua);
@@ -227,6 +229,7 @@ namespace LuaEntt
                 const char* componentName,
                 lua_Integer entity,
                 LuaRegister::Placeholder component) {
+                PROFILE_SCOPE("Entity.AddComponent");
                 if(EntityReflection::AddComponentFromLua(
                        lua,
                        componentName,

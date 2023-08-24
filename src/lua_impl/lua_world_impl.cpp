@@ -4,6 +4,8 @@
 #include <lua_impl/lua_register.hpp>
 #include <lua_impl/lua_register_types.hpp>
 
+#include <profiling.hpp>
+
 #include <component/acceleration.hpp>
 #include <component/area_tracker.hpp>
 #include <component/behaviour.hpp>
@@ -401,5 +403,22 @@ namespace LuaWorld
         lua_settable(lua, -3);
 
         lua_setglobal(lua, "Navigation");
+
+        lua_createtable(lua, 0, 0);
+        LuaRegister::PushRegister(
+            lua,
+            "Start",
+            +[](lua_State* lua, const char* text) {
+                Profiling::Start(text);
+                return 0;
+            });
+        LuaRegister::PushRegister(
+            lua,
+            "End",
+            +[](lua_State* lua) {
+                Profiling::End();
+                return 0;
+            });
+        lua_setglobal(lua, "Profiling");
     }
 }

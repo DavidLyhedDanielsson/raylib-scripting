@@ -16,6 +16,37 @@ if menuBarState == nil then
     drawFieldGoalId = 0
 end
 
+local function SpawnEnemies()
+    Profiling.Start("LUA::SpawnEnemies")
+    for i, spawnEntity in ipairs(enemySpawns) do
+        Profiling.Start(tostring(i) .. ": Get")
+        local sComponent = Entity.Get(spawnEntity).EnemySpawn
+        local spawnId = sComponent.id
+        local goalId = sComponent.goalId
+        local spawnPosition = Entity.Get(spawnEntity).Transform.position
+        Profiling.End()
+
+        Profiling.Start(tostring(i) .. ": Create")
+        local entity = Entity.Create()
+        Profiling.End()
+
+        Profiling.Start(tostring(i) .. ": AddComponent")
+        EntityTools.AddComponentOrPrintError("Render", entity,
+            { assetName = "Pot1" })
+        EntityTools.AddComponentOrPrintError("Transform", entity,
+            { position = spawnPosition, rotation = { x = 0, y = 0, z = 0 } })
+        EntityTools.AddComponentOrPrintError("MoveTowards", entity,
+            { vectorFieldId = (spawnId << 16) | goalId, speed = 1.5 })
+        EntityTools.AddComponentOrPrintError("Velocity", entity,
+            { x = 0, y = 0, z = 0 })
+        EntityTools.AddComponentOrPrintError("Acceleration", entity,
+            { acceleration = { x = 0, y = 0, z = 0 } })
+        EntityTools.AddComponentOrPrintError("Health", entity, { currentHealth = 3 })
+        Profiling.End()
+    end
+    Profiling.End()
+end
+
 local function Window()
     if ImGui.BeginMainMenuBar() then
         if ImGui.BeginMenu("File", true) then
@@ -72,33 +103,9 @@ local function Window()
 
             if ImGui.MenuItem("Wave", "", false, true) then
                 RegisterThread(function()
-                    function Spawn()
-                        for _, spawnEntity in ipairs(enemySpawns) do
-                            local sComponent = Entity.Get(spawnEntity).EnemySpawn
-                            local spawnId = sComponent.id
-                            local goalId = sComponent.goalId
-                            local spawnPosition = Entity.Get(spawnEntity).Transform.position
-
-                            local entity = Entity.Create()
-                            EntityTools.AddComponentOrPrintError("Render", entity,
-                                { assetName = "Pot1" })
-                            EntityTools.AddComponentOrPrintError("Transform", entity,
-                                { position = spawnPosition, rotation = { x = 0, y = 0, z = 0 } })
-                            EntityTools.AddComponentOrPrintError("MoveTowards", entity,
-                                { vectorFieldId = (spawnId << 16) | goalId, speed = 1.5 })
-                            EntityTools.AddComponentOrPrintError("Velocity", entity,
-                                { x = 0, y = 0, z = 0 })
-                            EntityTools.AddComponentOrPrintError("Acceleration", entity,
-                                { acceleration = { x = 0, y = 0, z = 0 } })
-                            EntityTools.AddComponentOrPrintError("Health", entity, { currentHealth = 3 })
-                        end
-                    end
-
-                    local shortest = 400
-
-                    for i = 0, 10 do
-                        Spawn()
-                        coroutine.yield(shortest)
+                    for _ = 0, 50 do
+                        SpawnEnemies()
+                        coroutine.yield(600)
                     end
                 end)
             end

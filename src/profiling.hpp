@@ -22,7 +22,8 @@ namespace Profiling
 
     struct TimeSpan
     {
-        std::string_view name;
+        // std::string_view name;
+        char name[64];
         std::chrono::steady_clock::time_point start;
         std::chrono::steady_clock::time_point end;
         ProfileHandle handle;
@@ -52,12 +53,14 @@ namespace Profiling
 
       public:
         Scoped(const char* name);
+        Scoped(long long number);
         ~Scoped();
     };
 
     Scoped Scope(const char*);
 
     ProfileHandle Start(const char*);
+    ProfileHandle Start(long long);
     void End(ProfileHandle handle);
     void End(); // Unsafe but nice to use. TODO: Come up with better API
 

@@ -1,6 +1,7 @@
 #include "profiling.hpp"
 #include "imgui.h"
 
+#include <algorithm>
 #include <cassert>
 #include <chrono>
 #include <external/imgui.hpp>
@@ -13,6 +14,11 @@ namespace Profiling
     Scoped::Scoped(const char* name)
     {
         this->handle = Profiling::Start(name);
+    }
+
+    Scoped::Scoped(long long number)
+    {
+        this->handle = Profiling::Start(number);
     }
 
     Scoped::~Scoped()
@@ -33,11 +39,19 @@ namespace Profiling
         ProfileHandle handle{.val = handleCounter++};
 
         auto now = std::chrono::steady_clock::now();
-        currentSpan->children.push_back(
-            TimeSpan{.name = name, .start = now, .end = now, .handle = handle});
+        TimeSpan span{.start = now, .end = now, .handle = handle};
+        memcpy(span.name, name, std::min((int)strlen(name), 64));
+        currentSpan->children.push_back(span);
         stack.push(&currentSpan->children.back());
 
         return handle;
+    }
+
+    ProfileHandle Start(long long number)
+    {
+        char buffer[64];
+        sprintf(buffer, "%lld", number);
+        return Start(buffer);
     }
 
     void End(ProfileHandle handle)
@@ -96,7 +110,8 @@ namespace Profiling
 
     struct FlameData
     {
-        std::string_view name;
+        // std::string_view name;
+        char name[64];
         std::chrono::steady_clock::time_point frameStart;
         std::chrono::steady_clock::time_point start;
         std::chrono::steady_clock::time_point end;
@@ -109,13 +124,14 @@ namespace Profiling
         const std::chrono::steady_clock::time_point frameStart,
         const int depth = 1)
     {
-        outFlameData.push_back(FlameData{
-            .name = span.name,
+        FlameData data{
             .frameStart = frameStart,
             .start = span.start,
             .end = span.end,
             .depth = depth,
-        });
+        };
+        memcpy(data.name, span.name, 64);
+        outFlameData.push_back(data);
 
         for(const auto& child : span.children)
             CreateFlameData(outFlameData, child, frameStart, depth + 1);
@@ -136,6 +152,7 @@ namespace Profiling
             if(!selectedFrame)
                 selectedFrame = frames.size() - 2;
 
+            ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
             ImGui::SliderInt("Frame", &selectedFrame.value(), 0, frames.size() - 2);
         }
         else
@@ -148,7 +165,7 @@ namespace Profiling
             CreateFlameData(flameData, *(frames.end() - 2), (frames.end() - 2)->start);
 
         ImGuiWidgetFlameGraph::PlotFlame(
-            "Frame",
+            "##FramePlot",
             +[](float* start,
                 float* end,
                 ImU8* level,
@@ -170,10 +187,15 @@ namespace Profiling
                     *level = flameData.depth;
 
                 if(caption)
-                    *caption = flameData.name.data();
+                    *caption = flameData.name;
             },
             flameData.data(),
-            flameData.size());
+            flameData.size(),
+            0,
+            NULL,
+            FLT_MAX,
+            FLT_MAX,
+            ImVec2(ImGui::GetContentRegionAvail().x, 0.0f));
         ImGui::End();*/
     }
 };
