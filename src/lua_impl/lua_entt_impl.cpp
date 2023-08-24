@@ -174,10 +174,16 @@ namespace LuaEntt
             +[](entt::registry* registry,
                 lua_State* lua,
                 lua_Integer entity) -> LuaRegister::Placeholder {
+                if(!registry->valid((entt::entity)entity))
+                {
+                    lua_pushnil(lua);
+                    return {};
+                }
+
                 lua_createtable(lua, 1, 0);
-                registry->each([&](entt::entity entity) {
-                    EntityReflection::PushEntityToLua(lua, registry, entity);
-                });
+
+                EntityReflection::PushEntityToLua(lua, registry, (entt::entity)entity);
+
                 lua_geti(lua, -1, entity);
                 // Pop table
                 lua_rotate(lua, lua_gettop(lua) - 1, 1);
