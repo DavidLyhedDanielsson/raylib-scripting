@@ -148,6 +148,7 @@ void main_loop()
     // should be disabled when the game is "released".
     // luaError signals that no lua functions can be called since some error occurred during dofile
     bool luaError = false;
+#ifndef DNO_LUA_RELOAD
     Profiling::ProfileCall("Load currentLuaFile", [&]() {
         auto res = luaL_dofile(luaState, LuaFilePath(currentLuaFile.c_str()).data());
         if(res != LUA_OK)
@@ -157,6 +158,7 @@ void main_loop()
             luaError = true;
         }
     });
+#endif
 
     //// 3D rendering
     PROFILE_CALL(BeginMode3D, camera);
@@ -507,6 +509,10 @@ int main()
 
     lua_getglobal(luaState, "init");
     lua_pcall(luaState, 0, 0, 0);
+
+#ifdef DNO_LUA_RELOAD
+    std::cout << "Not reloading lua files (DNO_LUA_RELOAD defined)" << std::endl;
+#endif
 
 #ifdef PLATFORM_WEB
     emscripten_set_main_loop(main_loop, 0, 1);

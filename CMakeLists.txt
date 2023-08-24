@@ -11,6 +11,7 @@ add_compile_definitions(-DIMGUI_DISABLE_OBSOLETE_FUNCTIONS)
 if (EMSCRIPTEN)
   add_compile_definitions(DASSET_ROOT=\"assets\")
   add_compile_definitions(DPLATFORM_WEB)
+  add_compile_definitions(DNO_LUA_RELOAD)
   add_definitions(-DPLATFORM_WEB)
 
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s USE_GLFW=3 -s ASSERTIONS=1 -s WASM=1 -s ASYNCIFY --preload-file ../assets@assets -s TOTAL_MEMORY=134217728")
