@@ -143,7 +143,7 @@ namespace Profiling
         if(frames.size() <= 1)
             return;
 
-        /*ImGui::Begin("Profiling");
+        ImGui::Begin("Profiling");
         ImGui::Checkbox("Stop", &stop);
 
         static std::optional<int> selectedFrame = 0;
@@ -196,6 +196,6 @@ namespace Profiling
             FLT_MAX,
             FLT_MAX,
             ImVec2(ImGui::GetContentRegionAvail().x, 0.0f));
-        ImGui::End();*/
+        ImGui::End();
     }
 };
