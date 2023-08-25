@@ -11,7 +11,7 @@ Two quick demo videos can be found in the media directory.
 
 The online build can be found at this repo's
 [github page](https://davidlyheddanielsson.github.io/raylib-scripting/).  The
-camera can be controlled while holding down right mouse button.
+camera can be controlled while holding down the left alt key on the keyboard.
 
 # Setup
 
