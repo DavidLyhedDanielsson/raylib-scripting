@@ -5,6 +5,7 @@
 #include <cassert>
 #include <chrono>
 #include <external/imgui.hpp>
+#include <optional>
 
 static uint64_t handleCounter = 0;
 static bool stop = false;
